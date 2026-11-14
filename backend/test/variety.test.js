@@ -97,3 +97,28 @@ test('Talon Strike and Take Flight: the artist\'s talons and wings, and animatio
         assert.ok(m && fs.existsSync(new URL(`../../frontend/src/${m[1].replace('./', '')}`, import.meta.url)), `${key} is a real file`);
     }
 });
+
+test('Flying keeps a flier out of reach of melee, not of every physical attack; Take Flight and Arcane Blast spend the next turn', async () => {
+    const { StatusEffectDefinitions: SD } = await import('../../shared/abilities/statusEffectDefinitions.js');
+    const { CombatantModel } = await import('../../shared/battle/combatantModel.js');
+    const { StatusEffectModel } = await import('../../shared/abilities/statusEffectModel.js');
+    assert.deepEqual(SD.flying.immunities, { ranges: ['melee'] });
+    const hawk = new CombatantModel(quiet(() => EntityFactory.create('HAWK', 5)));
+    const archer = new CombatantModel(quiet(() => EntityFactory.create('HUMANOID', 5)));
+    hawk.applyStatusEffect(new StatusEffectModel(SD.flying, 2, null));
+    assert.equal(hawk.checkImmunity(A.claw, archer).isImmune, true, 'a claw cannot reach it');
+    assert.equal(hawk.checkImmunity(A.claw, archer).reason, 'range');
+    const arrow = Object.values(A).find(a => a.range === 'ranged' && (a.tags || []).includes('physical'));
+    assert.equal(hawk.checkImmunity(arrow, archer).isImmune, false, `${arrow.id} still can`);
+    const otherFlier = new CombatantModel(quiet(() => EntityFactory.create('HAWK', 5)));
+    otherFlier.applyStatusEffect(new StatusEffectModel(SD.flying, 2, null));
+    assert.equal(hawk.checkImmunity(A.claw, otherFlier).isImmune, false, 'another flier can');
+    for (const id of ['take_flight', 'arcane_blast']) assert.ok(A[id].selfStatusEffects.some(s => s.id === 'recharging' && s.duration === 1), `${id} recharges`);
+    assert.deepEqual(SD.recharging.icon, SD.knocked_down.icon, 'recharging looks like knocked down');
+    assert.ok(!SD.recharging.cancels || !SD.recharging.cancels.includes('flying'), 'but does not pull the flier down');
+});
+
+test('indoors, a fight plays the plains\' battle music', async () => {
+    const { BIOME_DEFINITIONS } = await import('../../shared/world/biomeDefinitions.js');
+    assert.equal(BIOME_DEFINITIONS.HOUSE_INTERIOR.music.battle, BIOME_DEFINITIONS.PLAINS.music.battle);
+});

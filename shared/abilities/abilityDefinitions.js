@@ -1401,7 +1401,7 @@ export const AbilityDefinitions = {
     "take_flight": {
       id: "take_flight",
       name: "Take Flight",
-      description: "Launches into the sky for 2 turns: slash, blunt and pierce attacks cannot reach it until it lands.",
+      description: "Launches into the sky for 2 turns: melee attacks cannot reach it until it lands (arrows, spells and thrown weapons still can). The climb spends it: it must recharge on its next turn.",
       range: "self",
       tags: ["utility", "buff", "movement", "trait_trigger"],
       // Note: The trait's onBattleStart logic will likely override this message, 
@@ -1414,6 +1414,7 @@ export const AbilityDefinitions = {
       accuracy: 1.0,
       animationId: "take_flight",
       effects: [],
+      selfStatusEffects: [{ id: "recharging", chance: 1.0, duration: 1 }],   // the climb spends it: it loses its next turn (like Arcane Blast)
       // This applies the mechanical buff. You'll need a corresponding "flying" 
       // or "airborne" status in your StatusDefinitions to handle the actual 
       // stat changes (like evasion up or ground immunity).

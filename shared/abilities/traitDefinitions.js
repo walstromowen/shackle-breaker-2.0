@@ -193,7 +193,7 @@ export const TRAIT_DEFINITIONS = {
     },
     'airborne': {
         name: "Airborne",
-        description: "Takes to the skies at the start of battle and flies for 2 turns, out of reach of slash, blunt and pierce attacks.",
+        description: "Takes to the skies at the start of battle and flies for 2 turns, out of reach of melee attacks.",
         triggers: {
             onBattleStart: { ability: "take_flight", battleMessage: "{actor} takes to the air!", animationId: "take_flight" }
         }

@@ -158,8 +158,8 @@ export const StatusEffectDefinitions = {
     recharging: {
         id: 'recharging',
         name: 'Recharging',
-        description: "Spent by a mighty attack: misses its next turn.",
-        icon: { col: 6, row: 1 },
+        description: "Spent by a mighty effort: misses its next turn.",
+        icon: { col: 8, row: 0 },   // Knocked Down's: it plays out the same (the next turn is lost), but it does not pull a flier down
         defaultCharges: 1,
         maxStacks: 1,
         effects: [
@@ -375,13 +375,13 @@ export const StatusEffectDefinitions = {
     flying: {
         id: 'flying',
         name: 'Flying',
-        description: "In the air: slash, blunt and pierce attacks cannot reach it. Knock it down or bind it to bring it to the ground.",
-        icon: { col: 0, row: 3 },   // its own: wings over wind (tools/art/flyingIcon.py), no longer the speed buff's
+        description: "In the air: melee attacks cannot reach it (arrows, spells and thrown weapons still can, and so can another flier, or a weapon with reach). Knock it down or bind it to bring it to the ground.",
+        icon: { col: 0, row: 3 },   // its own: wings over wind (the artist's), no longer the speed buff's
         defaultCharges: 3, // -1 for Infinite duration
         maxStacks: 1,
+        tags: ['flying'],   // a flier attacking another flier can reach it (CombatantModel.checkImmunity)
         immunities: {
-            
-            tags: ['physical']
+            ranges: ['melee']   // out of reach of melee: 'Out of Reach!' (TurnManager); no longer immune to every physical attack
         }
     },
     incorporeal: {

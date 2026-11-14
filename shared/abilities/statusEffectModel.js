@@ -41,6 +41,9 @@ export class StatusEffectModel {
         
         // NEW: Array of status IDs that this status removes upon application
         this.cancels = definition.cancels || [];
+        // the tags it gives whoever has it (CombatantModel.getActiveTags): Flying's 'flying', which lets a flier reach another flier in melee.
+        // (They were never copied, so a status's tags did nothing until now.)
+        this.tags = definition.tags || [];
 
         this.charges = initialCharges !== null && initialCharges !== undefined 
             ? initialCharges 
