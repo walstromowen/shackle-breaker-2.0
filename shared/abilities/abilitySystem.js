@@ -6,7 +6,6 @@ import { AbilityDefinitions } from './abilityDefinitions.js';
 import { AbilityModel } from './abilityModel.js';
 import { gameState } from '../core/gameState.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
-import { SCAR_TRAITS } from './abilityTraits.js';
 import { TRAIT_DEFINITIONS } from './traitDefinitions.js';
 import { rng } from '../core/random.js';
 
@@ -405,17 +404,30 @@ export class AbilitySystem {
         return { success: true, message: this._fillTemplate(effect.message || '{target} is free.', { target: entity.name }) };
     }
 
-    /* { type: 'cure_trait', message?, nothingToCure? }
-       The Shmindolyn's Draught: takes the bad trait the character gained last (the negative traits, abilityTraits.SCAR_TRAITS: what a fall in battle can
-       leave, and the flaws a character can be made with) off them. With none, nothing happens and the draught is kept. */
-    static _world_cure_trait(effect, source, target) {
+    /* { type: 'forget_trait', message?, nothingToForget? }
+       Kurtus's Brew, drunk outside a fight: the drinker forgets the trait they gained last, good or bad (it does not choose). With none, nothing is
+       forgotten (the brew is still drunk: it set their health to 1 first). */
+    static _world_forget_trait(effect, source, target) {
         const entity = target && (target.originalEntity || target);
         const traits = (entity && Array.isArray(entity.traits)) ? entity.traits : [];
-        const bad = [...traits].reverse().find(id => SCAR_TRAITS.includes(id));
-        if (!bad) return { success: false, message: this._fillTemplate(effect.nothingToCure || '{target} has no bad trait to mend.', { target: entity?.name || 'They' }) };
-        entity.removeTrait(bad);
-        const trait = (TRAIT_DEFINITIONS[bad] && TRAIT_DEFINITIONS[bad].name) || bad;
+        const last = traits[traits.length - 1];
+        if (!last) return { success: false, message: this._fillTemplate(effect.nothingToForget || '{target} forgets nothing.', { target: entity?.name || 'They' }) };
+        entity.removeTrait(last);
+        const trait = (TRAIT_DEFINITIONS[last] && TRAIT_DEFINITIONS[last].name) || last;
         return { success: true, message: this._fillTemplate(effect.message || '{target} is no longer {trait}.', { target: entity.name, trait }) };
+    }
+
+    /* { type: 'cleanse_corruption', amount, message?, nothingToCleanse?, shackledMessage? }
+       The Shmindolyn's Draught: lowers the drinker's corruption by `amount` (CorruptionSystem.change, which also says when a tier's grip loosens).
+       With no corruption to ease, or on someone shackled (only a meteorite frees them), nothing happens and the draught is kept. */
+    static _world_cleanse_corruption(effect, source, target) {
+        const entity = target && (target.originalEntity || target);
+        const name = entity?.name || 'They';
+        if (CorruptionSystem.isShackled(entity)) return { success: false, message: this._fillTemplate(effect.shackledMessage || '{target} is shackled.', { target: name }) };
+        const r = CorruptionSystem.change(entity, -Math.abs(effect.amount || 25));
+        if (!r.amount) return { success: false, message: this._fillTemplate(effect.nothingToCleanse || '{target} has no corruption to ease.', { target: name }) };
+        const text = this._fillTemplate(effect.message || "{target}'s corruption eases.", { target: name, before: r.before, after: r.after });
+        return { success: true, message: [text, ...r.messages].join(' ') };
     }
 
     /* { type: 'show_interior_map', message?, notInside?, alreadyOpen? }

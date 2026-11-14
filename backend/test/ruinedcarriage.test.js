@@ -1,6 +1,6 @@
 // backend/test/ruinedcarriage.test.js: `npm test`. The Ruined Carriage on the plains: a 2 x 3 wreck with its own band in the plains' spawn list, an
 // encounter that can make the party rich (a large purse, the strongbox, a merchant's goods) or bring a herd of shackled steeds down on it, and the
-// Shmindolyn's Draught found in it, which cures a character of their last bad trait.
+// Shmindolyn's Draught found in it, which eases a character's corruption (and Kurtus's Brew, which now forgets a trait).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -118,7 +118,8 @@ test('a carriage visited again and again: no stage only informs and sends the pa
     assert.ok(all(chest.stages.found_key).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'opened_chest'));
 });
 
-test('the Shmindolyn\'s Draught: found in the carriage, it cures the last bad trait, leaves the good ones, and is kept when there is nothing to cure', () => {
+test('the Shmindolyn\'s Draught: found in the carriage, it eases corruption by 25, and is kept when there is none to ease or the drinker is shackled', async () => {
+    const { CorruptionSystem } = await import('../../shared/characters/corruptionSystem.js');
     const item = I.shmindolyns_draught;
     assert.equal(item.type, 'consumable');
     assert.equal(item.useAbility, 'shmindolyns_draught');
@@ -127,16 +128,33 @@ test('the Shmindolyn\'s Draught: found in the carriage, it cures the last bad tr
     assert.ok(all(E.stages.strongbox_open).some(r => r.type === 'GIVE_ITEM' && r.payload.itemId === 'shmindolyns_draught'), 'always in the strongbox');
     assert.ok(L.ruined_carriage_valuables.items.some(i => i.id === 'shmindolyns_draught'), 'and among the merchant\'s goods');
 
-    const hero = quiet(() => EntityFactory.create('HUMANOID', { name: 'Aldric', traits: ['quick', 'frail', 'tough', 'myopic'] }));
+    const hero = quiet(() => EntityFactory.create('HUMANOID', { name: 'Aldric', traits: ['quick', 'frail'] }));
+    CorruptionSystem.change(hero, 40);
     const drink = () => quiet(() => AbilitySystem.execute('shmindolyns_draught', hero, hero, { context: 'overworld' }));
     let r = drink();
     assert.ok(r.success);
-    assert.match(r.message, /no longer Myopic/, 'the most recent bad trait goes first');
-    assert.deepEqual([...hero.traits], ['quick', 'frail', 'tough']);
+    assert.equal(CorruptionSystem.valueOf(hero), 15, '40 - 25');
+    assert.deepEqual([...hero.traits], ['quick', 'frail'], 'traits are no longer its business');
+    drink();
+    assert.equal(CorruptionSystem.valueOf(hero), 0);
     r = drink();
-    assert.deepEqual([...hero.traits], ['quick', 'tough'], 'then the next');
-    r = drink();
-    assert.equal(r.success, false, 'nothing left to cure: the draught is not spent');
-    assert.deepEqual([...hero.traits], ['quick', 'tough'], 'good traits are never touched');
-    assert.ok(SCAR_TRAITS.length >= 7);
+    assert.equal(r.success, false, 'nothing left to ease: the draught is not spent');
+    CorruptionSystem.shackle(hero);
+    assert.equal(drink().success, false, 'it cannot reach the shackled');
+});
+
+test('Kurtus\'s Brew: 1 HP always; Enraged in a fight; outside one, the last trait gained is forgotten, good or bad', async () => {
+    const brew = A.brew_of_madness;
+    assert.ok(brew.statusEffects.every(s => s.battleOnly), 'Enraged only in a fight');
+    const hero = quiet(() => EntityFactory.create('HUMANOID', { name: 'Brenna', traits: ['frail', 'quick'] }));
+    const drink = (ctx) => quiet(() => AbilitySystem.execute('brew_of_madness', hero, hero, ctx));
+    drink({ context: 'overworld' });
+    assert.equal(hero.hp, 1);
+    assert.deepEqual([...hero.traits], ['frail'], 'the last one, though it was a good one');
+    drink({ context: 'overworld' });
+    assert.deepEqual([...hero.traits], []);
+    const fighter = quiet(() => EntityFactory.create('HUMANOID', { name: 'Cato', traits: ['tough'] }));
+    quiet(() => AbilitySystem.execute('brew_of_madness', fighter, fighter, {}));
+    assert.deepEqual([...fighter.traits], ['tough'], 'in a fight nothing is forgotten');
+    assert.ok((fighter.statusEffects || []).some(s => s.id === 'enraged'), 'and the drinker is Enraged');
 });

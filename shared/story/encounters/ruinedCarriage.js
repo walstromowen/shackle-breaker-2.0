@@ -16,7 +16,7 @@
      the herd         hunt it down first (hunt), or fight it when the noise brings it: 2 to 4 shackled steeds. Win, and the wagon can be searched at
                       leisure (ruined_carriage_cleared: the purse or the crates, the strongbox, or the dead man's ring, no roll needed).
    Every haul empties the carriage for good (REPLACE_OBJECT: RUINED_CARRIAGE_LOOTED): the purse 250 to 450 coin; the strongbox 350 coin, a Shmindolyn's
-   Draught (cures a bad trait) and more; or two or three rolls of ruined_carriage_valuables (lootTableDefinitions.js); or the ring. The journal does not:
+   Draught (eases corruption) and more; or two or three rolls of ruined_carriage_valuables (lootTableDefinitions.js); or the ring. The journal does not:
    the quest is a bonus on top of whatever the party takes.
    Art: assets/icons/encounters/ruined_carriage.png registered as `encounter_ruined_carriage` (one 128 px picture). */
 import { toStage, END } from './stageKit.js';
@@ -140,7 +140,7 @@ const stages = {
         text: "Empty it.",
         outcomes: [{ weight: 1, results: [
             { type: "MODIFY_CURRENCY", payload: { amount: 350 } },
-            { type: "GIVE_ITEM", payload: { itemId: "shmindolyns_draught", qty: 1 } },   // cures a bad trait
+            { type: "GIVE_ITEM", payload: { itemId: "shmindolyns_draught", qty: 1 } },   // eases corruption
             { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "ruined_carriage_valuables", rolls: 1 } },
             LOOTED, END
         ] }]

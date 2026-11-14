@@ -8,7 +8,7 @@
      the character creator   one of Quick, Inquisitive, Brawler, Tough or Stealthy
      battle                  the abilities a character uses, kills with, or lives through (abilities/abilityTraits.js), and a scar when struck down
      the Strange Obelisk     any trait, good after a success, bad after a failure (encounters/strangeObelisk.js)
-   and to lose one: a Shmindolyn's Draught cures the last bad trait, the obelisk can strip them all. */
+   and to lose one: Kurtus's Brew, drunk outside a fight, forgets the last trait gained (good or bad); the obelisk can strip them all. */
 
 export const ENCOUNTER_TRAITS = {
     // ---- good ----

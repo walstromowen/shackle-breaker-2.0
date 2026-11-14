@@ -1289,18 +1289,18 @@ export const ItemDefinitions = {
     name: "Kurtus's Brew of Madness",
     type: "consumable",
     useAbility: "brew_of_madness",
-    description: "Smells like ozone and bad decisions. Drops you to 1 HP and leaves you Enraged: physical attack +50% for 3 turns.",
+    description: "Smells like ozone and bad decisions. Drops you to 1 HP. In a fight it leaves you Enraged: physical attack +50% for 3 turns. Drunk outside one, you forget the trait you gained last, good or bad.",
     icon: { col: 11, row: 1 },   // a sealed bottle of strange ale (its own cell: it used to borrow the invigorating tonic's jar)
     stackable: true
   },
-  // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: it mends the character it is used on of the bad trait they gained last (a scar from a fight, a flaw they were born
-  // with: Clumsy, Frail, Myopic, Superstitious, Lazy, Dull, Sluggish). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js).
-  // Used from the character's page, outside a fight; on someone with no bad trait it does nothing and is kept.
+  // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: it eases the corruption of the character it is used on
+  // (by 25). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js). Used from the character's page, outside a fight; on someone with no
+  // corruption, or someone shackled, it does nothing and is kept. (Bad traits are forgotten with Kurtus's Brew now.)
   "shmindolyns_draught": {
     id: "shmindolyns_draught",
     name: "Shmindolyn's Draught",
     type: "consumable",
-    description: "A frothing draught brewed to the recipe of Shmindolyn, a healer of legend: it tastes of honey and woodsmoke. Cures the one who drinks it of their most recent bad trait (Clumsy, Frail, Myopic, Superstitious, Lazy, Dull or Sluggish).",
+    description: "A frothing draught brewed to the recipe of Shmindolyn, a healer of legend: it tastes of honey and woodsmoke. Eases the corruption of the one who drinks it by 25. It cannot reach someone already shackled.",
     value: 300,
     icon: { col: 10, row: 1 },   // a foaming tankard
     useAbility: "shmindolyns_draught",

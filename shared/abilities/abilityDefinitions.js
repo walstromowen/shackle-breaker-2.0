@@ -1144,11 +1144,17 @@ export const AbilityDefinitions = {
         battleMessage: "{user} chugs a {ability}!",
         targeting: { scope: "self" },
         animationId: "brew_of_madness",
-        // Kurtus's brew: fury for a price. Health drops to 1 and the drinker is Enraged (physical attack +50% for 3 turns).
+        // Kurtus's brew: oblivion for a price. Health drops to 1. In a fight the drinker is Enraged (physical attack +50% for 3 turns);
+        // drunk outside one, they wake having forgotten who they had become: their most recent trait, good or bad, is gone.
         effects: [
-            { type: "set", resource: "hp", value: 1 }
+            { type: "set", resource: "hp", value: 1 },
+            {
+                type: "forget_trait",                // AbilitySystem._world_forget_trait (outside a fight only)
+                message: "The world tilts. When it rights itself, {target} is no longer {trait}.",
+                nothingToForget: "{target} sleeps it off, and forgets nothing worth forgetting."
+            }
         ],
-        statusEffects: [{ id: "enraged", chance: 1.0, duration: 3 }]
+        statusEffects: [{ id: "enraged", chance: 1.0, duration: 3, battleOnly: true }]
     },
     "minor_heal": {
         id: "minor_heal",
@@ -1494,20 +1500,22 @@ export const AbilityDefinitions = {
             notShackled: "{target} is not shackled."
         }]
     },
-    // The Shmindolyn's Draught (item shmindolyns_draught): cures the character it is used on of the bad trait they gained last.
+    // The Shmindolyn's Draught (item shmindolyns_draught): eases the corruption of the character it is used on.
     "shmindolyns_draught": {
         id: "shmindolyns_draught",
         name: "Shmindolyn's Draught",
-        description: "Cures the drinker of their most recent bad trait.",
+        description: "Eases the drinker's corruption by 25.",
         context: "overworld",                       // never offered in a battle
         range: "self",
         tags: ["utility", "item"],
         targeting: { scope: "self", select: "auto" },
         accuracy: 1.0,
         effects: [{
-            type: "cure_trait",                      // AbilitySystem._world_cure_trait
-            message: "Warmth spreads through {target}. {target} is no longer {trait}.",
-            nothingToCure: "{target} has no bad trait to mend."
+            type: "cleanse_corruption",              // AbilitySystem._world_cleanse_corruption
+            amount: 25,
+            message: "Warmth spreads through {target}, and the darkness in them recedes ({before} to {after}).",
+            nothingToCleanse: "{target} carries no corruption to ease.",
+            shackledMessage: "The draught cannot reach {target} through the iron."
         }]
     },
     // Paste into AbilityDefinitions next to "torchlight". Carried by the "escape_rope" item.
