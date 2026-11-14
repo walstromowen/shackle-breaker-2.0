@@ -3,23 +3,54 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
-import { DIG_ODDS } from '../../shared/story/encounters/oldGravestone.js';
+import { DIG_SUCCESS, DIG_FAILURE, CAREFUL_DIG } from '../../shared/story/encounters/oldGravestone.js';
 
 const g = encounterDefinitions.old_gravestone;
-const weightsOf = (outs) => Object.fromEntries(outs.map(o => [o.results[0].payload.stageId, o.weight]));
 
-test('digging is a strength or a dexterity roll: a success mostly finds the goods, a failure mostly wakes the dead', () => {
-    const checks = g.stages.dig.decisions.filter(d => d.type === 'skill_check');
-    assert.deepEqual(checks.map(d => d.attribute).sort(), ['dexterity', 'strength']);
-    assert.ok(!g.stages.dig.decisions.some(d => d.type !== 'skill_check' && (d.outcomes || []).some(o => o.results.some(r => r.type === 'ADVANCE_STAGE'))), 'no dig without a roll');
-    for (const d of checks) {
-        const win = weightsOf(d.successOutcomes), lose = weightsOf(d.failureOutcomes);
-        for (const w of [win, lose]) {
-            assert.deepEqual(Object.keys(w).sort(), ['bones_rise', 'buried_things', 'empty_grave', 'sealed_coffin', 'spirit_rises']);
-            assert.equal(Object.values(w).reduce((a, b) => a + b, 0), 100);
-        }
-        assert.ok(win.buried_things > lose.buried_things && win.bones_rise + win.spirit_rises < lose.bones_rise + lose.spirit_rises);
+const outcomes = (d) => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])];
+const results = (d) => outcomes(d).flatMap(o => o.results);
+
+test('nothing comes out of the grave without a roll: every way in is a skill check, and only leaving (or switching) is free', () => {
+    const ds = g.stages.approach.decisions;
+    for (const d of ds) {
+        if (d.type === 'skill_check' || d.type === 'switch_character') continue;
+        assert.deepEqual(results(d).map(r => r.type), ['END_ENCOUNTER'], `"${d.text}" may only leave`);
     }
+    const checks = ds.filter(d => d.type === 'skill_check');
+    assert.deepEqual(checks.map(d => d.attribute).sort(), ['attunement', 'strength']);
+    // and no choice anywhere hands out loot or a stage of loot without a roll having led there: the loot stages are reached only by rolls
+    const lootStages = Object.entries(g.stages).filter(([, st]) => st.decisions.some(d => results(d).some(r => r.type === 'ROLL_LOOT_TABLE'))).map(([id]) => id);
+    for (const [id, st] of Object.entries(g.stages)) for (const d of st.decisions) {
+        if (d.type === 'skill_check') continue;
+        for (const r of results(d)) if (r.type === 'ADVANCE_STAGE') assert.ok(!lootStages.includes(r.payload.stageId), `${id}: "${d.text}" leads to loot without a roll`);
+    }
+});
+
+test('digging (strength): a success mostly finds the goods but can be empty or stir the dead; a failure mostly wakes them', () => {
+    const dig = g.stages.approach.decisions.find(d => d.attribute === 'strength');
+    const w = (outs) => Object.fromEntries(outs.map(o => [o.results[0].payload.stageId, o.weight]));
+    assert.deepEqual(w(dig.successOutcomes), DIG_SUCCESS);
+    assert.deepEqual(w(dig.failureOutcomes), DIG_FAILURE);
+    for (const t of [DIG_SUCCESS, DIG_FAILURE]) assert.equal(Object.values(t).reduce((a, b) => a + b, 0), 100);
+    assert.ok(DIG_SUCCESS.empty_grave > 0, 'a success is not always a find');
+    assert.ok(DIG_SUCCESS.buried_things > DIG_FAILURE.buried_things && DIG_SUCCESS.bones_rise + DIG_SUCCESS.spirit_rises < DIG_FAILURE.bones_rise + DIG_FAILURE.spirit_rises);
+});
+
+test('the careful dig (attunement): a success never wakes the dead but can find nothing; a miss costs insight or wakes the spirit', () => {
+    const c = g.stages.approach.decisions.find(d => d.attribute === 'attunement');
+    assert.ok(c.threshold > g.stages.approach.decisions.find(d => d.attribute === 'strength').threshold, 'harder than plain digging');
+    const w = Object.fromEntries(c.successOutcomes.map(o => [o.results[0].payload.stageId, o.weight]));
+    assert.deepEqual(w, CAREFUL_DIG);
+    assert.ok(!w.bones_rise && !w.spirit_rises && w.empty_grave > 0);
+    const miss = c.failureOutcomes.map(o => o.results.map(r => r.type === 'ADVANCE_STAGE' ? r.payload.stageId : r.type).join(','));
+    assert.deepEqual(miss.sort(), ['MODIFY_VITALS,listen_failed', 'spirit_rises']);
+    assert.ok(!results(g.stages.listen_failed.decisions[0]).some(r => r.type === 'DESTROY_OBJECT'), 'noise only: the stone stays for another try');
+});
+
+test('a short grave: no listening stages, no digging deeper', () => {
+    for (const gone of ['dig', 'listen_bundle', 'listen_bones', 'listen_spirit', 'listen_hollow', 'listen_coffin', 'deeper_find', 'deeper_nothing']) assert.ok(!g.stages[gone], `${gone} is gone`);
+    assert.ok(Object.keys(g.stages).length <= 12);
+    assert.equal(g.stages.buried_things.decisions.length, 1);
 });
 
 test('the dead can be escaped with a dexterity roll; a miss is the fight', () => {
@@ -30,56 +61,18 @@ test('the dead can be escaped with a dexterity roll; a miss is the fight', () =>
     assert.equal(g.stages.dragged_back.decisions[0].outcomes[0].results[0].type, 'START_BATTLE');
 });
 
-test('the buried bundle can be dug deeper for more, or less', () => {
-    const d = g.stages.buried_things.decisions.find(x => x.text === '[STR] Dig deeper still.');
-    assert.equal(d.type, 'skill_check');
-    assert.equal(d.attribute, 'strength');
-    for (const outs of [d.successOutcomes, d.failureOutcomes]) assert.equal(Object.values(weightsOf(outs)).reduce((a, b) => a + b, 0), 100);
-    assert.ok(weightsOf(d.successOutcomes).deeper_find > 0 && !weightsOf(d.failureOutcomes).deeper_find, 'only a success finds more');
-    const rolls = (id) => g.stages[id].decisions[0].outcomes[0].results.find(r => r.type === 'ROLL_LOOT_TABLE').payload.rolls;
-    assert.ok(rolls('deeper_find') > rolls('deeper_nothing'));
-    assert.equal(rolls('deeper_nothing'), 2);
-});
-
 test('the sealed coffin is a strength check; failing it wakes the dead', () => {
     const c = g.stages.sealed_coffin.decisions[0];
     assert.equal(c.type, 'skill_check');
     assert.equal(c.attribute, 'strength');
-    assert.deepEqual(Object.keys(weightsOf(c.failureOutcomes)).sort(), ['bones_rise', 'spirit_rises']);
+    assert.deepEqual(c.failureOutcomes.map(o => o.results[0].payload.stageId).sort(), ['bones_rise', 'spirit_rises']);
     assert.equal(c.successOutcomes[0].results[0].payload.stageId, 'coffin_opened');
-});
-
-test('listening to the ground is an attunement check that shows the dig\'s own odds, and a miss costs insight and cannot be retried', () => {
-    const l = g.stages.approach.decisions.find(d => d.text.startsWith('[ATT]'));
-    assert.equal(l.type, 'skill_check');
-    assert.equal(l.attribute, 'attunement');
-    const shown = weightsOf(l.successOutcomes), dug = DIG_ODDS;
-    assert.deepEqual(Object.values(shown).reduce((a, b) => a + b, 0), 100);
-    // each thing it can tell you has the same share as the thing it stands for in the dig
-    const stands = { listen_bundle: 'buried_things', listen_bones: 'bones_rise', listen_spirit: 'spirit_rises', listen_hollow: 'empty_grave', listen_coffin: 'sealed_coffin' };
-    assert.deepEqual(Object.keys(shown).sort(), Object.keys(stands).sort());
-    for (const [stage, target] of Object.entries(stands)) {
-        assert.equal(shown[stage], dug[target], `${stage} has the share of ${target}`);
-        const digs = g.stages[stage].decisions.find(d => d.type === 'skill_check');
-        assert.equal(digs.attribute, 'dexterity', `${stage}: digging down to it is still a roll`);
-        assert.equal(digs.successOutcomes[0].results[0].payload.stageId, target, `${stage} leads to ${target}`);
-        assert.ok(g.stages[stage].decisions.some(d => d.outcomes && d.outcomes[0].results[0].type === 'END_ENCOUNTER'), `${stage} lets you walk away`);
-    }
-    const fail = l.failureOutcomes[0].results.map(r => r.type);
-    assert.deepEqual(fail, ['SET_CONTEXT_FLAG', 'MODIFY_VITALS', 'ADVANCE_STAGE']);
-    assert.ok(l.conditions.some(c => c.type === 'context_flag_not_set' && c.flagId === 'failed_gravestone_listen'));
-    assert.equal(l.failureOutcomes[0].results[0].payload.flagId, 'failed_gravestone_listen');
-    // after a miss you can still dig (or go), but not listen again
-    const after = g.stages.listen_failed.decisions.map(d => d.text);
-    assert.ok(after.includes('Dig it up anyway.') && after.includes('Leave the dead in peace.'));
-    assert.ok(!g.stages.listen_failed.decisions.some(d => d.type === 'skill_check'));
 });
 
 test('the spirit can be spoken to (attunement): a success lays it to rest and destroys the grave, a failure is the fight', () => {
     const c = g.stages.spirit_rises.decisions.find(d => d.text.startsWith('[ATT]'));
     assert.equal(c.type, 'skill_check');
     assert.equal(c.attribute, 'attunement');
-    assert.ok(c.threshold > g.stages.approach.decisions.find(d => d.text.startsWith('[ATT]')).threshold, 'harder than listening');
     assert.equal(c.successOutcomes[0].results[0].payload.stageId, 'spirit_at_rest');
     assert.equal(c.failureOutcomes[0].results[0].payload.stageId, 'spirit_unmoved');
     const rest = g.stages.spirit_at_rest.decisions[0];
@@ -92,7 +85,6 @@ test('the spirit can be spoken to (attunement): a success lays it to rest and de
 });
 
 test('every stage of the gravestone leads to a stage that exists', () => {
-    const outcomes = (d) => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])];
     for (const [id, st] of Object.entries(g.stages)) {
         for (const d of st.decisions) for (const o of outcomes(d)) for (const r of o.results) {
             if (r.type === 'ADVANCE_STAGE') assert.ok(g.stages[r.payload.stageId], `${id} -> ${r.payload.stageId}`);

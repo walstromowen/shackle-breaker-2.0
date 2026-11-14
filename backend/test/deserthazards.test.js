@@ -64,7 +64,19 @@ test('its heart: a great locust swarm, and beating it always gives one of the th
     assert.equal(fight.payload.afterVictory.encounterId, 'cyclone_heart');
     const won = E.cyclone_heart.stages.stilled.decisions[0].outcomes;
     assert.ok(won.every(o => o.results.some(r => r.type === 'GIVE_ITEM' && INSIGHTS.includes(r.payload.itemId))), 'every outcome gives one: guaranteed');
-    assert.ok(E.cyclone.stages.eye.decisions.some(d => /Get out/.test(d.text)), 'the fight can be refused');
+    const out = E.cyclone.stages.eye.decisions.find(d => /Ride the next gust out/.test(d.text));
+    assert.ok(out, 'the fight can be refused');
+    assert.equal(out.type, 'skill_check', 'but getting out is a roll');
+    assert.equal(out.failureOutcomes[0].results[0].payload.stageId, 'thrown');
+});
+
+test('no free way past the cyclone: every choice at the funnel is a roll, sheltering too', () => {
+    const f = E.cyclone.stages.funnel.decisions;
+    assert.ok(f.length >= 4 && f.every(d => d.type === 'skill_check'), f.map(d => d.text).join(' | '));
+    const hide = f.find(d => /behind a dune/.test(d.text));
+    assert.equal(hide.attribute, 'vigor');
+    assert.deepEqual(hide.successOutcomes[0].results[0].payload.stageId, 'shelter');
+    assert.ok(hide.failureOutcomes.every(o => ['thrown', 'swarm'].includes(o.results[0].payload.stageId)));
 });
 
 test('their pictures are real files', () => {

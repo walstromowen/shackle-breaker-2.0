@@ -7,7 +7,8 @@
                starts with it. Reach into the wall [STR 14], dash through its eye [DEX 14], or read the storm [ATT 13]: done right, it gives up an
                Insight of Wind (the likeliest), of Earth, or of Lightning. Through the eye lies its heart: a great swarm of thunder locusts (six) guards
                what the storm carries, and beating it always gives one of those insights (cyclone_heart). Done wrong, it throws you, strikes you, or
-               spits out a swarm of thunder locusts. Or shelter behind a dune and let it pass.
+               spits out a swarm of thunder locusts. There is no free way past it: sheltering behind a dune is a roll too [VIG 12] (a miss and it
+               throws you, or brings the locusts), and so is leaving its eye without the fight [DEX 12] (a miss and it throws you).
 
    Art: assets/icons/encounters/quicksand.png and cyclone.png (one 128 px picture each, placeholders: tools/art/desertHazards.py). */
 import { toStage, END } from './stageKit.js';
@@ -102,14 +103,25 @@ export const cyclone = {
                 successOutcomes: toStage("calm"),
                 failureOutcomes: toStage("struck")
             },
-            { text: "Throw yourself down behind a dune.", outcomes: toStage("shelter") }
+            {
+                // no way past it without a roll: dig in behind a dune and hold on, or be taken
+                text: "[VIG] Throw yourself down behind a dune and hold on.",
+                type: "skill_check", attribute: "vigor", threshold: 12,
+                successOutcomes: toStage("shelter"),
+                failureOutcomes: [{ weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "thrown" } }] }, { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "swarm" } }] }]
+            }
         ], { bgm: BGM, effect: "shake" }),
         seized: cy("Your arm goes into the wall up to the shoulder, and the wind tries to flay it. Your fingers close on something warm, and you tear it free.",
             [{ text: "Look at what you hold.", outcomes: insight }]),
         // through the eye, to its heart: a great swarm of thunder locusts guards what the storm carries. Win, and it is yours (cyclone_heart)
         eye: cy("You run with the gusts, and then you are through, into the eye. Deeper in, at the cyclone's heart, lightning gathers around something bright, and a great swarm of thunder locusts wheels about it, crackling.", [
             { text: "Fight your way into its heart.", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: Array(6).fill("THUNDER_LOCUST"), bgm: BGM, afterVictory: { encounterId: "cyclone_heart" } } }] }] },
-            { text: "Get out while you can.", outcomes: toStage("slipped") }
+            {
+                text: "[DEX] Ride the next gust out.",
+                type: "skill_check", attribute: "dexterity", threshold: 12,
+                successOutcomes: toStage("slipped"),
+                failureOutcomes: toStage("thrown")
+            }
         ]),
         slipped: cy("You go with the next gust and let it carry you out the far side of the storm. The cyclone roars away across the dunes, its heart still burning.",
             end("Get up, and go on.")),

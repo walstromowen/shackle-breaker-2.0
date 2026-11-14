@@ -7,25 +7,22 @@
      (0,0) approach       (1,0) dig            (2,0) buried_things   (3,0) bones_rise
      (0,1) spirit_rises
 
-   Nothing in the ground is certain, and the party's attributes decide how it goes (every roll is d20 + (attribute - 10) / 3, like every skill check):
-   Flow:  approach      -> dig it up, or leave it be
-          dig           -> [STR 12] heave the earth out, or [DEX 12] dig slowly by hand. A success finds the grave goods before it wakes anything
-                           (DIG_SUCCESS: 60% bundle, 15% coffin, 10% empty, 10% bones, 5% spirit); a failure makes noise and wakes the dead
-                           (DIG_FAILURE: 20% bundle, 5% coffin, 10% empty, 30% bones, 35% spirit). Half and half, that is DIG_ODDS (40 / 10 / 10 / 20 / 20).
-          buried_things -> take the bundle (two rolls of old_grave_loot), or [STR 13] dig deeper still: a success 75% a second bundle (four rolls in all),
-                           25% only clay (the first bundle's two rolls); a failure 40% only clay, 60% the spirit below wakes
-          sealed_coffin -> [STR 10] pry the lid: success three rolls of loot; failure 60% skeletons, 40% a spirit
-          bones_rise    -> fight the skeletons (spawn table grave_skeletons), or [DEX 13] scramble out of the grave: a success escapes with nothing,
+   Nothing in the ground is certain, and nothing comes out of it without a roll (every roll is d20 + (attribute - 10) / 3, like every skill check).
+   Only leaving is free.
+   Flow:  approach      -> [STR 12] dig it up: a success mostly finds the grave goods before anything wakes, but the grave can be empty, and
+                           what sleeps in it can still stir (DIG_SUCCESS); a failure makes noise and mostly wakes the dead (DIG_FAILURE).
+                           [ATT 13] feel for what lies beneath and dig only where it is quiet: a success never wakes the dead, though it can still
+                           find nothing (CAREFUL_DIG); a failure fills your head with noise (a quarter of your insight) and you learn nothing, or
+                           the thing below notices you first (the spirit).
+                           Or leave the dead in peace.
+          buried_things -> take the bundle (two rolls of old_grave_loot)
+          sealed_coffin -> [STR 11] pry the lid: success three rolls of loot; failure 60% skeletons, 40% a spirit. Or leave it sealed.
+          bones_rise    -> fight the skeletons (spawn table grave_skeletons), or [DEX 13] scramble out: a success escapes with nothing,
                            a failure and they drag you back into the fight
-   Attunement (the sense for what is under the surface):
-          approach      -> [ATT 11] listen to the ground before the first spade. A success reads the grave for you: it names what lies below (DIG_ODDS)
-                           and you choose with that knowledge, so you can leave a fight in the ground. Digging down to what you heard is still a
-                           [DEX 10] roll: a clumsy spade over a bundle or a coffin can wake bones beside it (half the time).
-                           A failure teaches nothing, costs a quarter of your insight, and cannot be tried again at this stone.
-          spirit_rises  -> [ATT 14] speak to the spirit instead of fighting it. A success lets it rest (the grave goods, less corruption);
-                           a failure and it comes at you as before.
-   Whatever comes out of the ground, the grave is open: the object is destroyed on the button that hands out the loot or starts the fight. Leaving it be
-   (or backing out before the first spade) keeps the stone standing for another try. */
+          spirit_rises  -> [ATT 14] speak to it: a success lets it rest (one roll of the grave goods, less corruption); a failure, the fight.
+                           Or fight it at once.
+   Whatever comes out of the ground, the grave is open: the object is destroyed on the button that hands out the loot or starts the fight. Leaving it be,
+   leaving the coffin sealed, or a careful dig that only filled your head with noise keeps the stone standing for another try. */
 import { toStage } from './stageKit.js';
 
 const HUMANOID = { type: "has_tag", tag: "HUMANOID" };
@@ -37,49 +34,13 @@ const fight = (tableId) => [{
     ]
 }];
 
-/* What lies under the stone: a dig that succeeds finds the goods before it wakes anything, one that fails makes noise. DIG_ODDS is the two half and half. */
-const DIG_SUCCESS = { buried_things: 60, sealed_coffin: 15, empty_grave: 10, bones_rise: 10, spirit_rises: 5 };
-const DIG_FAILURE = { buried_things: 20, sealed_coffin: 5, empty_grave: 10, bones_rise: 30, spirit_rises: 35 };
-export const DIG_ODDS = Object.fromEntries(Object.keys(DIG_SUCCESS).map(k => [k, (DIG_SUCCESS[k] + DIG_FAILURE[k]) / 2]));
+/* What lies under the stone. A dig that succeeds finds the goods before it wakes anything (mostly); one that fails makes noise. A careful dig
+   (attunement) never wakes the dead, but the grave can still be empty. */
+export const DIG_SUCCESS = { buried_things: 50, sealed_coffin: 20, empty_grave: 15, bones_rise: 10, spirit_rises: 5 };
+export const DIG_FAILURE = { buried_things: 10, empty_grave: 20, bones_rise: 40, spirit_rises: 30 };
+export const CAREFUL_DIG = { buried_things: 55, sealed_coffin: 25, empty_grave: 20 };
 const digOutcomes = (table) => Object.entries(table).map(([stageId, weight]) => ({ weight, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }));
-
-/* What a successful listen tells you, and where each answer leads. The shares are DIG_ODDS, so listening never changes the odds, it only shows them. */
-const LISTEN = [
-    { weight: DIG_ODDS.buried_things, stage: "listen_bundle", then: "buried_things", dig: "[DEX] Dig carefully down to the bundle.", fragile: true },
-    { weight: DIG_ODDS.bones_rise, stage: "listen_bones", then: "bones_rise", dig: "[DEX] Dig anyway." },
-    { weight: DIG_ODDS.spirit_rises, stage: "listen_spirit", then: "spirit_rises", dig: "[DEX] Dig anyway." },
-    { weight: DIG_ODDS.empty_grave, stage: "listen_hollow", then: "empty_grave", dig: "[DEX] Dig anyway." },
-    { weight: DIG_ODDS.sealed_coffin, stage: "listen_coffin", then: "sealed_coffin", dig: "[DEX] Dig carefully down to the coffin.", fragile: true }
-];
-const listenStage = (stage, text) => {
-    const l = LISTEN.find(x => x.stage === stage);
-    return {
-        displayText: "Listening",
-        image: { col: 1, row: 0 },
-        text,
-        decisions: [
-            {
-                text: l.dig,
-                type: "skill_check",
-                attribute: "dexterity",
-                threshold: 10,
-                corruption: 2,   // a grave robbed: corruption goes up
-                conditions: [HUMANOID],
-                successOutcomes: toStage(l.then),
-                // a clumsy spade over goods worth keeping can strike the bones buried beside them
-                failureOutcomes: l.fragile
-                    ? [{ weight: 50, results: [{ type: "ADVANCE_STAGE", payload: { stageId: l.then } }] }, { weight: 50, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "bones_rise" } }] }]
-                    : toStage(l.then)
-            },
-            {
-                text: "Leave the dead in peace.",
-                corruption: -1,   // a kind act: corruption goes down
-                customActionText: "You thank the stone with a nod, and walk on.",
-                outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
-            }
-        ]
-    };
-};
+const END_IT = [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }];
 
 export const oldGravestone = {
     id: "old_gravestone",
@@ -93,27 +54,27 @@ export const oldGravestone = {
             text: "A gravestone leans in the long grass, its name worn smooth by the weather. Few graves are tended any more. The earth in front of it has sunk, as though something beneath had settled, or shifted.",
             decisions: [
                 {
-                    text: "Dig it up.",
-                    corruption: 2,   // magic used or a cruel act: corruption goes up
+                    text: "[STR] Dig it up.",
+                    type: "skill_check",
+                    attribute: "strength",
+                    threshold: 12,
+                    corruption: 2,   // a grave robbed: corruption goes up
                     conditions: [HUMANOID],
-                    customActionText: "You kneel at the foot of the stone and push your hands into the cold earth.",
-                    outcomes: toStage("dig")
+                    successOutcomes: digOutcomes(DIG_SUCCESS),
+                    failureOutcomes: digOutcomes(DIG_FAILURE)
                 },
                 {
-                    text: "[ATT] Listen to what lies beneath.",
+                    text: "[ATT] Feel for what lies beneath, and dig only where it is quiet.",
                     type: "skill_check",
                     attribute: "attunement",
-                    threshold: 11,
-                    conditions: [HUMANOID, { type: "context_flag_not_set", flagId: "failed_gravestone_listen" }],
-                    successOutcomes: LISTEN.map(l => ({ weight: l.weight, results: [{ type: "ADVANCE_STAGE", payload: { stageId: l.stage } }] })),
-                    failureOutcomes: [{
-                        weight: 100,
-                        results: [
-                            { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_gravestone_listen" } },
-                            { type: "MODIFY_VITALS", payload: { insight: -25, isPercentageOfCurrent: true, damageType: "true" } },
-                            { type: "ADVANCE_STAGE", payload: { stageId: "listen_failed" } }
-                        ]
-                    }]
+                    threshold: 13,
+                    corruption: 2,
+                    conditions: [HUMANOID],
+                    successOutcomes: digOutcomes(CAREFUL_DIG),
+                    failureOutcomes: [
+                        { weight: 50, results: [{ type: "MODIFY_VITALS", payload: { insight: -25, isPercentageOfCurrent: true, damageType: "true" } }, { type: "ADVANCE_STAGE", payload: { stageId: "listen_failed" } }] },
+                        { weight: 50, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "spirit_rises" } }] }
+                    ]
                 },
                 {
                     text: "Switch party member.",
@@ -123,7 +84,7 @@ export const oldGravestone = {
                 {
                     text: "Leave the dead in peace.",
                     customActionText: "You rest a hand on the cold stone for a moment, then walk on.",
-                    outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
+                    outcomes: END_IT
                 }
             ]
         },
@@ -131,57 +92,12 @@ export const oldGravestone = {
         listen_failed: {
             displayText: "Only Noise",
             image: { col: 0, row: 0 },
-            text: "A rushing fills your head like surf, and the quiet will not come. You learn nothing, and the effort leaves you drained.",
+            text: "A rushing fills your head like surf, and the quiet will not come. You learn nothing, and the effort leaves you drained. The grave keeps its secret, for now.",
             decisions: [
                 {
-                    text: "Dig it up anyway.",
-                    corruption: 2,
-                    conditions: [HUMANOID],
-                    customActionText: "You shake the noise out of your head and push your hands into the earth.",
-                    outcomes: toStage("dig")
-                },
-                {
-                    text: "Leave the dead in peace.",
+                    text: "Walk on.",
                     customActionText: "You rub your temples, give the stone a last look, and walk on.",
-                    outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
-                }
-            ]
-        },
-
-        listen_bundle: listenStage("listen_bundle", "The ground is still, and close under the sod something small and soft lies wrapped and waiting, left here on purpose. Nothing else stirs."),
-        listen_bones: listenStage("listen_bones", "A dry shifting runs through the earth, many small things settling against each other. The grave is crowded, and what is in it is light-sleeping."),
-        listen_spirit: listenStage("listen_spirit", "The quiet has a cold edge. Below you, something is awake, and it is turned toward you, and it is waiting."),
-        listen_hollow: listenStage("listen_hollow", "There is nothing to hear but soil, a few roots and the slow tick of settling wood. Whatever lay here has long gone."),
-        listen_coffin: listenStage("listen_coffin", "A hollow, wooden knock answers your palm: a lid, sealed tight, a hand's breadth down."),
-
-        dig: {
-            displayText: "The Soil Gives",
-            image: { col: 1, row: 0 },
-            text: "The soil is loose, as if it has been turned before. Something shifts beneath your hands, and the air around the stone grows quiet.",
-            decisions: [
-                {
-                    text: "[STR] Heave the earth out.",
-                    type: "skill_check",
-                    attribute: "strength",
-                    threshold: 12,
-                    conditions: [HUMANOID],
-                    successOutcomes: digOutcomes(DIG_SUCCESS),
-                    failureOutcomes: digOutcomes(DIG_FAILURE)
-                },
-                {
-                    text: "[DEX] Dig slowly, by hand.",
-                    type: "skill_check",
-                    attribute: "dexterity",
-                    threshold: 12,
-                    conditions: [HUMANOID],
-                    successOutcomes: digOutcomes(DIG_SUCCESS),
-                    failureOutcomes: digOutcomes(DIG_FAILURE)
-                },
-                {
-                    text: "Stop. Fill it in.",
-                    corruption: -1,   // a kind act: corruption goes down
-                    customActionText: "You press the earth back down with your palms and step away from the stone.",
-                    outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
+                    outcomes: END_IT
                 }
             ]
         },
@@ -204,55 +120,6 @@ export const oldGravestone = {
                             ]
                         }
                     ]
-                },
-                {
-                    text: "[STR] Dig deeper still.",
-                    type: "skill_check",
-                    attribute: "strength",
-                    threshold: 13,
-                    corruption: 1,
-                    conditions: [HUMANOID],
-                    successOutcomes: digOutcomes({ deeper_find: 75, deeper_nothing: 25 }),
-                    failureOutcomes: digOutcomes({ deeper_nothing: 40, spirit_rises: 60 })
-                }
-            ]
-        },
-
-        deeper_find: {
-            displayText: "A Second Bundle",
-            image: { col: 2, row: 0 },
-            text: "Under the first bundle lies another, wrapped in older cloth and left by a deeper hand.",
-            decisions: [
-                {
-                    text: "Take both bundles.",
-                    corruption: 2,
-                    outcomes: [{
-                        weight: 100,
-                        results: [
-                            { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 4 } },
-                            { type: "DESTROY_OBJECT" },
-                            { type: "END_ENCOUNTER", payload: null }
-                        ]
-                    }]
-                }
-            ]
-        },
-
-        deeper_nothing: {
-            displayText: "Only Clay",
-            image: { col: 1, row: 0 },
-            text: "There is nothing below but wet clay and pale roots. You take the bundle you found first.",
-            decisions: [
-                {
-                    text: "Take what was buried.",
-                    outcomes: [{
-                        weight: 100,
-                        results: [
-                            { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 2 } },
-                            { type: "DESTROY_OBJECT" },
-                            { type: "END_ENCOUNTER", payload: null }
-                        ]
-                    }]
                 }
             ]
         },
@@ -284,7 +151,7 @@ export const oldGravestone = {
                     text: "[STR] Pry the lid open.",
                     type: "skill_check",
                     attribute: "strength",
-                    threshold: 10,
+                    threshold: 11,
                     conditions: [HUMANOID],
                     successOutcomes: toStage("coffin_opened"),
                     failureOutcomes: [
