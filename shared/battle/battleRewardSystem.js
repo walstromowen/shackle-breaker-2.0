@@ -4,6 +4,7 @@ import { InventorySystem } from '../items/inventorySystem.js';
 import { LootTableFactory } from '../items/lootTableFactory.js';
 import { rng } from '../core/random.js';
 import { ABILITY_TRAIT_CHANCE, SCAR_TRAITS, scarForAbility } from '../abilities/abilityTraits.js';
+import { Dolos } from '../story/dolos.js';
 
 export class BattleRewardSystem {
     /**
@@ -35,7 +36,9 @@ export class BattleRewardSystem {
             // --- Process Loot Table ID via Factory ---
             const lootId = enemy.originalEntity.lootTableId;
             if (lootId) {
-                const generatedLoot = LootTableFactory.generateLoot(lootId, 1, 0);
+                // Dolos (story/dolos.js): in his gaze and his respite an enemy now and then leaves a second roll of its table
+                const rolls = 1 + (rng() < Dolos.effects().lootBonusChance ? 1 : 0);
+                const generatedLoot = LootTableFactory.generateLoot(lootId, rolls, 0);
                 if (generatedLoot && generatedLoot.items) {
                     generatedLoot.items.forEach(item => {
                         const itemId = typeof item === 'string' ? item : item.id;
@@ -133,7 +136,7 @@ export class BattleRewardSystem {
             if (entry.type === 'ABILITY_USED' && entry.actor?.team === 'enemy' && entry.target?.team === 'party') lastHit.set(entry.target, entry.action);
             if (entry.type !== 'DEATH' || entry.killed?.team !== 'party' || entry.killer?.team !== 'enemy') continue;
             const fallen = entry.killed, entity = fallen.originalEntity;
-            if (!entity || typeof entity.addTrait !== 'function' || rng() > ABILITY_TRAIT_CHANCE.killed_by_ability) continue;
+            if (!entity || typeof entity.addTrait !== 'function' || rng() > Math.min(1, ABILITY_TRAIT_CHANCE.killed_by_ability * Dolos.effects().badTrait)) continue;
             const held = entity.traits || [];
             const action = lastHit.get(fallen);
             const fit = scarForAbility(action && (action.config || action));
@@ -163,7 +166,8 @@ export class BattleRewardSystem {
                 if (reqCondition !== condition) return;
 
                 const traitId = typeof traitDef === 'string' ? traitDef : traitDef.id;
-                const chance = (typeof traitDef === 'object' && traitDef.chance !== undefined) ? traitDef.chance : 1.0;
+                const base = (typeof traitDef === 'object' && traitDef.chance !== undefined) ? traitDef.chance : 1.0;
+                const chance = base < 1 ? Dolos.traitChance(traitId, base, SCAR_TRAITS) : base;   // weighed by Dolos (story/dolos.js)
 
                 if (rng() <= chance) {
                     const entity = partyMember.originalEntity;

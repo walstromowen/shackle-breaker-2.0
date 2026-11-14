@@ -78,6 +78,7 @@ import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
 import { PARTY_SCALING, bossHpFactor } from '../../../shared/battle/spawnTableFactory.js';
+import { Dolos } from '../../../shared/story/dolos.js';
 import { ENTITY_DEFINITIONS } from '../../../shared/characters/entityDefinitions.js';
 import { dropGrave } from '../../../shared/world/graves.js';
 import { encounterDefinitions } from '../../../shared/story/encounterDefinitions.js';
@@ -209,6 +210,12 @@ export class SceneManager {
         return bgm ? { bgm } : {};
     }
 
+    _showDolosSign() {
+        if (!this.pendingDolosSign || !this.overworldController) return;
+        this.overworldController.showNotice(this.pendingDolosSign, false, 7000);
+        this.pendingDolosSign = null;
+    }
+
     resolveTargetBGM(targetScene, sceneContext = {}) {
         // 1. Explicit scene context overrides
         if (sceneContext.bgm) return sceneContext.bgm;
@@ -271,6 +278,7 @@ export class SceneManager {
         // Every arrival on the overworld (a new game, after a battle, an encounter, a shop, the menus) is a safe moment to save.
         // Saves from inside a house or cave too (SaveManager keeps the way back out), so loading returns to the same room.
         if (sceneName === 'overworld') SaveManager.autosave();
+        if (sceneName === 'overworld') this._showDolosSign();
         // story characters on the map follow the player's story: after meeting Nikoli the cats are gone and he turns to face you (WorldManager)
         if (sceneName === 'overworld' && this.worldManager && this.worldManager.refreshStoryObjects) this.worldManager.refreshStoryObjects();
 
@@ -614,6 +622,8 @@ export class SceneManager {
             // A party of several players meets stronger enemies (PARTY_SCALING.LEVELS_PER_PLAYER for every player beyond the first)
             const playerLevels = (multiplayerSocial.playerCount() - 1) * PARTY_SCALING.LEVELS_PER_PLAYER;
             const baseLevel = PartyManager.getHighestLevel() + globalOffset + ActSystem.getEnemyLevelOffset() + playerLevels;
+            // Dolos's attention (story/dolos.js): his gaze makes the world's enemies stronger, his respite weaker. Never a boss or its limbs.
+            const dolosLevel = Dolos.effects(gameState, ActSystem.isBloodMoon((gameState.world.time || 0) / 60)).enemyLevel;
 
             // `afterVictory: { encounterId }`: an encounter that plays when this fight is won, in place of going straight back to the overworld
             this.pendingAfterVictory = data.afterVictory && data.afterVictory.encounterId
@@ -643,6 +653,7 @@ export class SceneManager {
                 const enemyDef = ENTITY_DEFINITIONS[enemyId];
                 // ... and so do its limbs (an enemy that `fallsWith` a boss: the Dry Kraken's tentacles)
                 const bossOrLimb = enemyDef && ((enemyDef.tags || []).includes('BOSS') || (enemyDef.fallsWith && (ENTITY_DEFINITIONS[enemyDef.fallsWith]?.tags || []).includes('BOSS')));
+                if (!bossOrLimb && dolosLevel) factoryOverrides.level = Math.max(1, factoryOverrides.level + dolosLevel);
                 if (bossOrLimb) {
                     const factor = bossHpFactor(multiplayerSocial.playerCount());
                     if (factor !== 1) {
@@ -747,6 +758,12 @@ export class SceneManager {
             }, fromOverworld ? 'blade' : 'ethereal', { speed: fromOverworld ? 1.5 : 2.5, color: '#0a0a12' });
         });
 
+        // the omens of Dolos's attention (story/dolos.js): a line on the overworld, kept until the party is back out on it
+        events.on('DOLOS_SIGN', ({ text }) => {
+            this.pendingDolosSign = text;
+            if (this.currentScene === 'overworld') this._showDolosSign();
+        });
+
         events.on('BATTLE_ENDED', (data) => {
             this.activeBattleBGM = null;
             // a duel is for nothing: both parties are put back as they were, win or lose, and nobody falls for good
@@ -757,6 +774,11 @@ export class SceneManager {
             }
             const after = this.pendingAfterVictory;
             this.pendingAfterVictory = null;
+            {
+                const members = (gameState.party.members || []).filter(Boolean);
+                const hp = members.reduce((s, m) => s + Math.max(0, m.hp || 0), 0), max = members.reduce((s, m) => s + (m.maxHp || 0), 0);
+                Dolos.recordFight({ victory: !!data.victory, fled: !!data.fled, hpLeft: max ? hp / max : 1, fallen: members.filter(m => (m.hp || 0) <= 0).length });
+            }
             if (data.victory && !data.fled && after) {
                 // e.g. the end of Darius the Groveler: the act changes in an encounter of its own. The fight is over, so its music is too: unless the
                 // encounter's opening stage picks its own (or silence), the overworld's music comes back (Nikoli thanking you after the snow leopards)

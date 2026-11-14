@@ -1,6 +1,7 @@
 import { SpawnTableDefinitions } from './spawnTableDefinitions.js';
 import { SpawnTableModel } from './spawnTableModel.js';
 import { ActSystem } from '../story/actSystem.js';
+import { Dolos } from '../story/dolos.js';
 
 /* A bigger party meets bigger groups. EXTRA_ENEMIES[n - 1] is added to both ends of the spawn table's group size when n party members can
    fight (alive, up to the 3 that fit on the field); a fraction is a chance of one more (1.5 = one or two), and a lone fighter meets one fewer
@@ -55,6 +56,7 @@ export class SpawnTableFactory {
         if (ambush) {
             const [min, max] = AMBUSH_SIZE[difficulty] || AMBUSH_SIZE.normal;
             partySize = Math.max(min, Math.min(max, partySize));
+            if (Math.random() < Dolos.effects().extraEnemyChance) partySize = Math.min(max + 1, partySize + 1);   // story/dolos.js
         }
 
         // 3. Generate the specific enemies

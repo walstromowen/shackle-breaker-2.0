@@ -5,6 +5,7 @@ import { WeatherFactory } from './weatherFactory.js';
 import { events } from '../core/eventBus.js'; // NEW: Import event bus
 import { WeatherDefinitions } from './weatherDefinitions.js'; // NEW: Needed to look up the audio effect string
 import { ActSystem } from '../story/actSystem.js';
+import { Dolos } from '../story/dolos.js';
 
 /* How likely each weather is when a new one is rolled in a biome. Only the weather a biome lists in its `allowedWeather` (biomeDefinitions.js) can ever be
    rolled there, whatever this table says, so the two can no longer disagree. A biome that is not listed here gets CLEAR 60 and 20 for every weather it allows;
@@ -82,6 +83,7 @@ export class TimeSystem {
         // Calculate the game minutes that passed this frame
         const addedMinutes = dt * this.GAME_MINUTES_PER_REAL_SEC;
         gameState.world.time += addedMinutes;
+        Dolos.tick(gameState, ActSystem.isBloodMoon(gameState.world.time / 60));   // the hours feed his attention (story/dolos.js)
 
         // --- WEATHER LIFECYCLE MANAGEMENT ---
         

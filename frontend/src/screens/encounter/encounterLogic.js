@@ -13,6 +13,8 @@ import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { EntityFactory } from '../../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem.js';
 import { rng, withoutSeed } from '../../../../shared/core/random.js';
+import { Dolos } from '../../../../shared/story/dolos.js';
+import { SCAR_TRAITS } from '../../../../shared/abilities/abilityTraits.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { pushItemToast, pushTextToast } from '../../ui/toasts.js';
 import { UITheme } from '../../ui/UITheme.js';
@@ -390,6 +392,7 @@ export class EncounterLogic {
                         if (payload.minRolls !== undefined && payload.maxRolls !== undefined) {
                             computedRolls = Math.floor(rng() * (payload.maxRolls - payload.minRolls + 1)) + payload.minRolls;
                         }
+                        if (rng() < Dolos.effects().lootBonusChance) computedRolls += 1;   // Dolos (story/dolos.js): a gift in his respite, spoils in his gaze
                         const lootModel = LootTableFactory.generateLoot(actualTableId, computedRolls, payload.baseCurrency || 0, payload.exclude);
                         if (lootModel.hasItems()) {
                             lootModel.items.forEach(item => {
@@ -513,7 +516,7 @@ export class EncounterLogic {
                 }
                 case "ADD_TRAIT": {
                     // `chance` (0..1): only sometimes (encounterTraits.js). The seeded dice, so every screen in a party rolls the same
-                    if (payload.chance !== undefined && payload.chance < 1 && rng() >= payload.chance) break;
+                    if (payload.chance !== undefined && payload.chance < 1 && rng() >= Dolos.traitChance(payload.traitId, payload.chance, SCAR_TRAITS)) break;   // weighed by Dolos
                     const traitTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.subject(payload)].filter(Boolean);
                     traitTargets.forEach(char => {
                         const alreadyHasTrait = char.traits && char.traits.includes(payload.traitId);

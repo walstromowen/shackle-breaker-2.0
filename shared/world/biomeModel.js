@@ -2,6 +2,7 @@ import { CONFIG, CORRUPTION } from '../core/constants.js';
 import { gameState } from '../core/gameState.js';
 import { SpawnTableFactory } from '../battle/spawnTableFactory.js';
 import { ActSystem } from '../story/actSystem.js';
+import { Dolos } from '../story/dolos.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
 import { storyAmbush } from '../story/storyAmbush.js';
 
@@ -98,7 +99,8 @@ export class BiomeModel {
             ? this.battles.rate * ActSystem.getBattleRateMultiplier(currentHour)
             : (timeOfDay === 'night' ? OUTDOOR_BATTLE_RATE.night : OUTDOOR_BATTLE_RATE.day)
                 * (ActSystem.isBloodMoon(currentHour) ? ActSystem.getBattleRateMultiplier(currentHour) : 1);
-        if (!(this.battles.rate > 0) || Math.random() > rate * rateScale) return null;
+        const dolos = Dolos.effects(gameState, ActSystem.isBloodMoon(currentHour)).ambushRate;   // his attention (story/dolos.js)
+        if (!(this.battles.rate > 0) || Math.random() > rate * rateScale * dolos) return null;
         // A blood moon night has a table of its own (`tables.bloodMoon`), the dead and the cursed that rise under it
         // in act 2 the night's enemies are sometimes abroad by day too (actDefinitions.js nightByDay)
         const nightByDay = timeOfDay !== 'night' && this.battles.tables.night && ActSystem.nightEnemiesByDay();

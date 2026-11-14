@@ -38,6 +38,10 @@ const { SpawnTableFactory } = await import(ROOT + '/shared/battle/spawnTableFact
 const { ActSystem } = await import(ROOT + '/shared/story/actSystem.js');
 const { requirementsAt } = await import(ROOT + '/shared/items/weaponRequirements.js');
 const { DIFFICULTY_MODIFIERS } = await import(ROOT + '/shared/core/constants.js');
+// DOLOS_PHASE=gaze (or respite, stirring, calm): play every fight in that phase of Dolos's attention (story/dolos.js): his enemy levels and his
+// extra ambushers (the ambush size is his through SpawnTableFactory)
+const { Dolos: DOLOS } = await import(ROOT + '/shared/story/dolos.js');
+if (process.env.DOLOS_PHASE) { DOLOS.state(gameState).phase = process.env.DOLOS_PHASE; DOLOS.state(gameState).fights = []; }
 const DIFF = process.env.DIFF || 'normal';
 const DIFF_OFFSET = DIFFICULTY_MODIFIERS[DIFF]?.enemyLevelOffset || 0;
 // PARTY: '3' or '1:1,5:2,12:3' (from level 1 one fighter, from level 5 two, from level 12 three)
@@ -218,7 +222,7 @@ function encounter(level, fighters = 1) {
     const night = rnd() < 0.3;
     const table = act2 && night && rnd() < 0.6 ? `${b}_battles_blood_moon` : `${b}_battles_${night ? 'night' : 'day'}`;
     const model = SpawnTableFactory.generateBattle(table, DIFF, { fighters, ambush: true }, SCALE);   // an overworld ambush, as BiomeModel.getBattle rolls it (AMBUSH_SIZE)
-    const base = level + DIFF_OFFSET + ActSystem.getEnemyLevelOffset();
+    const base = level + DIFF_OFFSET + ActSystem.getEnemyLevelOffset() + DOLOS.effects().enemyLevel;   // DOLOS_PHASE: his phase (story/dolos.js)
     return (model.enemies || []).map(cfg => {
         const id = cfg.id; const { id: _, levelOffset = 0, ...rest } = cfg;
         let overrides = { level: Math.max(1, base + levelOffset), ...rest };
