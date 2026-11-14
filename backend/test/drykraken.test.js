@@ -25,13 +25,15 @@ const battle = () => quiet(() => {
     return createBattleState(KRAKEN.map(id => EntityFactory.create(id, 10)), { maxActive: 3 });
 });
 
-test('a boss head with 192 px frames, eight tentacles that die with it, placeholder sheets in the battle layout', () => {
+test('a boss head with 192 px frames, eight tentacles that die with it, sheets in the battle layout', () => {
     assert.ok(E.DRY_KRAKEN.tags.includes('BOSS'));
     assert.equal(E.DRY_KRAKEN.frameSize, 192);
     assert.equal(E.DRY_KRAKEN_TENTACLE.fallsWith, 'DRY_KRAKEN');
     assert.ok(!E.DRY_KRAKEN_TENTACLE.tags.includes('BOSS'));
-    assert.deepEqual(pngSize(fileOf(E.DRY_KRAKEN.spritePortrait)), [3072, 1152], 'head: 16 frames of 192 to a row, 6 rows');
-    assert.deepEqual(pngSize(fileOf(E.DRY_KRAKEN_TENTACLE.spritePortrait)), [2048, 768], 'tentacle: 16 frames of 128 to a row, 6 rows');
+    // 16 frames to a row; an enemy only ever shows the front rows 0 and 1, so a sheet of just those two is whole (the artist's are)
+    const [hw, hh] = pngSize(fileOf(E.DRY_KRAKEN.spritePortrait)), [tw, th] = pngSize(fileOf(E.DRY_KRAKEN_TENTACLE.spritePortrait));
+    assert.equal(hw, 16 * 192); assert.ok(hh >= 2 * 192 && hh % 192 === 0, `head: rows of 192 (${hh})`);
+    assert.equal(tw, 16 * 128); assert.ok(th >= 2 * 128 && th % 128 === 0, `tentacle: rows of 128 (${th})`);
     for (const id of ['DRY_KRAKEN', 'DRY_KRAKEN_TENTACLE']) {
         for (const a of E[id].abilities) assert.ok(A[a], `${id}: ${a} is a real ability`);
         for (const s of [E[id].crySound, E[id].deathSound]) assert.match(main, new RegExp(`${s}: '`), `${id}: ${s} is loaded`);
