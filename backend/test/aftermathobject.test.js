@@ -86,10 +86,10 @@ test('a waypoint can be found on the battlefield', async () => {
     assert.ok(LootTableDefinitions.battlefield_loot.items.some(i => i.id === 'waypoint'));
 });
 
-test('only the caves still roll a random encounter (the cave-in); the plains keep their rate for the Shackling alone', () => {
+test('only the caves (the cave-in) and the desert (its hazards: quicksand, the cyclone) still roll a random encounter; the plains keep their rate for the Shackling alone', () => {
     for (const [id, def] of Object.entries(BIOME_DEFINITIONS)) {
         const ids = ((def.encounters && def.encounters.pools) || []).map(p => p.id);
-        assert.deepEqual(ids, id === 'CAVE_INTERIOR' ? ['cave_in'] : [], id);
+        assert.deepEqual(ids, id === 'CAVE_INTERIOR' ? ['cave_in'] : id === 'DESERT' ? ['quicksand', 'cyclone'] : [], id);
     }
     assert.ok(BIOME_DEFINITIONS.PLAINS.encounters.rate > 0, 'the Shackling needs the rate');
 });

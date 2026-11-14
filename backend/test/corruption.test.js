@@ -442,10 +442,10 @@ test('the cursed portrait is used for exactly the shackled, and every portrait s
     }
 });
 
-test('nothing is met by chance except in the caves; on the plains only the Shackling can still happen', () => {
+test('nothing is met by chance except in the caves and the desert\'s hazards; on the plains only the Shackling can still happen', () => {
     for (const id of Object.keys(BIOME_DEFINITIONS)) {
         const pools = (BIOME_DEFINITIONS[id].encounters && BIOME_DEFINITIONS[id].encounters.pools) || [];
-        assert.deepEqual(pools.map(p => p.id), id === 'CAVE_INTERIOR' ? ['cave_in'] : [], id);
+        assert.deepEqual(pools.map(p => p.id), id === 'CAVE_INTERIOR' ? ['cave_in'] : id === 'DESERT' ? ['quicksand', 'cyclone'] : [], id);
     }
     const lead = hero('Lead'), bound = hero('Bound');
     gameState.party.members = [lead, bound];

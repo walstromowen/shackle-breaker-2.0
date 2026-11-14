@@ -199,7 +199,10 @@ export const BIOME_DEFINITIONS = {
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [{ chance: 0.02, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
         },
-        encounters: { rate: 0.005, type: 'time_weighted', pools: [] } /* the shady merchant is no longer a random encounter: he stands in the world (SHADY_MERCHANT_NPC) */,
+        encounters: { rate: 0.005, type: 'time_weighted', pools: [
+            { id: 'quicksand', weight: 3 },
+            { id: 'cyclone', weight: 4, weather: ['SANDSTORM'] }   /* only in a sandstorm (BiomeModel.getEncounter) */
+        ] } /* the desert's hazards (story/encounters/desertHazards.js). The shady merchant is no longer a random encounter: he stands in the world (SHADY_MERCHANT_NPC) */,
         battles: { rate: 0.01, tables: { day: 'desert_battles_day', dusk: 'desert_battles_day', night: 'desert_battles_night', bloodMoon: 'desert_battles_blood_moon' } },
     },
     SNOWY_MOUNTAINS: {

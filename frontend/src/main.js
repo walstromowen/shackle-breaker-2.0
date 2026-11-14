@@ -420,6 +420,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_suspicious_merchant: './assets/icons/encounters/suspicious_merchant.png',
     encounter_aftermath: './assets/icons/encounters/aftermath.png',
     encounter_ruined_carriage: './assets/icons/encounters/ruined_carriage.png',   // one 128 px picture
+    encounter_quicksand: './assets/icons/encounters/quicksand.png',   // the desert's hazards (story/encounters/desertHazards.js): placeholders, tools/art/desertHazards.py
+    encounter_cyclone: './assets/icons/encounters/cyclone.png',
     encounter_tracks_in_the_snow: './assets/icons/encounters/tracks_in_the_snow.png',
     encounter_prologue: './assets/icons/encounters/story/prologue.png',
     encounter_peculiar_scarecrow: './assets/icons/encounters/peculiar_scarecrow.png',

@@ -17,6 +17,7 @@ import { dryKrakenAmbush, codeyFreed } from './encounters/story/codey.js';
 import { jaeger } from './encounters/story/jaeger.js';
 import { codey, strangerMark, brothersSword, pursuer, pursuerWon } from './encounters/story/heroesNorth.js';
 import { ruinedCarriage } from './encounters/ruinedCarriage.js';
+import { quicksand, cyclone, cycloneHeart } from './encounters/desertHazards.js';
 import { prologue } from './encounters/story/prologue.js';
 import { actTwo } from './encounters/story/actTwo.js';
 import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
@@ -55,6 +56,9 @@ export const encounterDefinitions = {
     [pursuer.id]: pursuer,
     [pursuerWon.id]: pursuerWon,
     [nikoliBrothersWon.id]: nikoliBrothersWon,   // Jaeger, posing as his brother Nikoli, in the hoard of the first catacombs (story/encounters/story/jaeger.js)
+    [quicksand.id]: quicksand,   // the desert's hazards (encounters/desertHazards.js): quicksand any time, a cyclone only in a sandstorm
+    [cyclone.id]: cyclone,
+    [cycloneHeart.id]: cycloneHeart,
     [ruinedCarriage.id]: ruinedCarriage,   // a broken merchant carriage on the plains: loot, or the shackled steeds (encounters/ruinedCarriage.js)
     [prologue.id]: prologue,
     [actTwo.id]: actTwo,

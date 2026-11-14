@@ -403,6 +403,56 @@ Codey has not moved from the wall. When he sees you, he signs the skull and the 
   > Leave.
 
 
+===== CYCLONE (cyclone) =====
+
+[funnel]
+Out of the sandstorm a cyclone tears across the dunes toward you: a pillar of sand and screaming wind, lightning crackling in its heart. Something glints, caught in the spinning wall.
+  > [STR] Brace, and reach into the wall.
+  > [DEX] Time the gusts and dash through its eye.
+  > [ATT] Stand still, and read the storm.
+  > Throw yourself down behind a dune.
+
+[seized]
+Your arm goes into the wall up to the shoulder, and the wind tries to flay it. Your fingers close on something warm, and you tear it free.
+  > Look at what you hold.
+
+[thrown]
+The wall takes you. For a moment you are flying, and then the ground comes up hard. When you can see again, the cyclone is already far away across the dunes.
+  > Get up.
+
+[swarm]
+The cyclone spits you out, and something else with you: a swarm of thunder locusts, crackling, furious, and looking for anything to blame.
+  > Fight them off!
+
+[eye]
+You run with the gusts, and then you are through, into the eye. Deeper in, at the cyclone's heart, lightning gathers around something bright, and a great swarm of thunder locusts wheels about it, crackling.
+  > Fight your way into its heart.
+  > Get out while you can.
+
+[slipped]
+You go with the next gust and let it carry you out the far side of the storm. The cyclone roars away across the dunes, its heart still burning.
+  > Get up, and go on.
+
+[calm]
+You let the wind tell you where it is going. It howls past close enough to touch, and as it goes, it sets something down at your feet, almost gently.
+  > Pick it up.
+
+[struck]
+The storm does not care what you hear in it. Lightning leaps from its heart to the nearest thing standing, and that is you.
+  > Get up.
+
+[shelter]
+You throw yourself down behind a dune and press your face into the sand. The cyclone howls past, close enough to tear at your clothes. When it is gone, there is nothing left but smooth sand.
+  > Get up, and go on.
+
+
+===== CYCLONE (cyclone_heart) =====
+
+[stilled]
+The last locust drops, sparking, into the sand. At its heart the storm falters, and goes still, and what it carried falls into your hands.
+  > Look at what you hold.
+
+
 ===== INFERNUS SENTINEL (infernus_sentinel) =====
 
 [wakes]
@@ -1360,6 +1410,36 @@ Your fingers find the lip of the pit. You haul yourself up as the last loose sto
 [fell]
 You drop onto the stakes. Climbing back out of the pit takes a long, painful while.
   > Drag yourself out.
+
+
+===== QUICKSAND (quicksand) =====
+
+[sinking]
+The sand gives way beneath you without a sound. In a heartbeat you are in it to the knees, and every move drags you deeper.
+  > [STR] Haul yourself out.
+  > [DEX] Spread your weight and crawl for the edge.
+  > [INT] Lie still, and let the sand hold you up.
+  > [Escape Rope] Throw it around a rock and pull yourself free.
+
+[hauled]
+You drag one leg free, then the other, and haul yourself out onto firm ground, gasping. Your legs shake for a long while afterwards.
+  > Move on, carefully.
+
+[deeper]
+You thrash, and the sand closes over your waist, then your chest. By the time you claw your way out onto firm ground you are bruised, spent, and coughing sand.
+  > Move on.
+
+[crawled]
+Flat on your belly, you inch toward firm ground a hand's width at a time. It takes forever. It works.
+  > Move on, carefully.
+
+[floated]
+You stop fighting. Slowly the sand stops pulling, and you float in it like a stone in honey. Beneath the surface your hand finds a strap: someone else's pack. Someone who struggled.
+  > Take the pack, and ease out.
+
+[roped]
+The rope bites around a jutting rock. Hand over hand, you pull yourself free. The sand keeps the rope.
+  > Move on, carefully.
 
 
 ===== RUINED CARRIAGE (ruined_carriage) =====
