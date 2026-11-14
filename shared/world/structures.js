@@ -422,6 +422,16 @@ export const STRUCTURES = {
             max: 10,
         },
 
+        /* MADMEN: the villages' lost, each one "A Disturbing Sight" (MADMAN_NPC: coming within 2 tiles starts it), standing on the verge beside a road
+           (see _planMadmen in villagePlanner.js). Each step along a straight road has `chance` of one, no two on a road closer than `spacing` steps,
+           and a village has at most `max`: about three to a village. */
+        madmen: {
+            id: 'MADMAN_NPC',
+            chance: 0.09,
+            spacing: 10,
+            max: 3,
+        },
+
         /* STREET DRESSING (on the grass just beside the road; the solid ones are never in the way of the road) */
         streetProps: {
             chance: 0.10,                         // per step, per side

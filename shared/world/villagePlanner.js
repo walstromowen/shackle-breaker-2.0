@@ -792,10 +792,41 @@ export class VillagePlanner {
             }
         }
     }
+    /* The village's madmen (blueprint `madmen`): each "A Disturbing Sight", on the verge beside a straight road, the same cell rules as the graves,
+       their own rolls (so they do not stand where the graves would), at most `max` to a village. Kept in the world's changes like the graves. */
+    _planMadmen(plan, bp) {
+        const mc = bp.madmen;
+        if (!mc || !mc.chance || !MAP_OBJECTS_DEFINITIONS[mc.id]) return;
+        const offOf = (rd) => this._rad(plan, rd) + 1;
+        const spacing = mc.spacing ?? 10;
+        let placed = 0;
+        for (const road of plan.roads) {
+            const cs = road.centres;
+            let last = -Infinity;
+            for (let i = 3; i < cs.length && placed < (mc.max ?? 3); i++) {
+                if (i - last < spacing || !this._straightAt(cs, i, 2, 0)) continue;
+                if (this.pseudoRandom(cs[i].c * 151 + plan.salt, cs[i].r * 157 + 47) >= mc.chance) continue;
+                const horizontal = cs[i].d === 1 || cs[i].d === 3;
+                const side = this.pseudoRandom(cs[i].c * 163 + 5, cs[i].r * 167 + plan.salt) < 0.5 ? 0 : 1;
+                const sgn = side === 0 ? -offOf(road) : offOf(road);
+                const c = horizontal ? cs[i].c : cs[i].c + sgn;
+                const r = horizontal ? cs[i].r + sgn : cs[i].r;
+                const key = this._s(c, r);
+                if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
+                if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) continue;
+                if (this.getElevation(c, r) !== this._roadElev(plan, road) || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
+                this.modifyWorld(c, r, mc.id);
+                this._placeObject(c, r, mc.id);
+                last = i;
+                placed++;
+            }
+        }
+    }
     _planStreetProps(plan, bp) {
         this._planStreetScarecrows(plan, bp);
         this._planStreetTorches(plan, bp);
         this._planGravestones(plan, bp);
+        this._planMadmen(plan, bp);
         const sp = bp.streetProps;
         if (!sp || !sp.chance || !sp.pool || sp.pool.length === 0) return;
         const offOf = (rd) => this._rad(plan, rd) + 1;

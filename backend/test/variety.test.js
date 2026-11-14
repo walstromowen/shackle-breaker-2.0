@@ -114,7 +114,7 @@ test('Flying keeps a flier out of reach of melee, not of every physical attack; 
     otherFlier.applyStatusEffect(new StatusEffectModel(SD.flying, 2, null));
     assert.equal(hawk.checkImmunity(A.claw, otherFlier).isImmune, false, 'another flier can');
     for (const id of ['take_flight', 'arcane_blast']) assert.ok(A[id].selfStatusEffects.some(s => s.id === 'recharging' && s.duration === 1), `${id} recharges`);
-    assert.deepEqual(SD.recharging.icon, SD.knocked_down.icon, 'recharging looks like knocked down');
+    assert.deepEqual(SD.recharging.icon, { col: 1, row: 3 }, 'recharging wears the artist\'s hourglass');
     assert.ok(!SD.recharging.cancels || !SD.recharging.cancels.includes('flying'), 'but does not pull the flier down');
 });
 
@@ -150,4 +150,28 @@ test('ambushes are 1 to 3 (normal): a bigger party meets bigger groups, Dolos ti
     const done = Dolos.counter(foe, { outnumbered: 2, rand: () => 0.99, makeItem: null });
     assert.ok(done.countered, 'even in his respite, even on a high roll');
     assert.ok((foe.state || foe).traits.includes('ironhide') && (foe.state || foe).traits.includes('tough'));
+});
+
+test('every village keeps about three madmen in its streets, a disturbing sight each', async () => {
+    const { STRUCTURES } = await import('../../shared/world/structures.js');
+    const { WorldManager } = await import('../../shared/world/worldManager.js');
+    for (const id of ['ABANDONED_VILLAGE', 'ABANDONED_VILLAGE_DESERT', 'ABANDONED_VILLAGE_SNOWY']) {
+        assert.equal(STRUCTURES[id].madmen?.id, 'MADMAN_NPC', `${id} has madmen`);
+        assert.equal(STRUCTURES[id].madmen.max, 3);
+    }
+    const counts = [];
+    quiet(() => {
+        for (const seed of [16, 3]) {
+            gameState.seed = seed; gameState.world.isInterior = false; gameState.world.changes = {}; gameState.world.terrainOverrides = {}; gameState.world.villageStairs = []; gameState.world.levelPaths = {};
+            const wm = new WorldManager(); let plans = 0, prev = 0;
+            const pave = wm._paveRoads.bind(wm); wm._paveRoads = (plan) => { pave(plan); plans++; };
+            const madmen = () => Object.values(gameState.world.changes).filter(v => v === 'MADMAN_NPC').length;
+            for (let cy = -3; cy <= 3; cy++) for (let cx = -3; cx <= 3; cx++) {
+                const n0 = plans; wm._ensureStructuresSpawned(cx, cy);
+                if (plans > n0) { const now = madmen(); counts.push(now - prev); prev = now; }
+            }
+        }
+    });
+    assert.ok(counts.length > 0, 'some villages were planned');
+    for (const n of counts) assert.ok(n >= 2 && n <= 3, `about three madmen a village (got ${counts})`);
 });

@@ -159,7 +159,7 @@ export const StatusEffectDefinitions = {
         id: 'recharging',
         name: 'Recharging',
         description: "Spent by a mighty effort: misses its next turn.",
-        icon: { col: 8, row: 0 },   // Knocked Down's: it plays out the same (the next turn is lost), but it does not pull a flier down
+        icon: { col: 1, row: 3 },   // the artist's hourglass (it plays out as Knocked Down does, the next turn lost, but does not pull a flier down)
         defaultCharges: 1,
         maxStacks: 1,
         effects: [
