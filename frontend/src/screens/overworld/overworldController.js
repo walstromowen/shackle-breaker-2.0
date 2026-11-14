@@ -1210,7 +1210,6 @@ export class OverworldController extends BaseController {
             mpParty: this._partyPlaque(),                       // multiplayer: the party of players this one is in, and how to leave it
             facedObject: displayFacedObject, // Passes null if they lack the tool!
             hotbar: this.getHotbarInfo(),
-            whisper: this.voices ? this.voices.shown() : null,   // the voices' words, drifting in at the edge (engine/voicesPlayer.js)
             notice: (this.notice && performance.now() < this.notice.until) ? { text: this.notice.text, ok: this.notice.ok, left: this.notice.until - performance.now() } : null,
             buffs: buffInfo, // running world buffs, for a HUD
             torch: buffInfo.find(b => b.hasLight) || null, // the first light buff (the old name for it)

@@ -6,9 +6,10 @@
 
    level()       how loud they are now, 0 (silent) .. 1
    nextWhisper() seconds until the next whisper is heard (sooner the louder they are)
-   line()        what one of them says: the louder the level, the plainer and crueller (TIERS). Never Dolos's name while the story keeps him
-                 hidden; once he is named (story:dolos_named), now and then they say it.
-   The sound (a short whisper, at a random pitch, from left or right) and the words on the map are the frontend's (engine/voices.js). */
+   line()        what one of them would say: the louder the level, the plainer and crueller (TIERS). Never Dolos's name while the story keeps him
+                 hidden; once he is named (story:dolos_named), now and then they say it. NOT shown in the game: the voices are sound only. The
+                 lines are kept as the script for recording them as whispered speech one day.
+   The sound (a short whisper, at a random pitch, from left or right) is the frontend's (engine/voicesPlayer.js). */
 import { gameState } from '../core/gameState.js';
 import { Dolos, THRESHOLDS } from './dolos.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';

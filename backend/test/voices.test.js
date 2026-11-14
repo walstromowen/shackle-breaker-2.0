@@ -62,23 +62,21 @@ test('the louder, the sooner and the plainer: lines by tier, and his name only o
     assert.ok(TIERS.every(t => t.lines.every(l => !/Dolos/.test(l))));
 });
 
-test('the player: whispers from one side or the other, louder as they grow, words now and then; nothing in his respite', () => {
+test('the player: whispers from one side or the other, louder as they grow, sound only; nothing in his respite', async () => {
     reset();
     const heard = [];
     const p = new VoicesPlayer({ rand: () => 0.3, play: (v, r, pan) => heard.push({ v, r, pan }) });
     phase('gaze');
-    for (let s = 0; s < 120; s++) p.update(1, s * 1000);
+    for (let s = 0; s < 120; s++) p.update(1);
     assert.ok(heard.length >= 4, `${heard.length} whispers in two minutes of his gaze`);
     assert.ok(heard.every(h => Math.abs(h.pan) >= 0.35 && h.v > 0.5), 'from the sides, and loud');
-    assert.ok(p.heard > 0);
-    const q = new VoicesPlayer({ rand: () => 0.1, play: () => {} });
-    q.whisper(0.9, 0);
-    assert.ok(q.shown(100) && q.shown(100).text, 'words, with the whisper');
-    phase('respite');
-    q.update(0.1, 10000);   // past WHISPER_SHOWN_MS: the words have faded
-    assert.equal(q.shown(10000), null);
-    const quietPlayer = new VoicesPlayer({ rand: () => 0.3, play: (v) => heard.push(v) });
+    assert.ok(!('current' in p) && typeof p.shown !== 'function', 'sound only: no words on screen');
+    const fs = await import('node:fs');
+    const ui = fs.readFileSync(new URL('../../frontend/src/screens/overworld/overworldUIRenderer.js', import.meta.url), 'utf8');
+    assert.ok(!/drawWhisper/.test(ui), 'the overworld draws nothing for them');
     const before = heard.length;
-    for (let s = 0; s < 300; s++) quietPlayer.update(1, s * 1000);
+    const quietPlayer = new VoicesPlayer({ rand: () => 0.3, play: (v) => heard.push(v) });
+    phase('respite');
+    for (let s = 0; s < 300; s++) quietPlayer.update(1);
     assert.equal(heard.length, before, 'silence while he looks away');
 });
