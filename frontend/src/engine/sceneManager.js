@@ -648,7 +648,7 @@ export class SceneManager {
                 if (typeof enemyData === 'object') {
                     const specificOffset = enemyData.levelOffset || 0;
                     finalLevel = Math.max(1, baseLevel + specificOffset);
-                    const { id, levelOffset, ...restOfProperties } = enemyData;
+                    const { id, levelOffset, outnumbered, ...restOfProperties } = enemyData;
                     factoryOverrides = { level: finalLevel, ...restOfProperties };
                 }
 
@@ -682,7 +682,8 @@ export class SceneManager {
                 // the act may make it stronger still: one more trait, better gear (actDefinitions.js enemyBoosts; never a boss)
                 ActSystem.boostEnemy(enemyEntity, { makeItem });
                 // and Dolos may have readied it against this party: a trait against its damage, armour, a weapon forged to its level (story/dolos.js)
-                Dolos.counter(enemyEntity, { makeItem, bossOrLimb }, gameState, ActSystem.isBloodMoon((gameState.world.time || 0) / 60));
+                // (an outnumbered ambusher, SpawnTableFactory OUTNUMBERED, always: better equipped and trained, not given more health)
+                Dolos.counter(enemyEntity, { makeItem, bossOrLimb, outnumbered: (typeof enemyData === 'object' && enemyData.outnumbered) || 0 }, gameState, ActSystem.isBloodMoon((gameState.world.time || 0) / 60));
                 scaledEnemies.push(enemyEntity);
             }
             

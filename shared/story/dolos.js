@@ -7,8 +7,9 @@
    The cycle (PHASES): respite -> calm -> stirring -> gaze -> respite ...
      respite    he has looked away: fewer ambushes, weaker foes, more loot, good traits come easier and bad ones harder
      calm       nothing in particular
-     stirring   his attention gathers: more ambushes, now and then one more foe, bad traits come easier
-     gaze       he is watching: many ambushes, stronger and more foes, more spoils for those who live, bad traits come easiest
+     stirring   his attention gathers: more ambushes, bigger groups more often, bad traits come easier
+     gaze       he is watching: many ambushes, stronger foes and bigger groups more often (never past 3), more spoils for those who live,
+                bad traits come easiest
    Tension builds with the hours (twice as fast under a blood moon, when he is felt most) and with easy victories, and falls with hard ones.
    It climbs from calm to stirring to gaze; a gaze lasts its hours or its fights, then he looks away (respite), and a respite lasts its hours.
    A defeat ends any gaze at once: he lets the party up off the floor, for now.
@@ -27,14 +28,14 @@ import { StatCalculator } from '../characters/statCalculator.js';
 
 export const PHASES = ['respite', 'calm', 'stirring', 'gaze'];
 
-/* What each phase does. ambushRate: times the chance of an ambush; enemyLevel: added to non-boss enemies; extraEnemyChance: chance of one more
-   ambusher (one over the usual most, never more); lootBonusChance: chance of one more roll of an enemy's or an encounter's loot; goodTrait /
+/* What each phase does. ambushRate: times the chance of an ambush; enemyLevel: added to non-boss enemies; (how many ambush: his phase tilts
+   the 1-3 roll, battle/spawnTableFactory.js AMBUSH_TILT); lootBonusChance: chance of one more roll of an enemy's or an encounter's loot; goodTrait /
    badTrait: times the chance of gaining such a trait in a fight or an encounter. */
 export const PHASE_EFFECTS = {
-    respite:  { ambushRate: 0.5,  enemyLevel: -1, extraEnemyChance: 0,    lootBonusChance: 0.3,  goodTrait: 1.5, badTrait: 0.5 },
-    calm:     { ambushRate: 1,    enemyLevel: 0,  extraEnemyChance: 0,    lootBonusChance: 0,    goodTrait: 1,   badTrait: 1 },
-    stirring: { ambushRate: 1.3,  enemyLevel: 0,  extraEnemyChance: 0.25, lootBonusChance: 0,    goodTrait: 1,   badTrait: 1.25 },
-    gaze:     { ambushRate: 1.75, enemyLevel: 1,  extraEnemyChance: 0.5,  lootBonusChance: 0.35, goodTrait: 0.75, badTrait: 1.75 }
+    respite:  { ambushRate: 0.5,  enemyLevel: -1, lootBonusChance: 0.3,  goodTrait: 1.5, badTrait: 0.5 },
+    calm:     { ambushRate: 1,    enemyLevel: 0,  lootBonusChance: 0,    goodTrait: 1,   badTrait: 1 },
+    stirring: { ambushRate: 1.3,  enemyLevel: 0,  lootBonusChance: 0,    goodTrait: 1,   badTrait: 1.25 },
+    gaze:     { ambushRate: 1.75, enemyLevel: 1,  lootBonusChance: 0.35, goodTrait: 0.75, badTrait: 1.75 }
 };
 
 /* His temperament, from the difficulty: how fast tension builds (per in-game hour), and how long a gaze and a respite last (hours, and a gaze's
@@ -145,25 +146,27 @@ export const Dolos = {
      * it, a weapon forged to the party's level. Never a boss or a boss's limb. `makeItem(defId, level)` builds an item (the scene manager's).
      * @returns {{ countered: boolean, trait: string|null, weapon: number, armor: string[] }}
      */
-    counter(entity, { rand = Math.random, makeItem = null, bossOrLimb = false } = {}, state = gameState, bloodMoon = false) {
+    counter(entity, { rand = Math.random, makeItem = null, bossOrLimb = false, outnumbered = 0 } = {}, state = gameState, bloodMoon = false) {
         const done = { countered: false, trait: null, weapon: 0, armor: [] };
         const st = entity && (entity.state || entity);
         if (!st || bossOrLimb || (st.tags || []).includes('BOSS')) return done;
         const phase = this.effects(state, bloodMoon).phase;
         const edge = this.edge(state);
-        const chance = (COUNTER_CHANCE[phase] || 0) * Math.max(0, edge + 0.25);
+        // an outnumbered ambusher (SpawnTableFactory OUTNUMBERED) is always readied; any other now and then
+        const chance = outnumbered > 0 ? 1 : (COUNTER_CHANCE[phase] || 0) * Math.max(0, edge + 0.25);
         if (!(chance > 0) || rand() >= chance) return done;
         done.countered = true;
         const p = this.profile(state);
         const c = COUNTERS[p.kind] || COUNTERS.physical;
         const traits = st.traits || (st.traits = []);
-        for (const t of [c.trait, ...(edge > 0.5 && c.trait !== 'tough' ? ['tough'] : [])]) {
+        const tough = (edge > 0.5 || outnumbered >= 2) && c.trait !== 'tough';   // far ahead, or alone against a full party: Tough as well
+        for (const t of [c.trait, ...(tough ? ['tough'] : [])]) {
             if (!traits.includes(t)) { traits.push(t); done.trait = done.trait || t; }
         }
         if (!makeItem) return done;
         const eq = st.equipment || {};
-        // the weapon: forged up to the party's level (one below outside his gaze), never down
-        const weaponLevel = Math.max(1, p.weaponLevel - (phase === 'gaze' ? 0 : 1));
+        // the weapon: forged up to the party's level (one below outside his gaze, unless outnumbered), never down
+        const weaponLevel = Math.max(1, p.weaponLevel - (phase === 'gaze' || outnumbered > 0 ? 0 : 1));
         for (const slot of ['mainHand', 'twoHand']) {
             const it = eq[slot];
             if (!it) continue;

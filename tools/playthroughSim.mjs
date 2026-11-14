@@ -224,7 +224,7 @@ function encounter(level, fighters = 1) {
     const model = SpawnTableFactory.generateBattle(table, DIFF, { fighters, ambush: true }, SCALE);   // an overworld ambush, as BiomeModel.getBattle rolls it (AMBUSH_SIZE)
     const base = level + DIFF_OFFSET + ActSystem.getEnemyLevelOffset() + DOLOS.effects().enemyLevel;   // DOLOS_PHASE: his phase (story/dolos.js)
     return (model.enemies || []).map(cfg => {
-        const id = cfg.id; const { id: _, levelOffset = 0, ...rest } = cfg;
+        const id = cfg.id; const { id: _, levelOffset = 0, outnumbered = 0, ...rest } = cfg;
         let overrides = { level: Math.max(1, base + levelOffset), ...rest };
         const up = ActSystem.getEnemyUpgrade(id);
         if (up) overrides = { ...overrides, abilities: [...(overrides.abilities || []), ...up.abilities], traits: [...(overrides.traits || []), ...up.traits] };
@@ -238,6 +238,8 @@ function encounter(level, fighters = 1) {
             st.baseStats.maxHp += Math.trunc((lv - 1) * K.edgeHp);
             e.hp = e.maxHp;
         }
+        // an outnumbered ambusher comes readied (story/dolos.js counter, as SceneManager does), against the party in gameState
+        if (outnumbered) DOLOS.counter(e, { outnumbered, makeItem: (defId, l) => { const it = ItemFactory.createItem(defId); if (it) it.level = Math.min(it.maxLevel || 1, l); return it; } });
         return e;
     }).filter(Boolean);
 }
@@ -351,6 +353,7 @@ for (const [name, cls] of Object.entries(CLASSES)) {
         for (let level = 1; level <= MAXL; level++) {
             if (level > 1) { spendPoint(r, cls, level); for (const m of mates) spendPoint(m.r, m.c, level); }
             const player = [buildPlayer(r, cls, level), ...mates.slice(0, partySizeAt(level) - 1).map(m => buildPlayer(m.r, m.c, level))];
+            gameState.party.members = player;   // so Dolos reads this party's build (his counters)
             const band = BANDS.findIndex(([a, b]) => level >= a && level <= b);
             for (let f = 0; f < FIGHTS; f++) {
                 const foes = encounter(level, player.length);

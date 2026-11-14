@@ -898,6 +898,8 @@ export class OverworldController extends BaseController {
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
 
+        // the first snowy campfire the player comes upon becomes Nikoli's camp (WorldManager.noticeNikoliCampfire)
+        if (this.worldManager.noticeNikoliCampfire) this.worldManager.noticeNikoliCampfire(gameState.player.col, gameState.player.row);
         const stepOnObj = this.worldManager.getObjectAt(gameState.player.col, gameState.player.row);
         // --- UPDATED: Handle Walk-Over Pickups ---
         if (stepOnObj && stepOnObj.interaction?.type === 'PICKUP' && !stepOnObj.isFading) {

@@ -14,6 +14,26 @@ import { Dolos } from '../story/dolos.js';
 /* How many enemies an ambush (a random fight on the overworld, BiomeModel.getBattle) can bring, whatever the table and the party size say:
    one to three on easy and normal, up to four on hard, and two to four on nightmare. Story and encounter fights keep their own sizes. */
 export const AMBUSH_SIZE = { easy: [1, 3], normal: [1, 3], hard: [1, 4], nightmare: [2, 4] };
+/* How many come, within AMBUSH_SIZE: a weighted roll over 1, 2, 3, 4 by how many fighters the party has. A bigger party meets bigger groups
+   but still meets a lone enemy now and then (a full party used to meet three nearly every time). Dolos tilts it (AMBUSH_TILT: each size's
+   weight times tilt^(size - 1)): smaller groups in his respite, bigger as he stirs and watches, never past the difficulty's most. */
+export const AMBUSH_WEIGHTS = { 1: [62, 30, 8, 2], 2: [36, 40, 20, 4], 3: [20, 38, 36, 6] };
+export const AMBUSH_TILT = { respite: 0.7, calm: 1, stirring: 1.2, gaze: 1.45 };
+/* An outnumbered ambush is a better-prepared one: for each fighter the party has beyond the group's size, every enemy in it is
+   OUTNUMBERED.levels higher, and it comes readied by Dolos (story/dolos.js counter, forced: the trait that blunts the party's damage, armour
+   against it, a weapon forged to the party's level; a lone one against a full party is Tough too). No extra health beyond its level: it is
+   better equipped, not inflated. `outnumbered` on the config is how many fighters it is short (SceneManager readies it). */
+export const OUTNUMBERED = { levels: 3 };
+export function ambushSize(difficulty = 'normal', fighters = 1, phase = 'calm', rand = Math.random) {
+    const [min, max] = AMBUSH_SIZE[difficulty] || AMBUSH_SIZE.normal;
+    const base = AMBUSH_WEIGHTS[Math.max(1, Math.min(3, fighters || 1))];
+    const tilt = AMBUSH_TILT[phase] ?? 1;
+    const sizes = [];
+    for (let n = min; n <= max; n++) sizes.push([n, (base[n - 1] ?? base[base.length - 1]) * Math.pow(tilt, n - 1)]);
+    let r = rand() * sizes.reduce((s, [, w]) => s + w, 0);
+    for (const [n, w] of sizes) { r -= w; if (r <= 0) return n; }
+    return sizes[sizes.length - 1][0];
+}
 
 export const PARTY_SCALING = { EXTRA_ENEMIES: [-1, 0, 1.5], MAX_FIGHTERS: 3, EXTRA_ENEMIES_PER_PLAYER: 0, LEVELS_PER_PLAYER: 1,
     // A boss is tuned for a party of THREE players (Darius the Groveler was, playtested): with fewer it has this share of its health (1, 2, 3 players).
@@ -53,11 +73,8 @@ export class SpawnTableFactory {
         const extra = Math.floor(want) + (Math.random() < want - Math.floor(want) ? 1 : 0);
         const lo = Math.max(1, diffSettings.minSize + extra);
         let partySize = this._getRandomInt(lo, Math.max(lo, diffSettings.maxSize + extra));
-        if (ambush) {
-            const [min, max] = AMBUSH_SIZE[difficulty] || AMBUSH_SIZE.normal;
-            partySize = Math.max(min, Math.min(max, partySize));
-            if (Math.random() < Dolos.effects().extraEnemyChance) partySize = Math.min(max + 1, partySize + 1);   // story/dolos.js
-        }
+        if (ambush) partySize = ambushSize(difficulty, fighters, Dolos.effects().phase);   // 1-3 on normal, weighted by party size and Dolos's phase
+        const outnumbered = ambush ? Math.max(0, Math.min(3, fighters || 1) - partySize) : 0;
 
         // 3. Generate the specific enemies
         const generatedEnemies = [];
@@ -66,6 +83,10 @@ export class SpawnTableFactory {
             const enemyConfig = this._applyModifiers(rolledMember);
             // The shackled are the cursed: every one of them is born at the top of the corruption scale (see CORRUPTION in core/constants.js)
             if (factionPool.factionId === 'shackled') enemyConfig.baseStats = { corruption: 100, naturalCorruption: true };
+            if (outnumbered) {   // fewer of them, each better prepared
+                enemyConfig.levelOffset = (enemyConfig.levelOffset || 0) + outnumbered * OUTNUMBERED.levels;
+                enemyConfig.outnumbered = outnumbered;
+            }
             generatedEnemies.push(enemyConfig);
         }
 

@@ -169,22 +169,33 @@ test('the Panzerkamfer is one of many war beasts from the war, and Mentoras an o
     assert.match(N.stages.ask.text, /not always agreeing/);
 });
 
-test('his camp: the first snowy campfire is claimed; before the meeting he stands north of it facing the cats, and the scene follows the story', () => {
+test('his camp: the first snowy campfire the player comes upon (just before it is on screen); he stands north of it facing the cats, and the scene follows the story', async () => {
+    const { NIKOLI_CAMP_SIGHT } = await import('../../shared/world/worldManager.js');
     const w = gameState.world;
     w.nikoliCampfire = null; w.isInterior = false;
     story();
     const placed = [];
-    const fake = (biomeId) => ({ getBiomeAt: () => ({ id: biomeId }), _placeStory: (c, r, id) => placed.push([c, r, id]), _storyObjects: WorldManager.prototype._storyObjects });
+    const fake = (biomeId) => ({ getBiomeAt: () => ({ id: biomeId }), _placeStory: (c, r, id) => placed.push([c, r, id]), _storyObjects: WorldManager.prototype._storyObjects,
+        _campfirePlaced: WorldManager.prototype._campfirePlaced, noticeNikoliCampfire: WorldManager.prototype.noticeNikoliCampfire });
+    const world = fake('SNOWY_MOUNTAINS');
     WorldManager.prototype._campfirePlaced.call(fake('PLAINS'), 5, 5);
-    assert.equal(w.nikoliCampfire, null, 'a plains campfire is not his');
-    WorldManager.prototype._campfirePlaced.call(fake('SNOWY_MOUNTAINS'), 40, 60);
-    assert.equal(w.nikoliCampfire, '40,60');
+    // the world makes land far beyond the screen: a campfire made out there is only a candidate, not his camp
+    world._campfirePlaced(140, 60);
+    world._campfirePlaced(40, 60);
+    assert.equal(w.nikoliCampfire, null, 'nothing is claimed just because the world made a campfire');
+    assert.deepEqual(placed, []);
+    // the player walks toward one: it is claimed once it is just beyond the edge of the screen, before it can be seen
+    assert.equal(world.noticeNikoliCampfire(40, 60 + NIKOLI_CAMP_SIGHT.rows + 3), false, 'still too far');
+    assert.ok(NIKOLI_CAMP_SIGHT.cols > 30 && NIKOLI_CAMP_SIGHT.rows > 17 + 5, 'the claim is wider than the screen (with room for the cats north of it)');
+    assert.equal(world.noticeNikoliCampfire(40, 60 + NIKOLI_CAMP_SIGHT.rows), true);
+    assert.equal(w.nikoliCampfire, '40,60', 'the one the player came upon, not the first one made');
     assert.deepEqual(placed.sort(), [[39, 56, 'SNOW_LEOPARD_STALKING'], [40, 55, 'SNOW_LEOPARD_STALKING'], [40, 59, 'NIKOLI_NPC_WATCHING'], [41, 56, 'SNOW_LEOPARD_STALKING']],
         'Nikoli just north of the fire, three cats further north');
     assert.equal(M.NIKOLI_NPC_WATCHING.character.facing, 'UP', 'he faces up, at the cats');
     assert.equal(M.SNOW_LEOPARD_STALKING.character.facing, 'DOWN', 'they face down, at him');
     for (const id of ['NIKOLI_NPC_WATCHING', 'SNOW_LEOPARD_STALKING']) assert.deepEqual(M[id].interaction, { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 }, `${id}: coming near starts it`);
-    WorldManager.prototype._campfirePlaced.call(fake('SNOWY_MOUNTAINS'), 90, 90);
+    world._campfirePlaced(90, 90);
+    assert.equal(world.noticeNikoliCampfire(90, 90), false);
     assert.equal(w.nikoliCampfire, '40,60', 'only the first one');
     const at = (c, r) => WorldManager.prototype._storyObjectAt.call({ _storyObjects: WorldManager.prototype._storyObjects }, c, r);
     story({ milestones: ['nikoli_met'] });

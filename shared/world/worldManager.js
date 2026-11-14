@@ -28,6 +28,11 @@ const MASK_DIRECTIONS = [
     { c: -1, r: 0, bit: BITMASK.LEFT },
     { c: -1, r: -1, bit: BITMASK.TOP_LEFT },
 ];
+/* How near the player must come to a snowy-mountain campfire for it to become Nikoli's camp: just beyond the edge of the screen (60 x 34 tiles
+   of 32 px on the 1920 x 1080 canvas: 30 to either side, 17 above and below), so the scene is in place, Nikoli at his fire and the cats
+   5 tiles north of it, a little before it scrolls into view, and he never pops in where the player can see. */
+export const NIKOLI_CAMP_SIGHT = { cols: 30 + 6, rows: 17 + 6 + 5 };
+
 export class WorldManager {
     constructor() {
         if (!gameState.seed) gameState.seed = Math.floor(Math.random() * 1000000);
@@ -333,19 +338,44 @@ export class WorldManager {
             this._placeStory(c, r, id);
         }
     }
+    /* A campfire was put down. Nikoli's camp is the first snowy-mountain campfire the PLAYER comes upon, not the first the world happens to make:
+       the world makes the land well beyond the screen, so the first one made was often one the player never saw. So a snowy campfire is only a
+       candidate here; noticeNikoliCampfire() claims the first the player walks within NIKOLI_CAMP_SIGHT of. Once claimed, the meeting's scene
+       stands there whenever its chunk is made again. */
     _campfirePlaced(col, row) {
         const w = gameState.world;
         if (w.isInterior) return;
         if (!w.nikoliCampfire) {
             const biome = this.getBiomeAt(col, row);
-            if (!biome || biome.id !== 'SNOWY_MOUNTAINS') return;
-            InteriorFactory.claimHome('nikoliCampfire', `${col},${row}`);
+            if (biome && biome.id === 'SNOWY_MOUNTAINS') (this._snowyCampfires ||= new Set()).add(`${col},${row}`);
+            return;
         }
         if (w.nikoliCampfire !== `${col},${row}`) return;
         for (const [key, id] of this._storyObjects()) {
             const [c, r] = key.split(',').map(Number);
             this._placeStory(c, r, id);
         }
+    }
+
+    /** Called as each step ends: the nearest snowy campfire within NIKOLI_CAMP_SIGHT of the player (just beyond the screen) becomes Nikoli's
+     *  camp, if he has none yet. */
+    noticeNikoliCampfire(col, row) {
+        const w = gameState.world;
+        if (w.nikoliCampfire || w.isInterior || !this._snowyCampfires || !this._snowyCampfires.size) return false;
+        let best = null, bestD = Infinity;
+        for (const key of this._snowyCampfires) {
+            const [c, r] = key.split(',').map(Number);
+            const dc = Math.abs(c - col), dr = Math.abs(r - row);
+            if (dc > NIKOLI_CAMP_SIGHT.cols || dr > NIKOLI_CAMP_SIGHT.rows) continue;
+            const d = dc * dc + dr * dr;
+            if (d < bestD) { best = key; bestD = d; }
+        }
+        if (!best) return false;
+        InteriorFactory.claimHome('nikoliCampfire', best);
+        this._snowyCampfires.clear();
+        const [c, r] = best.split(',').map(Number);
+        this._campfirePlaced(c, r);
+        return true;
     }
     // what a cell of a stair piece is: { st, t } with t = 'W' walkway, 'F' / 'G' / 'T' open ground, 'R' rock (see STAIR_MASK in terrainGenerator.js);
     // null for a cell that is in no stair piece

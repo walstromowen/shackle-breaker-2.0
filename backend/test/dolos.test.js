@@ -42,10 +42,10 @@ test('the cycle: calm builds to stirring, then gaze; a gaze ends in a respite; a
 
 test('what each phase does: his gaze is harder and pays more, his respite is gentler, calm changes nothing', () => {
     const { respite, calm, stirring, gaze } = PHASE_EFFECTS;
-    assert.deepEqual(calm, { ambushRate: 1, enemyLevel: 0, extraEnemyChance: 0, lootBonusChance: 0, goodTrait: 1, badTrait: 1 });
+    assert.deepEqual(calm, { ambushRate: 1, enemyLevel: 0, lootBonusChance: 0, goodTrait: 1, badTrait: 1 });
     assert.ok(respite.ambushRate < 1 && respite.enemyLevel < 0 && respite.goodTrait > 1 && respite.badTrait < 1 && respite.lootBonusChance > 0);
-    assert.ok(stirring.ambushRate > 1 && stirring.extraEnemyChance > 0 && stirring.badTrait > 1);
-    assert.ok(gaze.ambushRate > stirring.ambushRate && gaze.enemyLevel > 0 && gaze.extraEnemyChance > stirring.extraEnemyChance && gaze.badTrait > stirring.badTrait);
+    assert.ok(stirring.ambushRate > 1 && stirring.badTrait > 1);
+    assert.ok(gaze.ambushRate > stirring.ambushRate && gaze.enemyLevel > 0 && gaze.badTrait > stirring.badTrait);
 });
 
 test('a blood moon: he is felt (at least stirring), and tension builds twice as fast', () => {

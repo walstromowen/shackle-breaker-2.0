@@ -122,3 +122,32 @@ test('indoors, a fight plays the plains\' battle music', async () => {
     const { BIOME_DEFINITIONS } = await import('../../shared/world/biomeDefinitions.js');
     assert.equal(BIOME_DEFINITIONS.HOUSE_INTERIOR.music.battle, BIOME_DEFINITIONS.PLAINS.music.battle);
 });
+
+test('ambushes are 1 to 3 (normal): a bigger party meets bigger groups, Dolos tilts them, and an outnumbered group is fiercer', async () => {
+    const { ambushSize, AMBUSH_TILT, OUTNUMBERED, SpawnTableFactory } = await import('../../shared/battle/spawnTableFactory.js');
+    const tally = (fighters, phase) => { const h = { 1: 0, 2: 0, 3: 0 }; let i = 0; for (; i < 3000; i++) h[ambushSize('normal', fighters, phase, () => (i * 0.6180339) % 1)]++; return h; };
+    for (const f of [1, 2, 3]) for (const ph of Object.keys(AMBUSH_TILT)) {
+        const h = tally(f, ph);
+        assert.equal(h[1] + h[2] + h[3], 3000, 'never fewer than 1 or more than 3');
+        assert.ok(h[1] > 0 && h[3] > 0, `${f} fighters, ${ph}: lone enemies and threes both happen`);
+    }
+    assert.ok(tally(3, 'calm')[3] < 1500, 'a full party no longer meets three nearly every time');
+    assert.ok(tally(3, 'gaze')[3] > tally(3, 'calm')[3] && tally(3, 'respite')[3] < tally(3, 'calm')[3], 'Dolos tilts it');
+    gameState.world.changes = {};
+    const r = Math.random; Math.random = () => 0.01;   // the smallest group
+    try {
+        const m = SpawnTableFactory.generateBattle('plains_battles_day', 'normal', { fighters: 3, ambush: true });
+        assert.equal(m.enemies.length, 1);
+        assert.ok(m.enemies[0].levelOffset >= 2 * OUTNUMBERED.levels, 'a lone enemy against three is a higher level');
+        assert.equal(m.enemies[0].outnumbered, 2, 'and is marked to be readied');
+        assert.ok(!(m.enemies[0].baseStats && m.enemies[0].baseStats.maxHpMultiplier), 'no inflated health');
+    } finally { Math.random = r; }
+    // readied (as SceneManager does): always, whatever Dolos's phase: the trait against the party's damage, Tough alone against three, armour
+    Dolos._enter(gameState, 'respite');
+    const sword = (await import('../../shared/items/itemFactory.js')).ItemFactory.createItem('shortsword'); sword.level = 3;
+    gameState.party.members = [quiet(() => EntityFactory.create('HUMANOID', { level: 10, levelEdge: false, equipment: { mainHand: sword } }))];
+    const foe = quiet(() => EntityFactory.create('LEGIONARY', 12));
+    const done = Dolos.counter(foe, { outnumbered: 2, rand: () => 0.99, makeItem: null });
+    assert.ok(done.countered, 'even in his respite, even on a high roll');
+    assert.ok((foe.state || foe).traits.includes('ironhide') && (foe.state || foe).traits.includes('tough'));
+});
