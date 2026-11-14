@@ -89,7 +89,7 @@ export const pursuer = {
         captive: { displayText: "The Pursuer", image: JAEGER_IMG, bgm: "apexPredatorBgm",
             text: "Among the hoard, a broad man in dark Panzerian armour stands waiting, a greatsword in his hands. At his feet, chained and silent, kneels the hooded man.",
             decisions: next("captive_2") },
-        captive_2: { displayText: "Nikoli", image: JAEGER_IMG, text: "\"You came. Good. Nikoli hates to wait.\"", decisions: next("captive_3") },
+        captive_2: { displayText: "Nikoli", image: JAEGER_IMG, text: "\"You come. Good. Nikoli hate to wait.\"", decisions: next("captive_3") },
         captive_3: { displayText: "The Hooded Stranger", image: STRANGER_IMG, text: "\"That is not Nikoli. ...Nikoli has fewer teeth.\"", decisions: next("captive_4") },
         captive_4: { displayText: "Nikoli", image: JAEGER_IMG, text: "\"Quiet, Commander.\"", decisions: [{
             text: "Draw your weapon.",

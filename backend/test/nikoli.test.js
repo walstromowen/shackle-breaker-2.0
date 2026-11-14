@@ -69,7 +69,8 @@ test('the first meeting: snow leopards at his fire, and the fight is fought besi
     assert.ok(battle.bgm && battle.noEscape);
     assert.match(AFTER.stages.after.text, /Thank you/, 'he thanks you');
     assert.match(AFTER.stages.after_2.text, /Nikoli was general/, 'and speaks of himself as Nikoli, as he does in the story');
-    assert.match(AFTER.stages.after_2.text, /Commander Mentoras/);
+    assert.match(AFTER.stages.after_2.text, /Alterian Commander: Mentoras/, 'the man he walks so far to find');
+    assert.match(AFTER.stages.after_2.text, /Nikoli walk long way/, 'in his own broken way: no article, no s on the verb');
 });
 
 test('telling him about the hooded man needs the Stranger met; it pays an Insight of Ice, and either answer leads to the war beast', () => {

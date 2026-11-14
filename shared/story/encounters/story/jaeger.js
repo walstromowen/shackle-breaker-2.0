@@ -50,7 +50,7 @@ export const jaeger = {
             next("cold")),
         cold: stage("The torches burn low on his side of the hall. Frost rims his gauntlets, though the air is still and warm.",
             next("greet")),
-        greet: stage("\"Ah. You are one who killed statue. Is good. Nikoli was tired of waiting for it to fall over.\"",
+        greet: stage("\"Ah. You are one who kill statue. Is good. Nikoli was tired of waiting for it to fall over.\"",
             next("smile")),
         smile: stage("He smiles. It is a straight, white, even smile. It does not reach his eyes.", [
             { text: "Continue.", conditions: [{ type: "has_milestone", id: "nikoli_met" }], outcomes: toStage("remember") },
@@ -63,9 +63,9 @@ export const jaeger = {
             next("ask")),
 
         // ---- the question ----
-        ask: stage("\"Nikoli searches for old friend. Commander Mentoras, of Altus royal guard. Tired eyes. Sharp tongue. You have seen him, da?\"",
+        ask: stage("\"Nikoli search for old friend. Alterian Commander, Mentoras, of royal guard. Tired eyes. Sharp tongue. You have seen him, da?\"",
             next("debt")),
-        debt: stage("\"He owes Nikoli a debt. Nikoli intends to collect it. In full.\"", [
+        debt: stage("\"He owe Nikoli a debt. Nikoli intends to collect it. In full.\"", [
             {
                 text: "[Hooded Stranger] \"There's a hooded man in a village workshop. He might be the one.\"",
                 conditions: [{ type: "has_milestone", id: "stranger_met" }],   // someone in this world has met the Stranger
@@ -86,13 +86,13 @@ export const jaeger = {
         dunno: stage("\"No? Pity.\" He studies you a long moment, the way a man studies a lock.",
             next("dunno_2")),
         // the one slip of his own name, caught at once: never named, by him or by the narrator
-        dunno_2: stage("\"Jae... Nikoli will find you. [pause] Nikoli always finds people.\"",
+        dunno_2: stage("\"Jae... Nikoli will find you. [pause] Nikoli always find people.\"",
             done("Leave him to the dark.")),
 
         // ---- talked to again, before the player has gone ----
-        again: stage("He does not look up from the greatsword across his knees. \"Nikoli has nothing more to ask you.\"",
+        again: stage("He does not look up from the greatsword across his knees. \"Nikoli have nothing more to ask you.\"",
             [{ text: "Leave.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }]),
-        again_told: stage("He is buckling on his gauntlets. \"Nikoli has what he came for. Go, my friend.\"",
+        again_told: stage("He is buckling on his gauntlets. \"Nikoli have what he come for. Go, my friend.\"",
             [{ text: "Leave.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }])
     }
 };
