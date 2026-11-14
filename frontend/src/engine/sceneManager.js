@@ -195,6 +195,20 @@ export class SceneManager {
         this.setupEventListeners();
     }
 
+    /* The music for an encounter that follows a won fight (START_BATTLE afterVictory): { bgm } with the overworld's track, or nothing when the
+       encounter's opening stage chooses its own music or silence (stage.bgm), which it then plays as usual. */
+    _afterBattleBgm(encounterId) {
+        const def = encounterDefinitions[encounterId];
+        let first = null;
+        try {
+            const id = def && (typeof def.initialStage === 'function' ? def.initialStage() : def.initialStage);
+            first = def && def.stages ? def.stages[id] : null;
+        } catch (e) { first = null; }
+        if (first && first.bgm) return {};
+        const bgm = this.resolveTargetBGM('overworld');
+        return bgm ? { bgm } : {};
+    }
+
     resolveTargetBGM(targetScene, sceneContext = {}) {
         // 1. Explicit scene context overrides
         if (sceneContext.bgm) return sceneContext.bgm;
@@ -744,8 +758,9 @@ export class SceneManager {
             const after = this.pendingAfterVictory;
             this.pendingAfterVictory = null;
             if (data.victory && !data.fled && after) {
-                // e.g. the end of Darius the Groveler: the act changes in an encounter of its own
-                events.emit('START_ENCOUNTER', { encounterId: after.encounterId, context: after.context });
+                // e.g. the end of Darius the Groveler: the act changes in an encounter of its own. The fight is over, so its music is too: unless the
+                // encounter's opening stage picks its own (or silence), the overworld's music comes back (Nikoli thanking you after the snow leopards)
+                events.emit('START_ENCOUNTER', { encounterId: after.encounterId, context: after.context, ...(this._afterBattleBgm(after.encounterId)) });
             } else if (data.victory) {
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {

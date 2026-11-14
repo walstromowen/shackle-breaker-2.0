@@ -1,6 +1,6 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
-import { drawStatTooltip, statAt } from '../../ui/statTooltip.js';
+import { drawStatTooltip, layoutStatTooltip, statAt } from '../../ui/statTooltip.js';
 import { helpOptionsFor } from '../../../../shared/characters/statDescriptions.js';
 import { rollModifier, formatModifier } from '../../../../shared/story/encounterRolls.js';
 import { gameState } from '../../../../shared/core/gameState.js';
@@ -45,6 +45,7 @@ export class LevelUpRenderer {
 
         this.ui.drawPanel(leftColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
         this.ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[1]);
+        this._rightCol = { x: rightColX, y: startY, w: colW, h: panelHeight };
 
         this._renderCharacterColumn(
             member, availablePoints, pendingAllocations, hoveredId, selectedElementId, leftColX, startY, colW, panelHeight
@@ -83,7 +84,14 @@ export class LevelUpRenderer {
             if (stat) drawStatTooltip(this.ui, stat, this._statRects[stat], { placement: 'left', ...helpOptionsFor(state.member, gameState.difficulty || 'normal') });
             return;
         }
-        drawStatTooltip(this.ui, attr, this._attrBlock, { placement: 'above', gap: 2, width: 800, ...helpOptionsFor(state.member, gameState.difficulty || 'normal') });
+        // at the foot of the Projected Stats panel: an attribute's card is up to ~680px tall, more than the room above the rows, and anywhere on
+        // the left it would cover the + / - buttons or Reset / Confirm, the very things being used while it shows. At the foot, the top of the
+        // projected stats (health, stamina, insight...) still shows above it as the points go in.
+        const col = this._rightCol;
+        const opts = { width: col.w - 48, ...helpOptionsFor(state.member, gameState.difficulty || 'normal') };
+        const lay = layoutStatTooltip(this.ui, attr, opts);
+        if (!lay) return;
+        drawStatTooltip(this.ui, attr, this._attrBlock, { ...opts, at: { x: col.x + 24, y: Math.max(col.y + 24, col.y + col.h - lay.h - 24) } });
     }
 
     _renderCharacterColumn(member, availablePoints, pendingAllocations, hoveredId, selectedId, x, y, w, h) {
@@ -127,7 +135,7 @@ export class LevelUpRenderer {
         const attributes = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
         const startX = centerX - (this.layout.attrBlockWidth / 2);
         this._attrRects = {};
-        // all five rows as one block: the help card sits above it, over the portrait, so it never hides the Projected Stats next door
+        // all five rows as one block (the help card for them sits over the Projected Stats panel: see _drawStatHelp)
         this._attrBlock = { x: startX - 24, y: currentY, w: this.layout.attrBlockWidth + 48, h: attributes.length * this.layout.attrRowHeight };
 
         // The ROLL column: what each attribute adds to an encounter's d20 skill check on this difficulty (shared/story/encounterRolls.js), and what
