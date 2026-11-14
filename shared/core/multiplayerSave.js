@@ -52,6 +52,7 @@ export function playerPart(data) {
         world: {
             currentBiome: w.currentBiome || null,
             waypoints: w.waypoints || [],
+            mapMarkers: w.mapMarkers || [],   // the player's own pins: theirs, not the world's
             discoveredChunks: w.discoveredChunks || [],
             interior: w.interior || null,
         },
@@ -73,6 +74,7 @@ export function mergeParts(world, player) {
             ...world.world,
             currentBiome: player.world ? player.world.currentBiome : null,
             waypoints: player.world ? player.world.waypoints : [],
+            mapMarkers: player.world ? (player.world.mapMarkers || []) : [],
             discoveredChunks: player.world ? player.world.discoveredChunks : [],
             interior,
         },

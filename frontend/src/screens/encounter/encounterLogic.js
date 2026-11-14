@@ -223,6 +223,19 @@ export class EncounterLogic {
         return amount > 0 ? { type: "AWARD_XP", payload: { amount, exact: true, target: "active_character" } } : null;
     }
 
+    /* What happens to the party the moment a stage appears, not when its button is pressed: a stage with one way on (one decision, no roll, no
+       conditions, one outcome) tells of harm or healing the player cannot avoid (the chest explodes, the axe cuts, the altar's glow), so its
+       hp / stamina / insight changes and status effects land with the stage, the bars and icons changing as the words are read. The rest of
+       the outcome (the stage it moves to, the end) waits for the button as before. */
+    static ENTRY_RESULTS = new Set(['MODIFY_VITALS', 'APPLY_STATUS_EFFECT', 'TAKE_DAMAGE']);
+    static entryResults(stage) {
+        const ds = (stage && stage.decisions) || [];
+        if (ds.length !== 1) return [];
+        const d = ds[0];
+        if (d.type === 'skill_check' || (d.conditions && d.conditions.length) || (d.outcomes || []).length !== 1) return [];
+        return (d.outcomes[0].results || []).filter(r => EncounterLogic.ENTRY_RESULTS.has(r.type));
+    }
+
     static selectOutcome(outcomes) {
         if (!outcomes || outcomes.length === 0) return null;
         const totalWeight = outcomes.reduce((sum, outcome) => sum + (outcome.weight || 1), 0);

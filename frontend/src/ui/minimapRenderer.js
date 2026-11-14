@@ -2,6 +2,7 @@ import { gameState } from '../../../shared/core/gameState.js';
 import { multiplayerSession } from '../engine/multiplayerSession.js';
 import { multiplayerSocial } from '../engine/multiplayerSocial.js';
 import { BIOME_DEFINITIONS, FIRST_PLATEAU, CLIFF_LEVELS, layerIndex } from '../../../shared/world/biomeDefinitions.js';
+import { markersOn, markerColor } from '../../../shared/world/mapMarkers.js';
 
 /* MinimapRenderer - a small round, north-up map of the terrain around the player, drawn in the bottom-left corner of the overworld screen.
  *
@@ -352,6 +353,21 @@ export class MinimapRenderer {
             ctx.fillRect(dx - h - 1, dy - h - 1, s + 2, s + 2);
             ctx.fillStyle = cfg.others;
             ctx.fillRect(dx - h, dy - h, s, s);
+        }
+
+        // the player's own pins (world/mapMarkers.js): a little coloured drop on their tile
+        const pinSpan = 2 * R + 3;
+        for (const m of markersOn(inside ? (w.interiorId || null) : null)) {
+            if (m.col < left - 1 || m.col > left + pinSpan || m.row < top - 1 || m.row > top + pinSpan) continue;
+            const pxm = sx(m.col + 0.5), pym = sy(m.row + 0.5) - 2;
+            ctx.beginPath();
+            ctx.moveTo(pxm, pym + 5); ctx.lineTo(pxm - 4, pym - 1); ctx.lineTo(pxm - 4, pym - 4); ctx.lineTo(pxm, pym - 7); ctx.lineTo(pxm + 4, pym - 4); ctx.lineTo(pxm + 4, pym - 1);
+            ctx.closePath();
+            ctx.fillStyle = markerColor(m).fill;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.lineWidth = 1.5;
+            ctx.fill();
+            ctx.stroke();
         }
 
         // the area the main view shows

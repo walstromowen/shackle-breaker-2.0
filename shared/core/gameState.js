@@ -91,6 +91,7 @@ export function resetWorldForNewGame() {
     w.levelPaths = {};
     w.discoveredChunks = [];
     w.waypoints = [];
+    w.mapMarkers = [];   // the player's own pins on the map (world/mapMarkers.js)
     w.strangerHome = null;   // a new world: the Hooded Stranger has not chosen his workshop yet
     w.strangerDesertHome = null;   // nor where he goes in act 2
     w.nikoliCampfire = null;       // and Nikoli has not made camp

@@ -4,12 +4,15 @@ import { ExploredMap, BLOCK } from '../../../../shared/world/exploredMap.js';
 import { layerIndex } from '../../../../shared/world/biomeDefinitions.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { allWaypoints, findWaypoint, planFastTravel, chargeFastTravel, waypointName } from '../../../../shared/world/waypoints.js';
+import { markersOn, findMarker, addMarker, removeMarker, cycleMarkerColor, markerColor, MARKER_MAX } from '../../../../shared/world/mapMarkers.js';
 
 /* WorldMapController - the world map screen (opened from the overworld menu, key N): the land the party has SEEN, north up, which can be panned and zoomed.
  * Nothing that has not been seen is on it (shared/world/exploredMap.js decides what has), the party's own spot is.
  *
  * Keys:   arrow keys / W A S D pan (hold Shift to go faster), + / - (also Q / E) or the wheel zoom, F fits everything seen, C or Space centres on the party,
- *         T (or a click on a banner) picks a waypoint, Enter (or the Fast Travel button) pays and goes to it, Esc / N / right-click leaves. The mouse can drag the map, too, and the buttons at the bottom right do the same as the keys.
+ *         T (or a click on a banner) picks a waypoint, Enter (or the Fast Travel button) pays and goes to it, Esc / N / right-click leaves.
+ *         Markers (world/mapMarkers.js): K, or the Add Marker button and then a click on the map, pins the tile under the pointer (with the keys, the middle of
+ *         the map); a click on a pin picks it, and its Colour / Remove buttons (or Delete) change or take it away. The mouse can drag the map, too, and the buttons at the bottom right do the same as the keys.
  * Zoom:   a list of scales (pixels per tile); the picture eases to the chosen one, keeping the point under the mouse (or the middle of the map) where it is.
  *
  * The screen is 1920 x 1080 like the others (the canvas is that size; see UITheme.backButtonBox). VIEW is the map's window. */
@@ -56,6 +59,7 @@ function interiorExtent(wm, player) {
 }
 
 const BUTTONS = [
+    { id: 'btn_marker', label: 'Add Marker', w: 256 },
     { id: 'btn_zoom_out', label: '−', w: 76 },
     { id: 'btn_zoom_in', label: '+', w: 76 },
     { id: 'btn_center', label: 'Center', w: 190 },
@@ -70,7 +74,8 @@ export class WorldMapController extends BaseController {
             KeyM: 'CANCEL',
             Equal: 'ZOOM_IN', NumpadAdd: 'ZOOM_IN', KeyE: 'ZOOM_IN',
             Minus: 'ZOOM_OUT', NumpadSubtract: 'ZOOM_OUT', KeyQ: 'ZOOM_OUT',
-            KeyF: 'FIT', KeyC: 'CENTER', Space: 'CENTER', Enter: 'CENTER', KeyT: 'NEXT_WAYPOINT'
+            KeyF: 'FIT', KeyC: 'CENTER', Space: 'CENTER', Enter: 'CENTER', KeyT: 'NEXT_WAYPOINT',
+            KeyK: 'ADD_MARKER', Delete: 'REMOVE_MARKER'
         };
         this.worldManager = null;
         this.player = { x: 0, y: 0, direction: 'down' };
@@ -83,6 +88,8 @@ export class WorldMapController extends BaseController {
         this.hitboxes = [];
         this.selectedId = null;                   // the waypoint picked on the map (its id), or null
         this.notice = null;                       // { text, until } a line the map shows for a moment ("not enough currency")
+        this.placing = false;                     // after Add Marker: the next click on the map puts a pin there
+        this.markerId = null;                     // the pin picked on the map (its id), or null
     }
 
     init(data = {}) {
@@ -97,6 +104,8 @@ export class WorldMapController extends BaseController {
         this.drag = null;
         this.selectedId = null;
         this.notice = null;
+        this.placing = false;
+        this.markerId = null;
         this.centerOnParty();
         this.startInKeyboardMode();
         console.log('[WorldMapController] Initialized');
@@ -215,6 +224,7 @@ export class WorldMapController extends BaseController {
 
     select(id) {
         this.selectedId = id;
+        this.markerId = null;   // a waypoint or a pin, not both
         const wp = this.selectedWaypoint();
         if (wp) { this.cx = wp.col; this.cy = wp.row; this._clamp(); }
     }
@@ -225,6 +235,55 @@ export class WorldMapController extends BaseController {
         if (!list.length) { this.say('You have not planted a waypoint yet.'); return false; }
         const i = list.findIndex((w) => String(w.id) === String(this.selectedId));
         this.select(list[(i + 1) % list.length].id);
+        return true;
+    }
+
+    // ---- markers -------------------------------------------------------------------------------------------------------------------------------
+
+    /** The map the pins go on: null for the overworld, the interior's id on a cave's or a house's map. */
+    mapId() { return this.interior ? (gameState.world.interiorId || null) : null; }
+
+    markers() { return markersOn(this.mapId()); }
+
+    selectedMarker() {
+        const m = this.markerId === null ? null : findMarker(this.markerId);
+        return m && (m.map || null) === this.mapId() ? m : null;
+    }
+
+    /** A pin on the tile (col, row), picked at once. */
+    placeMarker(col, row) {
+        this.placing = false;
+        if ((gameState.world.mapMarkers || []).length >= MARKER_MAX) {
+            this.playErrorSound(); this.say(`The map holds ${MARKER_MAX} markers. Remove one first.`); return null;
+        }
+        const m = addMarker(col, row, { mapId: this.mapId() });
+        if (!m) { this.playErrorSound(); this.say('There is a marker there already.'); return null; }
+        this.playConfirmSound();
+        this.selectedId = null;
+        this.markerId = m.id;
+        return m;
+    }
+
+    /** K: a pin under the pointer (mouse) or in the middle of the map (keys). */
+    markHere() {
+        const useMouse = this.inputMode === 'mouse' && this._inView(this.mouse.x, this.mouse.y);
+        const at = useMouse ? this.tileAt(this.mouse.x, this.mouse.y) : { col: this.cx, row: this.cy };
+        return this.placeMarker(at.col, at.row);
+    }
+
+    pickMarker(id) {
+        this.markerId = id;
+        this.selectedId = null;
+        this.placing = false;
+    }
+
+    removePicked() {
+        const m = this.selectedMarker();
+        if (!m) { this.playErrorSound(); return false; }
+        removeMarker(m.id);
+        this.markerId = null;
+        this.playCancelSound();
+        this.say(`${m.label} removed.`);
         return true;
     }
 
@@ -253,6 +312,16 @@ export class WorldMapController extends BaseController {
     }
 
     onClick(hitboxId) {
+        if (hitboxId && hitboxId.startsWith('mk_')) {
+            this.playConfirmSound();
+            this.pickMarker(Number(hitboxId.slice(3)));
+            return;
+        }
+        if (!hitboxId && this.placing && this._inView(this.mouse.x, this.mouse.y)) {
+            const at = this.tileAt(this.mouse.x, this.mouse.y);
+            this.placeMarker(at.col, at.row);
+            return;
+        }
         if (hitboxId && hitboxId.startsWith('wp_')) {
             this.playConfirmSound();
             const id = hitboxId.slice(3);
@@ -261,6 +330,13 @@ export class WorldMapController extends BaseController {
         }
         switch (hitboxId) {
             case 'btn_fast_travel': this.fastTravel(); break;
+            case 'btn_marker':
+                this.placing = !this.placing;
+                if (this.placing) { this.playConfirmSound(); this.say('Click the map to place a marker.'); }
+                else this.playCancelSound();
+                break;
+            case 'btn_marker_color': { const m = this.selectedMarker(); if (m) { cycleMarkerColor(m.id); this.playNavSound(); } break; }
+            case 'btn_marker_remove': this.removePicked(); break;
             case 'btn_zoom_in': if (this.zoomStep(1)) this.playConfirmSound(); else this.playErrorSound(); break;
             case 'btn_zoom_out': if (this.zoomStep(-1)) this.playConfirmSound(); else this.playErrorSound(); break;
             case 'btn_center': this.playConfirmSound(); this.centerOnParty(); break;
@@ -271,13 +347,18 @@ export class WorldMapController extends BaseController {
     }
 
     onRightClick() {
+        if (this.placing) { this.placing = false; this.playCancelSound(); this.notice = null; return; }   // first, the right button only stops the placing
         this.exit();
     }
 
     handleKeyDown(code, e) {
         const intent = this.resolveIntent(code, e);
         switch (intent) {
-            case 'CANCEL': this.exit(); break;
+            case 'CANCEL':
+                if (this.placing) { this.placing = false; this.playCancelSound(); this.notice = null; break; }
+                this.exit(); break;
+            case 'ADD_MARKER': this.markHere(); break;
+            case 'REMOVE_MARKER': this.removePicked(); break;
             case 'ZOOM_IN': if (this.zoomStep(1)) this.playNavSound(); break;
             case 'ZOOM_OUT': if (this.zoomStep(-1)) this.playNavSound(); break;
             case 'FIT': this.playConfirmSound(); this.fit(); break;
@@ -318,10 +399,25 @@ export class WorldMapController extends BaseController {
             banners.push({ wp, x, y });
             hitboxes.push({ id: 'wp_' + wp.id, x: x - 22, y: y - 54, w: 44, h: 62, zIndex: 5 });
         }
+        // the pins in view (over the banners: a pin is small and put down on purpose)
+        const pins = [];
+        for (const m of this.markers()) {
+            const x = sx(m.col + 0.5), y = sy(m.row + 0.5);
+            if (x < VIEW.x - 20 || x > VIEW.x + VIEW.w + 20 || y < VIEW.y - 10 || y > VIEW.y + VIEW.h + 40) continue;
+            pins.push({ m, x, y, fill: markerColor(m).fill });
+            hitboxes.push({ id: 'mk_' + m.id, x: x - 16, y: y - 40, w: 32, h: 44, zIndex: 6 });
+        }
         const picked = this.selectedWaypoint();
         const plan = picked ? this.travelPlan() : null;
+        const marker = this.selectedMarker();
         const panel = { x: VIEW.x + 20, y: VIEW.y + VIEW.h - 150, w: 660, h: 130 };
         if (picked) hitboxes.push({ id: 'btn_fast_travel', x: panel.x + panel.w - 210, y: panel.y + panel.h - 72, w: 190, h: 56, zIndex: 11, label: 'Fast Travel' });
+        if (marker) {
+            hitboxes.push({ id: 'btn_marker_remove', x: panel.x + panel.w - 190, y: panel.y + panel.h - 72, w: 170, h: 56, zIndex: 11, label: 'Remove' });
+            hitboxes.push({ id: 'btn_marker_color', x: panel.x + panel.w - 376, y: panel.y + panel.h - 72, w: 170, h: 56, zIndex: 11, label: 'Colour' });
+        }
+        const placeBtn = hitboxes.find(h => h.id === 'btn_marker');
+        if (placeBtn && this.placing) placeBtn.label = 'Cancel';
         this.hitboxes = hitboxes;
         this.updateHitboxes(hitboxes);
 
@@ -338,6 +434,9 @@ export class WorldMapController extends BaseController {
             hoveredHitboxId: this.getFocusId(),
             dragging: !!this.drag,
             banners,
+            pins,
+            placing: this.placing,
+            selectedMarker: marker ? { ...marker, fill: markerColor(marker).fill, colorName: markerColor(marker).label, tiles: Math.round(Math.hypot(marker.col - this.player.x, marker.row - this.player.y)) } : null,
             selectedWaypoint: picked ? { ...picked, name: waypointName(picked) } : null,
             travelPlan: plan,
             currency: gameState.party.currency || 0,

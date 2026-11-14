@@ -298,6 +298,7 @@ export const SaveManager = {
                 villageStairs: clone(world.villageStairs || []),
                 levelPaths: clone(world.levelPaths || {}),
                 waypoints: clone(world.waypoints || []),
+                mapMarkers: clone(world.mapMarkers || []),   // the player's pins on the map (world/mapMarkers.js)
                 strangerHome: world.strangerHome || null,   // the workshop the Hooded Stranger lives in (InteriorFactory)
                 strangerDesertHome: world.strangerDesertHome || null,   // where he goes in act 2 (InteriorFactory.workshopResident)
                 nikoliCampfire: world.nikoliCampfire || null,           // Nikoli's camp, "col,row" of the campfire (WorldManager)
@@ -422,6 +423,7 @@ export const SaveManager = {
             villageStairs: data.world.villageStairs || [],
             levelPaths: data.world.levelPaths || {},
             waypoints: data.world.waypoints || [],
+            mapMarkers: data.world.mapMarkers || [],
             strangerHome: data.world.strangerHome || null,
             strangerDesertHome: data.world.strangerDesertHome || null,
             nikoliCampfire: data.world.nikoliCampfire || null,

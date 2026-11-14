@@ -377,6 +377,7 @@ export class SceneManager {
                     SaveManager.backupAutosave();
                     gameState.world.discoveredChunks = [];   // a new world has been seen by no one
                     gameState.world.waypoints = [];          // ... and holds no banners
+                    gameState.world.mapMarkers = [];         // ... and no pins on the map
                     this.tutorial.store.reset();   // every new game shows each screen's control card again (Settings > Replay Tips does the same by hand)
                 }
 

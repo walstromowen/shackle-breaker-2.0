@@ -175,3 +175,29 @@ test('every village keeps about three madmen in its streets, a disturbing sight 
     assert.ok(counts.length > 0, 'some villages were planned');
     for (const n of counts) assert.ok(n >= 2 && n <= 3, `about three madmen a village (got ${counts})`);
 });
+
+test('an encounter\'s unavoidable harm lands as its stage appears (the chest explodes), not when the button is pressed, and only once', async () => {
+    const { EncounterLogic } = await import('../../frontend/src/screens/encounter/encounterLogic.js');
+    gameState.party.members = [quiet(() => EntityFactory.create('HUMANOID', { level: 8 }))];
+    const hero = gameState.party.members[0];
+    const statuses = () => JSON.stringify(hero.statusEffects || hero.state?.statusEffects || []);
+    const hp0 = hero.hp;
+    const c = new EncounterController({ heldKeys: new Set(), isMouseDown: false, mouse: { x: 0, y: 0 } }, {}, {});
+    c.worldManager = { modifyWorld() {}, _placeObject() {}, _unplaceObject() {}, objects: new Map() };
+    c.model = EncounterFactory.create('treasure_chest', { col: 1, row: 1 }, 'chest_explosion');
+    c.textTimer = 0;
+    quiet(() => c._playStageCues());
+    assert.equal(hero.hp, hp0, 'nothing before the stage\'s moment');
+    c.textTimer = 99;
+    quiet(() => c._playStageCues());
+    const hp1 = hero.hp;
+    assert.ok(hp1 < hp0, 'the blast burns as the stage appears');
+    assert.match(statuses(), /burn/, 'and the burn is on at once');
+    c.pendingDecision = c.model.getCurrentStage().decisions[0];
+    quiet(() => c.executeLogic());
+    assert.equal(hero.hp, hp1, 'Brace for impact! does not burn again');
+    assert.ok(c.pendingLogicResponse.response.messages.some(m => /burn/.test(m)), 'what it did is still told after the button');
+    assert.ok(c.pendingLogicResponse.response.shouldEndEncounter);
+    // a stage with real choices waits for the choice
+    assert.deepEqual(EncounterLogic.entryResults(E.treasure_chest.stages[E.treasure_chest.initialStage] || {}), []);
+});

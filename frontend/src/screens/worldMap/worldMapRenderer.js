@@ -152,6 +152,7 @@ export class WorldMapRenderer {
         }
 
         this._banners(ctx, state);
+        this._pins(ctx, state, scale);
         this._graves(ctx, sx, sy, scale);
         this._others(ctx, sx, sy, scale);
         this._party(ctx, sx(player.x), sy(player.y), player.direction, scale);
@@ -168,12 +169,15 @@ export class WorldMapRenderer {
 
         // buttons, and the key help between them and the Back button (the Back button itself is drawn by SceneManager)
         this._travelPanel(ctx, ui, state);
+        this._markerPanel(ctx, ui, state);
         for (const b of state.hitboxes) {
             if (!b.label) continue;
             const cantPay = b.id === 'btn_fast_travel' && state.travelPlan && !state.travelPlan.affordable;
             ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, state.hoveredHitboxId, cantPay ? { disabled: true } : {}));
         }
-        ui.drawStyled('hint', `Arrows pan  ·  Wheel zooms  ·  F fits all  ·  C centers${state.interior ? '' : '  ·  T picks a waypoint'}`, 820, H - 48 - 28, { maxWidth: 900 });
+        const hint = state.placing ? 'Click the map to place the marker  ·  Esc or right-click stops'
+            : `Arrows pan  ·  Wheel zooms  ·  F fits  ·  C centers  ·  K marks${state.interior ? '' : '  ·  T waypoints'}`;
+        ui.drawStyled('hint', hint, 684, H - 48 - 28, { maxWidth: 630 });   // between the Back button (ends at 348) and the row of buttons (starts at 1020)
     }
 
     /* The waypoint banners: the banner sprite of the origin that planted it (its first frame) standing on its tile at any zoom; the picked one is bigger and ringed. */
@@ -201,6 +205,65 @@ export class WorldMapRenderer {
             }
             ctx.restore();
         }
+    }
+
+    /* The player's pins (world/mapMarkers.js): a coloured drop standing on its tile, its number on it once the map is near enough; the picked one ringed and named. */
+    _pins(ctx, state, scale) {
+        const k = Math.max(0.9, Math.min(1.5, 0.7 + scale / 8));
+        const sel = state.selectedMarker;
+        for (const { m, x, y, fill } of state.pins || []) {
+            const picked = sel && sel.id === m.id;
+            const r = (picked ? 11 : 9) * k, hy = y - r * 2.1;   // the head of the pin, above its point
+            ctx.save();
+            if (picked) {
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + (Math.sin(performance.now() * 0.005) + 1) * 0.2})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.ellipse(x, y, 16 * k, 6 * k, 0, 0, Math.PI * 2); ctx.stroke();
+            }
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - r * 0.8, hy + r * 0.6);
+            ctx.arc(x, hy, r, Math.PI * 0.8, Math.PI * 0.2);
+            ctx.closePath();
+            ctx.fillStyle = fill;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.stroke();
+            if (scale >= 2 || picked) {
+                ctx.font = `bold ${Math.round(11 * k)}px sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                ctx.fillText(String(m.id), x, hy + 0.5);
+            } else {
+                ctx.beginPath(); ctx.arc(x, hy, r * 0.35, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; ctx.fill();
+            }
+            if (picked) {
+                ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+                ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'; ctx.fillStyle = '#ffffff';
+                ctx.strokeText(m.label, x, hy - r - 6); ctx.fillText(m.label, x, hy - r - 6);
+            }
+            ctx.restore();
+        }
+    }
+
+    /* Bottom left of the window, while a pin is picked: its name and colour, how far it is, and its Colour / Remove buttons (drawn with the other buttons). */
+    _markerPanel(ctx, ui, state) {
+        const m = state.selectedMarker, p = state.panel;
+        if (!m || state.selectedWaypoint) return;
+        ctx.save();
+        ctx.fillStyle = 'rgba(12, 11, 9, 0.82)';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.strokeStyle = UITheme.colors.border;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(p.x + 1, p.y + 1, p.w - 2, p.h - 2);
+        ctx.fillStyle = m.fill;
+        ctx.beginPath(); ctx.arc(p.x + 36, p.y + 34, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'; ctx.stroke();
+        ctx.restore();
+        ui.drawStyled('subtitle', m.label, p.x + 56, p.y + 40, { align: 'left', maxWidth: 240 });
+        ui.drawStyled('label', `${m.tiles} tiles away`, p.x + 24, p.y + 78, { align: 'left' });
+        ui.drawStyled('label', `${m.colorName}  ·  ${m.col}, ${m.row}`, p.x + 24, p.y + 108, { align: 'left' });
     }
 
     /* The graves beaten multiplayer parties left on the overworld (world/graves.js): the cursed grave in a violet glow, mine named. */

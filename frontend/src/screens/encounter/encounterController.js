@@ -170,6 +170,7 @@ export class EncounterController extends BaseController {
     this.inputCooldown = 0.15;
     this.holdTimer = 0; this._holdArmed = false; this._wasDown = false; this._swallowClick = false; this._swallowTimer = 0; this.hintPulse = 0;
     this._cueKey = null;              // the stage whose sound cues (sfx / ambience) have been played
+    this._entry = null;               // what the stage on screen did to the party as it appeared (EncounterLogic.entryResults)
     this.rewardQueue = [];
     this.rewardItemsByMessage = {};   // reward message text -> [{id, qty}] (pictures of the items it lists)
     this.currentRewardItems = null;   // the items of the reward message on screen
@@ -992,7 +993,19 @@ export class EncounterController extends BaseController {
       if (def && def.consumesObject && resultsArray.some(r => r.type === 'END_ENCOUNTER' || r.type === 'START_BATTLE') && !resultsArray.some(r => r.type === 'DESTROY_OBJECT')) {
         resultsArray = [{ type: 'DESTROY_OBJECT' }, ...resultsArray];
       }
+      // what the stage already did to the party as it appeared is not done twice (pressed before its moment came: it lands now)
+      const entry = this._entry;
+      const entryHere = entry && entry.results.length && entry.key === `${this.model.instanceId}:${this.model.currentStageId}` && !entry.consumed;
+      if (entryHere) {
+        this._applyEntry();
+        entry.consumed = true;
+        resultsArray = resultsArray.filter(r => !EncounterLogic.ENTRY_RESULTS.has(r.type));   // (the stage's one outcome: entryResults took every one of these)
+      }
       const logicResponse = EncounterLogic.resolveResults(resultsArray, this.model, this.worldManager);
+      if (entryHere) {
+        logicResponse.messages.unshift(...entry.messages);
+        if (entry.isGameOver) logicResponse.isGameOver = true;
+      }
       this.pendingLogicResponse = { response: logicResponse, isStartingBattle, isGameOverTriggered };
     }
   }
@@ -1212,6 +1225,11 @@ export class EncounterController extends BaseController {
       const firstStage = this._cueKey === null || !String(this._cueKey).startsWith(`${this.model.instanceId}:`);
       this._cueKey = key;
       this._sfxPending = true;
+      // a new stage (not the reward screens, nor coming back from them to the stage they interrupted): its unavoidable harm is due
+      if (this.model.currentStageId !== 'encounter_rewards_stage' && !(this._entry && this._entry.key === key)) {
+        const results = EncounterLogic.entryResults(stage);
+        this._entry = { key, results, applied: results.length === 0, messages: [] };
+      }
       const ambience = stage.ambience !== undefined ? stage.ambience : (firstStage ? this.model.ambience : undefined);
       if (ambience === 'none') events.emit('STOP_AMBIENCE', { fadeTime: stage.ambienceFade ?? 2.0 });
       else if (ambience) events.emit('PLAY_AMBIENCE', { id: ambience, fadeTime: stage.ambienceFade ?? 3.0, volume: stage.ambienceVolume ?? 1.0 });   // ambienceVolume: 0..1, a quieter bed
@@ -1219,7 +1237,19 @@ export class EncounterController extends BaseController {
     if (this._sfxPending && this.textTimer >= STAGE_START_TIMER) {
       this._sfxPending = false;
       if (stage.sfx) events.emit('PLAY_SFX', { id: stage.sfx, volume: stage.sfxVolume ?? 1.0 });
+      this._applyEntry();   // with the blast, not after the button
     }
+  }
+
+  /* The stage's unavoidable harm (EncounterLogic.entryResults), once: the bars and status icons change now. What it says ("afflicted with burn")
+     is kept and shown after the button, where the decision's own messages are. */
+  _applyEntry() {
+    const e = this._entry;
+    if (!e || e.applied || !this.model || e.key !== `${this.model.instanceId}:${this.model.currentStageId}`) return;
+    e.applied = true;
+    const res = EncounterLogic.resolveResults(e.results, this.model, this.worldManager);
+    e.messages = res.messages || [];
+    e.isGameOver = !!res.isGameOver;
   }
 
   getState() {
