@@ -34,7 +34,7 @@ export class OverworldUIRenderer {
             hoveredHitboxId, isMenuOpen, menuToggleHitbox, dropdownHitboxes, 
             trackedQuests, toasts, facedObject, camera,
             isHarvesting, harvestTimer, harvestDuration, harvestTarget,
-            hotbar, notice, skillPointReady, questReady, worldInfo
+            hotbar, notice, skillPointReady, questReady, worldInfo, whisper
         } = state || {};
 
         const ui = new CanvasUI(ctx);
@@ -87,6 +87,7 @@ export class OverworldUIRenderer {
             this.drawHotbar(ctx, ui, hotbar, hoveredHitboxId, notice);
         }
 
+        if (whisper) this.drawWhisper(ctx, whisper);
         if (state && state.mpMessages && state.mpMessages.length) this.drawMultiplayerMessages(ctx, ui, state.mpMessages);
         if (state && state.mpParty) {
             const p = state.mpParty;
@@ -208,6 +209,27 @@ export class OverworldUIRenderer {
         if (hovered && hovered.defId) {
             ui.drawMessageBox(hovered.name, cx, stackY, { kind: 'info', bottom: true, maxWidth: ctx.canvas.width - 200 });
         }
+    }
+
+    /* The voices' words (engine/voicesPlayer.js): pale italic text at the edge of the screen on the side the whisper came from, drifting up as it
+       fades in and out. The louder the voices, the plainer the words and the more they tremble, and the redder they run. */
+    drawWhisper(ctx, w) {
+        const { width, height } = ctx.canvas;
+        const fade = w.t < 0.2 ? w.t / 0.2 : w.t > 0.7 ? (1 - w.t) / 0.3 : 1;
+        const x = width / 2 + w.pan * width * 0.33;
+        const y = height * 0.36 - w.t * 40;
+        const shake = w.level > 0.7 ? (Math.random() - 0.5) * 4 * w.level : 0;
+        const red = Math.round(200 + 55 * w.level), gb = Math.round(215 - 120 * w.level);
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, fade) * (0.45 + 0.4 * w.level);
+        ctx.font = `italic 400 ${Math.round(26 + 10 * w.level)}px "Cormorant Garamond", Georgia, serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = `rgb(${red}, ${gb}, ${gb})`;
+        ctx.fillText(w.text, x + shake, y + shake);
+        ctx.restore();
     }
 
     // --- NEW: Draw a floating progress bar above the object being harvested ---

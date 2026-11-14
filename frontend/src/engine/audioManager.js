@@ -332,6 +332,35 @@ class AudioManager {
     // NEW: Ambient Audio Methods
     // =========================================================
     /* volume: 0..1 of the ambience bus (default 1). Asking again for the track that is already playing only eases it to the new volume. */
+    /* One whisper of the voices (shared/story/voices.js, engine/voices.js): the whispers sound at `rate` (pitch and speed), from `pan` (-1 left .. 1
+       right), at `volume`, on the ambience channel (its slider sets how loud the voices can get). It fades in and out, so it never clicks. */
+    playWhisper(volume = 0.5, rate = 1, pan = 0, key = 'whispers') {
+        if (!this.isInitialized || !this.loader || !this.ctx) return;
+        const buffer = this.loader.get(key);
+        if (!buffer) return;
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.playbackRate.value = Math.max(0.5, Math.min(2, rate));
+        const gain = this.ctx.createGain();
+        const now = this.ctx.currentTime, length = buffer.duration / source.playbackRate.value;
+        const vol = Math.max(0, Math.min(1, volume));
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(vol, now + Math.min(0.6, length / 3));
+        gain.gain.setValueAtTime(vol, now + Math.max(0.6, length - 0.8));
+        gain.gain.linearRampToValueAtTime(0, now + length);
+        let out = gain;
+        if (this.ctx.createStereoPanner) {
+            const panner = this.ctx.createStereoPanner();
+            panner.pan.value = Math.max(-1, Math.min(1, pan));
+            gain.connect(panner);
+            out = panner;
+        }
+        source.connect(gain);
+        out.connect(this.ambientGain);
+        source.start(now);
+        source.stop(now + length + 0.05);
+    }
+
     playAmbience(key, fadeTime = 2.0, volume = 1.0) { // Longer default fade for weather
         if (!this.isInitialized || !this.loader) return;
         const vol = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 1.0;

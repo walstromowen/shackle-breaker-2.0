@@ -79,6 +79,7 @@ import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
 import { PARTY_SCALING, bossHpFactor } from '../../../shared/battle/spawnTableFactory.js';
 import { Dolos } from '../../../shared/story/dolos.js';
+import { VoicesPlayer } from './voicesPlayer.js';
 import { ENTITY_DEFINITIONS } from '../../../shared/characters/entityDefinitions.js';
 import { dropGrave } from '../../../shared/world/graves.js';
 import { encounterDefinitions } from '../../../shared/story/encounterDefinitions.js';
@@ -147,6 +148,8 @@ export class SceneManager {
         this.encounterRenderer = new EncounterRenderer(this.config, this.loader);
         this.transitionRenderer = new TransitionRenderer(this.config); this.transitionRenderer.loader = this.loader;   // the loading screen shows an item's icon
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
+        // the voices: whispers of madness on the overworld, as loud as Dolos makes them (engine/voicesPlayer.js, story/voices.js)
+        this.voices = new VoicesPlayer();
         this.partyRenderer = new PartyRenderer(this.ctx, this.loader);
         this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader);
         this.levelUpRenderer = new LevelUpRenderer(this.ctx, this.config, this.loader);
@@ -382,7 +385,7 @@ export class SceneManager {
                     console.log(`%c[SceneManager] Generating World with finalized seed: ${gameState.seed}`, 'color: #00ff00');
                     if (this.worldManager && this.worldManager.dropPendingWork) this.worldManager.dropPendingWork();   // the old world is gone: never finish its plans in the new one
                     this.worldManager = new WorldManager();
-                    this.overworldController = new OverworldController(this.input, this.config, this.worldManager);
+                    this.overworldController = new OverworldController(this.input, this.config, this.worldManager); this.overworldController.voices = this.voices;
                     this.encounterController = new EncounterController(this.input, this.config, this.worldManager);
                     this.battleController = new BattleController(this.input, this.config, this.worldManager);
                     this._prebuildWorld(gameState.player.col, gameState.player.row);
@@ -1019,6 +1022,7 @@ export class SceneManager {
         if (['overworld', 'encounter', 'battle'].includes(this.currentScene)) {
             if (this.currentScene === 'overworld') {
                 this.timeSystem.update(dt);
+                if (this.overworldController && !this.overworldController.isLocked && !this.tutorial.blocking) this.voices.update(dt);
             }
             const camera = this.overworldController.getState().camera;
             if (this.weatherRenderer.update && camera) {
