@@ -58,7 +58,7 @@ test('pools and recovery: Dexterity and Strength feed stamina, Attunement and In
 });
 
 // the starting backgrounds (characterCreatorLogic.js): [vigor, strength, dexterity, intelligence, attunement]
-const BACKGROUNDS = { Warrior: [13, 15, 9, 7, 6], Thief: [9, 8, 16, 9, 8], Ranger: [10, 9, 15, 8, 8], Scholar: [8, 7, 9, 14, 12], Hermit: [10, 7, 9, 13, 11], Traveler: [11, 11, 10, 9, 9] };
+const BACKGROUNDS = { Warrior: [13, 15, 9, 7, 6], Thief: [9, 8, 16, 9, 8], Ranger: [10, 9, 15, 8, 8], Scholar: [8, 7, 9, 14, 12], Hermit: [10, 7, 9, 9, 15], Traveler: [11, 11, 10, 9, 9] };
 const at = ([vigor, strength, dexterity, intelligence, attunement]) => attackOf({ vigor, strength, dexterity, intelligence, attunement });
 
 test('the backgrounds hit hardest with the types their best attributes feed', () => {
@@ -194,7 +194,7 @@ test('weapon requirements rise with the upgrade level, and every starting backgr
     // characterCreatorLogic.js: [vigor, strength, dexterity, intelligence, attunement] and the weapon each starts with
     const STARTS = { Traveler: [[11, 11, 10, 9, 9], 'shortsword'], Blacksmith: [[15, 13, 8, 7, 7], 'shortsword'], Ranger: [[10, 9, 15, 8, 8], 'shortbow'],
         Scholar: [[8, 7, 9, 14, 12], 'insight_of_arcane'], Warrior: [[13, 15, 9, 7, 6], 'handaxe'], Thief: [[9, 8, 16, 9, 8], 'dagger'],
-        Hermit: [[10, 7, 9, 13, 11], 'insight_of_earth'], Farmer: [[15, 12, 9, 7, 7], 'scythe'], BountyHunter: [[12, 11, 14, 7, 6], 'shortsword'] };
+        Hermit: [[10, 7, 9, 9, 15], 'insight_of_earth'], Farmer: [[15, 12, 9, 7, 7], 'scythe'], BountyHunter: [[12, 11, 14, 7, 6], 'shortsword'] };
     for (const [name, [[vigor, strength, dexterity, intelligence, attunement], weapon]] of Object.entries(STARTS)) {
         const unmet = unmetRequirements(requirementsAt(weapon, 1), { vigor, strength, dexterity, intelligence, attunement });
         assert.deepEqual(unmet, [], `${name} can use the ${weapon} they start with`);

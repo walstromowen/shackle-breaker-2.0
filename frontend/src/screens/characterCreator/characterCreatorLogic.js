@@ -59,7 +59,7 @@ export const CREATION_DATA = {
         {
             id: "HERMIT", label: "Hermit",
             desc: "Most of those who studied magic wished to stay as close to the artifact as possible. However, for better or for worse, a handful decided to study magic in solitude.",
-            attributes: { vigor: 10, strength: 7, dexterity: 9, intelligence: 13, attunement: 11 }, // Sum: 50
+            attributes: { vigor: 10, strength: 7, dexterity: 9, intelligence: 9, attunement: 15 }, // Sum: 50. Attuned to the elements (its Insight of Earth hits with attunement), where the Scholar reasons
             equipment: { mainHand: "insight_of_earth", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {

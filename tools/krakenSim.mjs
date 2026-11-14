@@ -35,7 +35,7 @@ const CLASSES = {
     Traveler: { a: [11, 11, 10, 9, 9], weapon: 'shortsword', armor: 'leather' }, Blacksmith: { a: [15, 13, 8, 7, 7], weapon: 'shortsword', armor: 'iron' },
     Ranger: { a: [10, 9, 15, 8, 8], weapon: 'shortbow', armor: 'leather' }, Scholar: { a: [8, 7, 9, 14, 12], weapon: 'insight_of_arcane', armor: 'cloth' },
     Warrior: { a: [13, 15, 9, 7, 6], weapon: 'handaxe', armor: 'iron' }, Thief: { a: [9, 8, 16, 9, 8], weapon: 'dagger', armor: 'leather' },
-    Hermit: { a: [10, 7, 9, 13, 11], weapon: 'insight_of_earth', armor: 'cloth' }, Farmer: { a: [15, 12, 9, 7, 7], weapon: 'scythe', armor: 'iron' },
+    Hermit: { a: [10, 7, 9, 9, 15], weapon: 'insight_of_earth', armor: 'cloth' }, Farmer: { a: [15, 12, 9, 7, 7], weapon: 'scythe', armor: 'iron' },
     BountyHunter: { a: [12, 11, 14, 7, 6], weapon: 'shortsword', armor: 'leather' },
 };
 const ATTRS = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
