@@ -23,6 +23,7 @@
 import { gameState } from '../core/gameState.js';
 import { worldSync } from '../core/worldSync.js';
 import { events } from '../core/eventBus.js';
+import { StatCalculator } from '../characters/statCalculator.js';
 
 export const PHASES = ['respite', 'calm', 'stirring', 'gaze'];
 
@@ -45,6 +46,20 @@ export const TEMPERAMENTS = {
     nightmare: { tensionPerHour: 5,   gazeHours: 10, gazeFights: 5, respiteHours: 5 }
 };
 export const THRESHOLDS = { stirring: 50, gaze: 100 };
+
+/* His counters: the enemies he sends are readied against the party he has been watching (counter()). The chance an enemy is readied, by phase,
+   is COUNTER_CHANCE[phase] x (edge + 0.25): never in his respite, now and then while calm, often in his gaze, and most against a party that is
+   far ahead. A readied enemy gets the trait that blunts the party's main kind of damage, armour against it (a humanoid that can wear it), and its
+   weapon forged up to the party's own weapon level (up to one below outside his gaze). A party far ahead (edge > 0.5) also meets Tough foes. */
+export const COUNTER_CHANCE = { respite: 0, calm: 0.15, stirring: 0.35, gaze: 0.6 };
+const PHYSICAL = ['blunt', 'slash', 'pierce'];
+/* the trait that blunts each kind of damage, and the armour against it */
+export const COUNTERS = {
+    physical: { trait: 'ironhide', armor: ['iron_armor', 'iron_helmet'] },
+    fire:     { trait: 'pyromaniac', armor: ['cloth_robe', 'cloth_hood'] },
+    dark:     { trait: 'nocturnal', armor: ['cloth_robe', 'cloth_hood'] },
+    magic:    { trait: 'tough', armor: ['cloth_robe', 'cloth_hood'] }
+};
 const MEMORY = 6;
 export const GRACE_LEVEL = 5;                     // he takes no notice of a party below this level: the opening hours are the player's own                                 // the fights he remembers when he weighs the party
 const WEAPON_DUE = [1, 4, 9, 15, 22];            // the levels a weapon is usually upgraded by (tools/playthroughSim.mjs): the curve he holds the party to
@@ -100,6 +115,74 @@ export const Dolos = {
         const fights = this.state(state).fights || [];
         const perf = fights.length ? fights.reduce((s, f) => s + f, 0) / fights.length : 0;
         return clamp(0.4 * gear + 0.6 * perf, -1, 1);
+    },
+
+    /** What he has learned of the party: the damage it relies on (each member's strongest attack, weighed by how strong it is; every character
+     *  has some of every kind, so the sum would say nothing), whether that is mostly physical, and its weapons' and armour's levels on average. */
+    profile(state = gameState) {
+        const members = (state.party && state.party.members || []).filter(Boolean);
+        const attack = {};
+        let weapons = 0, wn = 0, armor = 0, an = 0;
+        for (const m of members) {
+            let st = null;
+            try { st = StatCalculator.calculate(m); } catch (e) { st = null; }
+            const best = Object.entries((st && st.attack) || {}).sort((a, b) => (b[1] || 0) - (a[1] || 0))[0];
+            if (best) attack[best[0]] = (attack[best[0]] || 0) + (best[1] || 0);
+            const eq = m.equipment || (m.state && m.state.equipment) || {};
+            const w = eq.mainHand || eq.twoHand;
+            if (w && typeof w === 'object') { weapons += w.level || 1; wn++; }
+            if (eq.torso && typeof eq.torso === 'object') { armor += eq.torso.level || 1; an++; }
+        }
+        const total = Object.values(attack).reduce((s, v) => s + v, 0) || 1;
+        const physical = PHYSICAL.reduce((s, k) => s + (attack[k] || 0), 0) / total;
+        const magic = Object.entries(attack).filter(([k]) => !PHYSICAL.includes(k)).sort((a, b) => b[1] - a[1])[0];
+        const kind = physical >= 0.5 ? 'physical' : (magic && (magic[0] === 'fire' || magic[0] === 'dark') ? magic[0] : 'magic');
+        return { kind, physical, attack, weaponLevel: wn ? Math.round(weapons / wn) : 1, armorLevel: an ? Math.round(armor / an) : 1 };
+    },
+
+    /**
+     * Readies one enemy against the party, now and then (COUNTER_CHANCE, by phase and edge): the trait that blunts its main damage, armour against
+     * it, a weapon forged to the party's level. Never a boss or a boss's limb. `makeItem(defId, level)` builds an item (the scene manager's).
+     * @returns {{ countered: boolean, trait: string|null, weapon: number, armor: string[] }}
+     */
+    counter(entity, { rand = Math.random, makeItem = null, bossOrLimb = false } = {}, state = gameState, bloodMoon = false) {
+        const done = { countered: false, trait: null, weapon: 0, armor: [] };
+        const st = entity && (entity.state || entity);
+        if (!st || bossOrLimb || (st.tags || []).includes('BOSS')) return done;
+        const phase = this.effects(state, bloodMoon).phase;
+        const edge = this.edge(state);
+        const chance = (COUNTER_CHANCE[phase] || 0) * Math.max(0, edge + 0.25);
+        if (!(chance > 0) || rand() >= chance) return done;
+        done.countered = true;
+        const p = this.profile(state);
+        const c = COUNTERS[p.kind] || COUNTERS.physical;
+        const traits = st.traits || (st.traits = []);
+        for (const t of [c.trait, ...(edge > 0.5 && c.trait !== 'tough' ? ['tough'] : [])]) {
+            if (!traits.includes(t)) { traits.push(t); done.trait = done.trait || t; }
+        }
+        if (!makeItem) return done;
+        const eq = st.equipment || {};
+        // the weapon: forged up to the party's level (one below outside his gaze), never down
+        const weaponLevel = Math.max(1, p.weaponLevel - (phase === 'gaze' ? 0 : 1));
+        for (const slot of ['mainHand', 'twoHand']) {
+            const it = eq[slot];
+            if (!it) continue;
+            const defId = typeof it === 'string' ? it : (it.defId || it.id);
+            const level = (typeof it === 'object' && it.level) || 1;
+            if (weaponLevel <= level) continue;
+            const better = makeItem(defId, weaponLevel);
+            if (better && (better.level || 1) > level) { eq[slot] = better; done.weapon = better.level; }
+        }
+        // armour against the party's damage, for a humanoid with the slot to wear it (the helmet only in his gaze)
+        if ((st.tags || []).includes('HUMANOID')) {
+            for (const id of c.armor.slice(0, phase === 'gaze' ? 2 : 1)) {
+                const piece = makeItem(id, Math.max(1, p.armorLevel));
+                if (!piece || !piece.slot || !(piece.slot in eq) || eq[piece.slot]) continue;
+                eq[piece.slot] = piece;
+                done.armor.push(id);
+            }
+        }
+        return done;
     },
 
     /** What he is doing to the world now (PHASE_EFFECTS of the phase, a blood moon counted as at least stirring), with the phase. */

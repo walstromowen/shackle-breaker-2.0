@@ -672,11 +672,14 @@ export class SceneManager {
                 }
 
                 const enemyEntity = EntityFactory.create(enemyId, factoryOverrides);
-                // the act may make it stronger still: one more trait, better gear (actDefinitions.js enemyBoosts; never a boss)
-                ActSystem.boostEnemy(enemyEntity, { makeItem: (defId, level) => {
+                const makeItem = (defId, level) => {
                     const def = ItemDefinitions[defId];
                     return def ? ItemFactory.createItem(defId, { level: Math.min(def.maxLevel || 1, level) }) : null;
-                } });
+                };
+                // the act may make it stronger still: one more trait, better gear (actDefinitions.js enemyBoosts; never a boss)
+                ActSystem.boostEnemy(enemyEntity, { makeItem });
+                // and Dolos may have readied it against this party: a trait against its damage, armour, a weapon forged to its level (story/dolos.js)
+                Dolos.counter(enemyEntity, { makeItem, bossOrLimb }, gameState, ActSystem.isBloodMoon((gameState.world.time || 0) / 60));
                 scaledEnemies.push(enemyEntity);
             }
             

@@ -153,3 +153,65 @@ test('only the world\'s owner moves him; the others play by the state they are s
         assert.equal(JSON.stringify(Dolos.state()), before, 'a guest never moves him');
     } finally { worldSync.onLocalChange = null; worldSync.ownsWorld = true; }
 });
+
+// ---- his counters: enemies readied against the party's build ----
+const makeItem = (defId, level) => { const it = ItemFactory.createItem(defId); if (it) it.level = Math.min(it.maxLevel || 1, level); return it; };
+const CASTER = { vigor: 9, strength: 6, dexterity: 7, intelligence: 12, attunement: 20 };
+const partyWith = (weaponId, level = 10, weaponLevel = 5) => {
+    const w = ItemFactory.createItem(weaponId); w.level = weaponLevel;
+    const attributes = /^insight_of/.test(weaponId) ? { attributes: CASTER } : {};   // a caster leans on the elements
+    gameState.party.members = [quiet(() => EntityFactory.create('HUMANOID', { level, levelEdge: false, ...attributes, equipment: { [w.slot === 'twoHand' ? 'twoHand' : 'mainHand']: w } }))];
+};
+
+test('he reads the party: the damage it relies on, and its weapons\' level', () => {
+    reset();
+    partyWith('shortsword');
+    const p = Dolos.profile();
+    assert.equal(p.kind, 'physical');
+    assert.equal(p.weaponLevel, 5);
+    partyWith('insight_of_fire', 10, 3);
+    assert.equal(Dolos.profile().kind, 'fire');
+});
+
+test('a readied enemy: the trait that blunts the party\'s damage, armour against it, a weapon forged to the party\'s level', async () => {
+    const { COUNTERS } = await import('../../shared/story/dolos.js');
+    reset();
+    partyWith('shortsword');
+    for (let i = 0; i < 6; i++) Dolos.recordFight({ victory: true, hpLeft: 0.95 });   // far ahead
+    Dolos._enter(gameState, 'gaze');
+    const foe = quiet(() => EntityFactory.create('LEGIONARY', 10));
+    const st = foe.state || foe;
+    const done = Dolos.counter(foe, { rand: () => 0, makeItem });
+    assert.ok(done.countered);
+    assert.ok(st.traits.includes(COUNTERS.physical.trait) && st.traits.includes('tough'), `traits ${st.traits}`);
+    assert.equal(done.weapon, 5, 'its weapon forged to the party\'s level in his gaze');
+    assert.ok(done.armor.length >= 1 && done.armor.every(id => COUNTERS.physical.armor.includes(id)), `armour ${done.armor}`);
+    // against a fire party: the fire answer, and cloth (a beast gets the trait but no armour)
+    partyWith('insight_of_fire', 10, 3);
+    const cat = quiet(() => EntityFactory.create('SNOW_LEOPARD', 10));
+    const d2 = Dolos.counter(cat, { rand: () => 0, makeItem });
+    assert.ok((cat.state || cat).traits.includes('pyromaniac'));
+    assert.deepEqual(d2.armor, [], 'a beast wears nothing');
+});
+
+test('never a boss or its limbs, never in his respite, and rarely while he is calm with a party on the curve', async () => {
+    const { COUNTER_CHANCE } = await import('../../shared/story/dolos.js');
+    reset();
+    partyWith('shortsword');
+    Dolos._enter(gameState, 'gaze');
+    assert.equal(Dolos.counter(quiet(() => EntityFactory.create('DARIUS_THE_GROVELER', 15)), { rand: () => 0, makeItem }).countered, false);
+    assert.equal(Dolos.counter(quiet(() => EntityFactory.create('LEGIONARY', 10)), { rand: () => 0, makeItem, bossOrLimb: true }).countered, false);
+    Dolos._enter(gameState, 'respite');
+    assert.equal(Dolos.counter(quiet(() => EntityFactory.create('LEGIONARY', 10)), { rand: () => 0, makeItem }).countered, false);
+    assert.equal(COUNTER_CHANCE.respite, 0);
+    assert.ok(COUNTER_CHANCE.calm < COUNTER_CHANCE.stirring && COUNTER_CHANCE.stirring < COUNTER_CHANCE.gaze);
+    // a weapon is never forged down
+    reset();
+    partyWith('shortsword', 3, 1);
+    Dolos._enter(gameState, 'gaze');
+    const foe = quiet(() => EntityFactory.create('LEGIONARY', 10));
+    const eq = (foe.state || foe).equipment;
+    const before = eq.mainHand && eq.mainHand.level;
+    Dolos.counter(foe, { rand: () => 0, makeItem });
+    if (eq.mainHand && before) assert.ok(eq.mainHand.level >= before);
+});
