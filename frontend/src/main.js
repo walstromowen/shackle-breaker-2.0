@@ -379,6 +379,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     shackledMarchBgm: './assets/audio/music/shackled_march.mp3',
     prologueMarch: './assets/audio/sfx/encounters/story/prologue/prologue_march.wav',
     prologueWind: './assets/audio/sfx/encounters/story/prologue/prologue_wind.wav',
+    prologueMarchWind: './assets/audio/sfx/encounters/story/prologue/prologue_march_wind.mp3',   // the march with the wind 9 dB under it (90 s, both loops line up)
     chainSnap: './assets/audio/sfx/encounters/story/prologue/chain_snap.mp3',
     heartbeat: './assets/audio/sfx/encounters/story/prologue/heartbeat.mp3',
     // --- ENCOUNTER AMBIENCE (loops) AND STAGE SOUNDS (see the cues in data/encounters/*.js) ---

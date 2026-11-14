@@ -7,6 +7,10 @@
 //   node tools/voice/generateVoices.mjs --generate --raw <dir>   use <dir>/<line key>.mp3 (an untreated take, e.g. downloaded from the
 //                                                    ElevenLabs history) instead of recording: re-treats a take without paying for it again
 //   node tools/voice/generateVoices.mjs --sample "Some words." --voice <voiceId> --out sample.mp3      try a voice on one line
+//   node tools/voice/generateVoices.mjs --level         level every clip already recorded to the same loudness (LEVEL), in place: nothing is sent
+//
+// Every clip is levelled as it is made (after its "fx"): the whole clip is turned up or down to LEVEL's loudness (EBU R128, two passes, linear,
+// so the acting inside a line keeps its rise and fall), and its peaks are kept under LEVEL.tp, so no line plays much louder than another.
 //
 // Which encounters are voiced, and who speaks what: shared/story/voiceLines.js (VOICED, SPEAKERS). The voices: tools/voice/voices.json.
 // Clips go to frontend/src/assets/audio/voice/, named by the line's key and the voice that read it, with manifest.json mapping each line's
@@ -58,6 +62,34 @@ const FX = {
     // something deeper speaks along beneath it
     nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.85:80|190|340|520:0.32|0.23|0.16|0.09,highpass=f=60,lowpass=f=7000,volume=1.0'
 };
+/* Every clip's loudness: integrated loudness (LUFS) and true peak (dBTP). Speech in a game sits well at about -19 LUFS. */
+const LEVEL = { i: -19, tp: -1.5, lra: 11 };
+/** How loud a clip is: loudnorm's measurement ({ input_i, input_tp, ... }), or null when it cannot be measured (too short or silent). */
+function measure(audio) {
+    const m = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-f', 'mp3', '-i', 'pipe:0', '-af', `loudnorm=I=${LEVEL.i}:TP=${LEVEL.tp}:LRA=${LEVEL.lra}:print_format=json`, '-f', 'null', '-'], { input: audio, maxBuffer: 64 << 20 });
+    const json = /\{[\s\S]*\}/.exec(String(m.stderr || ''));
+    if (m.status !== 0 || !json) return null;
+    const s = JSON.parse(json[0]);
+    return Number.isFinite(Number(s.input_i)) && Number(s.input_i) > -60 ? s : null;
+}
+function ffmpegAf(audio, af) {
+    const r = spawnSync('ffmpeg', ['-loglevel', 'error', '-f', 'mp3', '-i', 'pipe:0', '-af', af, '-ar', '44100', '-b:a', '128k', '-f', 'mp3', 'pipe:1'], { input: audio, maxBuffer: 64 << 20 });
+    if (r.status !== 0 || !r.stdout || !r.stdout.length) throw new Error(`ffmpeg (level): ${String(r.stderr || r.error).slice(0, 300)}`);
+    return r.stdout;
+}
+/** The clip turned up or down to LEVEL: loudnorm, measured first, then applied linearly (the line's own rise and fall kept). A clip whose peaks
+ *  stop the linear pass short of LEVEL (a sharp shout in a quiet line) is lifted the rest of the way with a gentle limiter on those peaks.
+ *  A clip too short or quiet to measure is kept as it is. */
+function levelClip(audio) {
+    const s = measure(audio);
+    if (!s) return audio;
+    let out = ffmpegAf(audio, `loudnorm=I=${LEVEL.i}:TP=${LEVEL.tp}:LRA=${LEVEL.lra}:measured_I=${s.input_i}:measured_TP=${s.input_tp}:measured_LRA=${s.input_lra}:measured_thresh=${s.input_thresh}:offset=${s.target_offset}:linear=true`);
+    const after = measure(out);
+    const short = after ? LEVEL.i - Number(after.input_i) : 0;
+    if (short > 1.5) out = ffmpegAf(out, `volume=${short.toFixed(2)}dB,alimiter=limit=${Math.pow(10, LEVEL.tp / 20).toFixed(3)}:attack=5:release=60:level=disabled`);
+    return out;
+}
+
 function applyFx(name, audio) {
     if (!name) return audio;
     if (!FX[name]) throw new Error(`No sound treatment "${name}" (FX in generateVoices.mjs)`);
@@ -169,6 +201,21 @@ async function main() {
     for (const l of missing) bySpeaker[l.speaker] = (bySpeaker[l.speaker] || 0) + spokenText(l).length;
     console.log(`${lines.length} voiced lines in ${Object.keys(VOICED).join(', ')}; ${missing.length} need recording: ${chars} characters ${JSON.stringify(bySpeaker)}`);
 
+    if (flag('--level')) {
+        // every clip already made, levelled in place to LEVEL (the words keep their timings: the clip's length does not change)
+        let n = 0;
+        for (const e of Object.values(manifest)) {
+            const f = e && typeof e === 'object' && e.f && path.join(OUT_DIR, e.f);
+            if (!f || !fs.existsSync(f)) continue;
+            const audio = levelClip(fs.readFileSync(f));
+            fs.writeFileSync(f, audio);
+            e.d = mp3Duration(audio);
+            n++;
+        }
+        fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));
+        console.log(`Levelled ${n} clips to ${LEVEL.i} LUFS.`);
+        return;
+    }
     if (flag('--align')) {
         let n = 0;
         for (const l of lines) {
@@ -192,7 +239,7 @@ async function main() {
         const rawFile = opt('--raw') && path.join(opt('--raw'), `${l.key}.mp3`);
         const take = rawFile && fs.existsSync(rawFile) ? fs.readFileSync(rawFile)
             : await tts(v.id, spokenText(l), v.settings || CONFIG.defaultSettings, v.model || CONFIG.model);
-        const audio = applyFx(v.fx, take);
+        const audio = levelClip(applyFx(v.fx, take));
         fs.writeFileSync(path.join(OUT_DIR, fileOf(l)), audio);
         manifest[l.key] = { f: fileOf(l), d: mp3Duration(audio) };   // the file, and its length in seconds (the words on screen keep time with it)
         const w = await wordTimes(audio, l.text);

@@ -28,8 +28,8 @@ export const prologue = {
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 0, row: 0 },
             bgm: "plainsBgmDay",
-            ambience: "prologueMarch",
-            text: "You look down at your wrists. Metal shackles bind you to the prisoner ahead of you.",
+            ambience: "prologueMarchWind",   // the march, with the wind under it: the wind carries through the whole prologue
+            text: "Iron shackles bind your wrists, chained to the prisoner ahead of you.",
             decisions: [
                 {
                     text: "Continue.",
@@ -47,7 +47,7 @@ export const prologue = {
             decisions: [
                 {
                     text: "Walk.",
-                    customActionText: "You walk forward, as you have done for so long.",
+                    customActionText: "Forward, as you have walked for so long.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_others" } }] }]
                 }
             ]
@@ -56,6 +56,8 @@ export const prologue = {
             displayText: "The Prisoners",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 1, row: 0 },
+            sfx: "magicAddictCry",   // one of the prisoners ahead: the magic addicts' cry
+            sfxVolume: 0.55,
             text: "The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops.",
             decisions: [
                 {
@@ -65,7 +67,7 @@ export const prologue = {
                 },
                 {
                     text: "Ignore them.",
-                    customActionText: "You stare at the ground and keep walking, hoping to drown out their endless laughter.",
+                    customActionText: "Eyes on the ground, you keep walking, hoping to drown out their endless laughter.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
                 }
             ]
@@ -83,7 +85,7 @@ export const prologue = {
                 },
                 {
                     text: "Keep your eyes on the ground.",
-                    customActionText: "You count your steps and do not look up, hoping the guard did not notice your gaze.",
+                    customActionText: "Head down, you count your steps, hoping the guard did not notice your gaze.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 }
             ]
@@ -96,12 +98,12 @@ export const prologue = {
             decisions: [
                 {
                     text: "Walk.",
-                    customActionText: "You continue walking, your labored steps sinking into the mud.",
+                    customActionText: "On you walk, your labored steps sinking into the mud.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "slack" } }] }]
                 },
                 {
                     text: "Ask where you are going.",
-                    customActionText: "You sheepishly ask where you are going to anyone who is listening. After a short pause, the prisoners around you burst out in a chorus of laughter.",
+                    customActionText: "Sheepishly, you ask anyone who is listening where you are going. After a short pause, the prisoners around you burst out in a chorus of laughter.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "slack" } }] }]
                 }
             ]
@@ -140,7 +142,7 @@ export const prologue = {
             displayText: "Left Behind",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 1, row: 1 },
-            text: "You stand still, bewildered, as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.",
+            text: "Bewildered, you stand still as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.",
             decisions: [
                 {
                     text: "Continue.",
@@ -151,9 +153,8 @@ export const prologue = {
         awake: {
             displayText: "Awake",
             image: { sheet: "encounter_prologue", col: 2, row: 1 },
-            sfx: "heartbeat",
-            ambience: "none",
-            text: "You draw a steadying breath as reality grounds you. Before you stretches a silent, hollow wasteland.",
+            sfx: "heartbeat",   // (the wind goes on: it lasts the whole prologue)
+            text: "A steadying breath, and reality grounds you. Before you stretches a silent, hollow wasteland.",
             decisions: [
                 {
                     text: "Continue.",

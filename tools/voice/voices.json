@@ -20,23 +20,15 @@
         "stability": 0.5
       },
       "directions": {
-        "You look down at your wrists. Metal shackles bind you to the prisoner ahead of you.": "[hushed, slow, ominous] You look down at your wrists. Metal shackles bind you to the prisoner ahead of you.",
         "It pulls, and you follow. You don't remember how you got here, or how long you have been walking.": "[hushed, weary] It pulls, and you follow. You don't remember how you got here, or how long you have been walking.",
-        "You walk forward, as you have done for so long.": "[quiet, resigned] You walk forward, as you have done for so long.",
         "The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops.": "[low, unsettled] The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops.",
         "The prisoners' words make no sense, yet they laugh as if reminiscing over a shared memory.": "[low, uneasy] The prisoners' words make no sense, yet they laugh as if reminiscing over a shared memory.",
-        "You stare at the ground and keep walking, hoping to drown out their endless laughter.": "[quiet, tense] You stare at the ground and keep walking, hoping to drown out their endless laughter.",
         "A guard in dark armor walks beside you, his face hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.": "[low, wary] A guard in dark armor walks beside you, his face hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
         "The guard's expression is neutral, revealing nothing of his thoughts.": "[flat, uneasy] The guard's expression is neutral, revealing nothing of his thoughts.",
-        "You count your steps and do not look up, hoping the guard did not notice your gaze.": "[quiet, nervous] You count your steps and do not look up, hoping the guard did not notice your gaze.",
         "The road stretches endlessly ahead. Where this road ends, and why you walk it, you do not know.": "[slow, hollow] The road stretches endlessly ahead. Where this road ends, and why you walk it, you do not know.",
-        "You continue walking, your labored steps sinking into the mud.": "[weary, heavy] You continue walking, your labored steps sinking into the mud.",
-        "You sheepishly ask where you are going to anyone who is listening. After a short pause, the prisoners around you burst out in a chorus of laughter.": "[hesitant, then unsettling] You sheepishly ask where you are going to anyone who is listening. After a short pause, the prisoners around you burst out in a chorus of laughter.",
         "In an instant, a sound like a bell struck underwater fills your ears. The chain that binds you to the line breaks, and goes slack.": "[sudden, tense] In an instant, a sound like a bell struck underwater fills your ears. The chain that binds you to the line breaks, and goes slack.",
         "The chain lies broken in the dust, a few links still hanging from your wrists. You are free of the line.": "[quiet, stunned] The chain lies broken in the dust, a few links still hanging from your wrists. You are free of the line.",
         "The shackles are still locked around your wrists. You turn them over, searching for a keyhole, and find none.": "[low, dread creeping in] The shackles are still locked around your wrists. You turn them over, searching for a keyhole, and find none.",
-        "You stand still, bewildered, as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.": "[slow, bewildered, fading] You stand still, bewildered, as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.",
-        "You draw a steadying breath as reality grounds you. Before you stretches a silent, hollow wasteland.": "[a slow breath, quiet] You draw a steadying breath as reality grounds you. Before you stretches a silent, hollow wasteland.",
         "Memories flicker in and out of focus making it difficult to discern what is real and what is illusion.": "[unsteady, dreamlike] Memories flicker in and out of focus making it difficult to discern what is real and what is illusion.",
         "But looking down at your wrists one thing is for certain: something is terribly wrong...": "[slow, foreboding, almost a whisper] But looking down at your wrists one thing is for certain: something is terribly wrong...",
         "A hooded man leans against the workbench. He looks at your wrists before he looks at your face, and something in his own face closes.": "[grave, low, measured narration] A hooded man leans against the workbench. He looks at your wrists before he looks at your face, and something in his own face closes.",
@@ -123,7 +115,15 @@
         "A greatsword stands planted in the snow beside it, rimed with frost. A length of broken chain hangs from its hilt.": "[slow, mournful] A greatsword stands planted in the snow beside it, rimed with frost. A length of broken chain hangs from its hilt.",
         "Among the hoard, a broad man in dark Panzerian armour stands waiting, a greatsword in his hands. At his feet, chained and silent, kneels the hooded man.": "[low, tense, ominous] Among the hoard, a broad man in dark Panzerian armour stands waiting, a greatsword in his hands. At his feet, chained and silent, kneels the hooded man.",
         "He staggers back between the graves, frost bleeding from his wounds, and is gone into the dark.": "[low, tense] He staggers back between the graves, frost bleeding from his wounds, and is gone into the dark.",
-        "You break the chains. The hooded man rises slowly, rubbing his wrists.": "[quiet, relieved] You break the chains. The hooded man rises slowly, rubbing his wrists."
+        "You break the chains. The hooded man rises slowly, rubbing his wrists.": "[quiet, relieved] You break the chains. The hooded man rises slowly, rubbing his wrists.",
+        "Iron shackles bind your wrists, chained to the prisoner ahead of you.": "[hushed, slow, ominous] Iron shackles bind your wrists, chained to the prisoner ahead of you.",
+        "Forward, as you have walked for so long.": "[quiet, resigned] Forward, as you have walked for so long.",
+        "Eyes on the ground, you keep walking, hoping to drown out their endless laughter.": "[quiet, tense] Eyes on the ground, you keep walking, hoping to drown out their endless laughter.",
+        "Head down, you count your steps, hoping the guard did not notice your gaze.": "[quiet, nervous] Head down, you count your steps, hoping the guard did not notice your gaze.",
+        "On you walk, your labored steps sinking into the mud.": "[weary, heavy] On you walk, your labored steps sinking into the mud.",
+        "Sheepishly, you ask anyone who is listening where you are going. After a short pause, the prisoners around you burst out in a chorus of laughter.": "[hesitant, then unsettling] Sheepishly, you ask anyone who is listening where you are going. After a short pause, the prisoners around you burst out in a chorus of laughter.",
+        "Bewildered, you stand still as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.": "[slow, bewildered, fading] Bewildered, you stand still as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.",
+        "A steadying breath, and reality grounds you. Before you stretches a silent, hollow wasteland.": "[a slow breath, quiet] A steadying breath, and reality grounds you. Before you stretches a silent, hollow wasteland."
       }
     },
     "STRANGER": {
