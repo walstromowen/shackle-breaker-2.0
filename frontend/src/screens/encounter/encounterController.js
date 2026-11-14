@@ -365,13 +365,36 @@ export class EncounterController extends BaseController {
   /* `offerChance: 0.2` on a decision: this particular object (a chest at its spot on the map) offers that choice only that often. It is rolled the
      first time the object is looked at and kept in the world's changes (saved, and shared with the other players in a multiplayer world), so
      walking away and coming back offers the same choices. An encounter that is not about an object on the map rolls once per visit. */
+  /* `offerGroup: { id, variant, weights }` on decisions: this object is ONE of the group's variants, picked once (by `weights`, { variant: weight },
+     a variant no decision has meaning "none of them") and kept, and only the decisions of that variant are offered, in every stage of the
+     encounter. One carriage has a dead man whose ring will not come off, another one whose ring slips free, another no dead man at all. */
   _isOffered(decision, index) {
+    if (decision.offerGroup) {
+      const g = decision.offerGroup;
+      const chosen = this._kept(`group:${g.id}`, () => {
+        const entries = Object.entries(g.weights || {});
+        const total = entries.reduce((s, [, w]) => s + w, 0);
+        let r = withoutSeed(() => Math.random()) * total;
+        for (const [v, w] of entries) { r -= w; if (r <= 0) return v; }
+        return entries.length ? entries[entries.length - 1][0] : null;
+      });
+      if (chosen !== g.variant) return false;
+    }
     if (decision.offerChance === undefined || decision.offerChance >= 1) return true;
+    return this._kept(`${this.model.currentStageId}#${index}`, () => withoutSeed(() => Math.random()) < decision.offerChance);
+  }
+  /*
+    if (decision.offerChance === undefined || decision.offerChance >= 1) return true;
+    return this._kept(`${this.model.currentStageId}#${index}`, () => withoutSeed(() => Math.random()) < decision.offerChance);
+  }
+
+  /* A roll this object keeps: made the first time, then the same every visit (the world's changes: saved, and the same for every player). An
+     encounter that is not about an object on the map rolls once per visit. */
+  _kept(slot, roll) {
     const ctx = (this.model && this.model.context) || {};
-    const slot = `${this.model.currentStageId}#${index}`;
     if (ctx.col === undefined || ctx.row === undefined) {
       const rolled = (this.model.offered ||= {});
-      if (rolled[slot] === undefined) rolled[slot] = withoutSeed(() => Math.random()) < decision.offerChance;
+      if (rolled[slot] === undefined) rolled[slot] = roll();
       return rolled[slot];
     }
     const where = gameState.world.isInterior && gameState.world.interiorId ? `INT_${gameState.world.interiorId}_` : '';
@@ -379,7 +402,7 @@ export class EncounterController extends BaseController {
     const changes = gameState.world.changes || (gameState.world.changes = {});
     const kept = changes[key] && typeof changes[key] === 'object' ? changes[key] : {};
     if (kept[slot] === undefined) {
-      const next = { ...kept, [slot]: withoutSeed(() => Math.random()) < decision.offerChance };
+      const next = { ...kept, [slot]: roll() };
       changes[key] = next;
       if (worldSync.onLocalChange) worldSync.onLocalChange(key, next);   // the same choices for every player at this chest
       return next[slot];

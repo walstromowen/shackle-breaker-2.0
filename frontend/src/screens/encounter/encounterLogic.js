@@ -15,6 +15,7 @@ import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem
 import { rng, withoutSeed } from '../../../../shared/core/random.js';
 import { Dolos } from '../../../../shared/story/dolos.js';
 import { SCAR_TRAITS } from '../../../../shared/abilities/abilityTraits.js';
+import { ENTITY_DEFINITIONS } from '../../../../shared/characters/entityDefinitions.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { pushItemToast, pushTextToast } from '../../ui/toasts.js';
 import { UITheme } from '../../ui/UITheme.js';
@@ -580,6 +581,17 @@ export class EncounterLogic {
                         if (spawnModel && spawnModel.hasEnemies()) {
                             enemyList = [...enemyList, ...spawnModel.enemies];
                         }
+                    }
+                    // Dolos decides how many come (story/dolos.js): one fewer in his respite, more while he stirs or watches. A story set piece
+                    // (a betrayal, a fight with allies, one there is no running from, a boss) is left as it is written.
+                    {
+                        const isBoss = (e) => {
+                            const id = typeof e === 'string' ? e : (e && (e.id || e.templateId || (e.state && e.state.templateId)));
+                            const def = id && ENTITY_DEFINITIONS[id];
+                            const tags = (def && def.tags) || (e && e.state && e.state.tags) || [];
+                            return tags.includes('BOSS') || !!(def && def.fallsWith);
+                        };
+                        enemyList = Dolos.adjustEncounterGroup(enemyList, { rand: rng, isBoss, fixed: !!(payload.betrayer || payload.noEscape || (Array.isArray(payload.allies) && payload.allies.length)) });
                     }
                     let battleBgAsset = payload.background;
                     if (!battleBgAsset) {

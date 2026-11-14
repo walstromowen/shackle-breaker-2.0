@@ -430,11 +430,11 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "beast", "pierce"],
         battleMessage: "{user} drops on {target} talons first!",
-        icon: { col: 4, row: 2 },   // Bite's: the same tearing wound
+        icon: { col: 0, row: 13 },   // the artist's talons
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.95,
-        animationId: "bite",
+        animationId: "talon_strike",
         effects: [{ type: "damage", damageType: "pierce", power: 1.1 }],
         statusEffects: [{ id: "bleed", chance: 0.25, duration: 3 }]
     },
@@ -1090,7 +1090,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.15 }, { type: "dispel", tags: ["bleed"] }]   // heals half of what a healing herb does (minor_heal 0.3)
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.05 }, { type: "dispel", tags: ["bleed"] }]   // heals half of what a healing herb does (minor_heal 0.1)
     },
     "item_antidote": {
         id: "item_antidote",
@@ -1104,7 +1104,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.15 }, { type: "dispel", tags: ["poison"] }]
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.05 }, { type: "dispel", tags: ["poison"] }]
     },
     "item_aloe": {
         id: "item_aloe",
@@ -1118,7 +1118,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.15 }, { type: "dispel", tags: ["burn"] }]
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.05 }, { type: "dispel", tags: ["burn"] }]
     },
     "rest": {
         id: "rest",
@@ -1159,7 +1159,7 @@ export const AbilityDefinitions = {
     "minor_heal": {
         id: "minor_heal",
         name: "Minor Heal",
-        description: "Restores a small amount of health.",
+        description: "Restores a tenth of the user's health.",
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
@@ -1168,12 +1168,12 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.3 }]
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.1 }]
     },
     "minor_recover": {
         id: "minor_recover",
         name: "Minor Recover",
-        description: "Restores a small amount of stamina.",
+        description: "Restores a tenth of the user's stamina.",
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
@@ -1182,12 +1182,12 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "stamina", calculation: "percent", power: 0.3 }]
+        effects: [{ type: "recover", resource: "stamina", calculation: "percent", power: 0.1 }]
     },
     "minor_channel": {
         id: "minor_channel",
         name: "Minor Channel",
-        description: "Restores a small amount of insight.",
+        description: "Restores a tenth of the user's insight.",
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
@@ -1196,12 +1196,12 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "insight", calculation: "percent", power: 0.3 }]
+        effects: [{ type: "recover", resource: "insight", calculation: "percent", power: 0.1 }]
     },
     "moderate_heal": {
         id: "moderate_heal",
         name: "Moderate Heal",
-        description: "Restores a moderate amount of health.",
+        description: "Restores half of the user's health.",
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
@@ -1211,12 +1211,12 @@ export const AbilityDefinitions = {
         speedModifier: 1.0,
         accuracy: 1.0,
         // a Healing Tonic is worth five Healing Herbs (minor_heal is 30% of max HP each), so buying or brewing one pays off
-        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 1.5 }]
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.5 }]
     },
     "moderate_recover": {
         id: "moderate_recover",
         name: "Moderate Recover",
-        description: "Restores a moderate amount of stamina.",
+        description: "Restores half of the user's stamina.",
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
@@ -1230,7 +1230,7 @@ export const AbilityDefinitions = {
     "moderate_channel": {
         id: "moderate_channel",
         name: "Moderate Channel",
-        description: "Restores a moderate amount of insight.",
+        description: "Restores half of the user's insight.",
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
@@ -1407,12 +1407,12 @@ export const AbilityDefinitions = {
       // Note: The trait's onBattleStart logic will likely override this message, 
       // but it's good practice to have a fallback here.
       battleMessage: "{user} launches into the air!", 
-      icon: { col: 4, row: 2 }, 
+      icon: { col: 1, row: 13 },   // the artist's wings, as on the Flying status
       targeting: { scope: "self", select: "auto" },
       // a trait that casts it at the start of a fight (Airborne) pays nothing (battleQueue: ignoreCost); taking off again later costs stamina
       cost: { stamina: 15 },
       accuracy: 1.0,
-      animationId: "trait_activate",
+      animationId: "take_flight",
       effects: [],
       // This applies the mechanical buff. You'll need a corresponding "flying" 
       // or "airborne" status in your StatusDefinitions to handle the actual 

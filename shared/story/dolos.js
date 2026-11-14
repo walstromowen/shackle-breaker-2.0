@@ -185,6 +185,32 @@ export const Dolos = {
         return done;
     },
 
+    /**
+     * An encounter's fight, as he would have it (the enemies an encounter sends into battle: its own list, or a spawn table's roll): in his
+     * respite one fewer now and then (never fewer than one), while he stirs now and then one more, in his gaze often one more (and against a party
+     * far ahead, now and then a second). One more is a copy of one already there. A story set piece is left as it is written: pass `fixed`
+     * (a boss fight, one with allies, one there is no running from, a betrayal), or a list with a boss in it (`isBoss`).
+     * @param {Array} enemies  ids, configs ({ id, ... }) or built entities
+     * @returns {Array} the list he sends (a new array; the input is not changed)
+     */
+    adjustEncounterGroup(enemies, { rand = Math.random, fixed = false, isBoss = () => false } = {}, state = gameState, bloodMoon = false) {
+        const list = Array.isArray(enemies) ? [...enemies] : [];
+        if (fixed || !list.length || list.some(isBoss)) return list;
+        const phase = this.effects(state, bloodMoon).phase;
+        const copyOne = () => {
+            const pick = list[Math.floor(rand() * list.length) % list.length];
+            return typeof pick === 'string' ? pick : (pick && pick.state ? null : { ...pick });   // a built entity (a turned companion) is never copied
+        };
+        if (phase === 'respite') {
+            if (list.length > 1 && rand() < 0.5) list.pop();
+            return list;
+        }
+        const extra = phase === 'gaze' ? (rand() < 0.5 ? 1 : 0) + (this.edge(state) > 0.5 && rand() < 0.25 ? 1 : 0)
+            : phase === 'stirring' ? (rand() < 0.25 ? 1 : 0) : 0;
+        for (let i = 0; i < extra; i++) { const c = copyOne(); if (c) list.push(c); }
+        return list;
+    },
+
     /** What he is doing to the world now (PHASE_EFFECTS of the phase, a blood moon counted as at least stirring), with the phase. */
     effects(state = gameState, bloodMoon = false) {
         const d = this.state(state);

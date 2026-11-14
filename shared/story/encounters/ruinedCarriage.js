@@ -10,9 +10,11 @@
                       rotten board splinters into your hand (splinters).
      strongbox        success: the biggest haul, coin, a Shmindolyn's Draught and a merchant's goods (strongbox_open). Failure: the iron rings out,
                       and the herd comes (strongbox_noise).
-     the dead man     (body) [DEX 11] work the ring off his hand: a Noble's Ring (ring_noble) or, on a cord at his throat, a Royal Guard's Signet
-                      (ring_signet); failure snaps the finger, and the herd hears it (bone_snap). His journal starts the quest Cursed Populace
-                      (journal; offered until that quest has been taken up). Or leave him in peace.
+     the dead man     not on every carriage (offerGroup, picked once per carriage and kept: 45% his ring is stuck, 20% it hangs loose, 35% there
+                      is no dead man). Stuck (body): [DEX 11] work it off: a Noble's Ring (ring_noble) or, on a cord at his throat, a Royal Guard's
+                      Signet (ring_signet); failure snaps the finger, and the herd hears it (bone_snap). Loose (body_loose): it slips off, no roll.
+                      Half of them carry a journal, which starts the quest Cursed Populace (journal; offered until that quest has been taken up).
+                      Or leave him in peace.
      the herd         hunt it down first (hunt), or fight it when the noise brings it: 2 to 4 shackled steeds. Win, and the wagon can be searched at
                       leisure (ruined_carriage_cleared: the purse or the crates, the strongbox, or the dead man's ring, no roll needed).
    Every haul empties the carriage for good (REPLACE_OBJECT: RUINED_CARRIAGE_LOOTED): the purse 250 to 450 coin; the strongbox 350 coin, a Shmindolyn's
@@ -48,14 +50,20 @@ const ringFinds = [
     { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ring_noble" } }] },
     { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ring_signet" } }] }
 ];
+/* Not every carriage is the same (EncounterController offerGroup: picked once per carriage, kept, the same in every stage): a dead man whose ring
+   will not come off (stuck), one whose ring slips free (loose), or nobody at all; and only some of them carry a journal. */
+const BODY = { id: "carriage_body", weights: { stuck: 45, loose: 20, none: 35 } };
+const JOURNAL = { id: "carriage_journal", weights: { yes: 50, no: 50 } };
+const body = (variant) => ({ ...BODY, variant });
 const journal = {
-    text: "Take the journal from his coat.",
+    text: "Take the journal from inside his coat.",
+    offerGroup: { ...JOURNAL, variant: "yes" },
     conditions: [{ type: "quest_not_started", id: QUEST }],
     outcomes: toStage("journal")
 };
 
 const stages = {
-    discovery: stage("A covered wagon stands abandoned in the tall grass, its canvas stained and its team long gone. The traces hang empty, ending in links of black iron. A man in a good coat sits against the front wheel with his head bowed, as if he stopped to rest and never got up. Fresh hoofprints circle the wagon.", [
+    discovery: stage("A covered wagon stands abandoned in the tall grass, its canvas stained and its team long gone. The traces hang empty, ending in links of black iron. Fresh hoofprints circle the wagon.", [
         {
             text: "[DEX] Search the wagon bed.",
             type: "skill_check", attribute: "dexterity", threshold: 12,
@@ -71,19 +79,27 @@ const stages = {
             successOutcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "strongbox_open" } }] }],
             failureOutcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "strongbox_noise" } }] }]
         },
-        { text: "Search the dead man.", outcomes: toStage("body") },
+        // a dead man by the wheel, on some carriages: his ring stuck fast, or loose on a shrunken finger
+        { text: "Search the dead man slumped against the front wheel.", offerGroup: body("stuck"), outcomes: toStage("body") },
+        { text: "Search the dead man slumped against the front wheel.", offerGroup: body("loose"), outcomes: toStage("body_loose") },
         { text: "Hunt down the herd before you search.", outcomes: toStage("hunt") },
         { text: "Leave it be.", outcomes: [{ weight: 100, results: [END] }] }
     ]),
 
     // ---- the dead man ----
-    body: stage("He has been dead for days; the cold has kept him. His boots are good and his hands are soft. A ring glints on one swollen finger, and inside his coat is a journal wrapped in oilcloth.", [
+    body: stage("He has been dead for days; the cold has kept him. His boots are good and his hands are soft. A ring glints on one swollen finger, sunk deep in the flesh.", [
         {
             text: "[DEX] Work the ring off his hand.",
             type: "skill_check", attribute: "dexterity", threshold: 11,
             successOutcomes: ringFinds,
             failureOutcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "bone_snap" } }] }]
         },
+        journal,
+        { text: "Leave the dead in peace.", outcomes: [{ weight: 100, results: [END] }] }
+    ]),
+    // the same man, but the ring hangs loose on a finger the cold has shrunk: it comes away with no roll at all
+    body_loose: stage("He has been dead for days; the cold has kept him. His boots are good and his hands are soft. The flesh has shrunk on his fingers, and the ring hangs loose on one of them.", [
+        { text: "Slip the ring from his finger.", outcomes: ringFinds },
         journal,
         { text: "Leave the dead in peace.", outcomes: [{ weight: 100, results: [END] }] }
     ]),
@@ -120,7 +136,8 @@ const stages = {
             text: "Take your time over the strongbox.",
             outcomes: [{ weight: 1, results: [{ type: "ADVANCE_TIME", payload: { hours: 1 } }, { type: "ADVANCE_STAGE", payload: { stageId: "strongbox_open" } }] }]
         },
-        { text: "Search the dead man.", outcomes: ringFinds },
+        { text: "Search the dead man.", offerGroup: body("stuck"), outcomes: ringFinds },
+        { text: "Search the dead man.", offerGroup: body("loose"), outcomes: ringFinds },
         journal
     ]),
 

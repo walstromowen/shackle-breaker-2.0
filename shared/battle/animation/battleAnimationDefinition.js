@@ -243,6 +243,19 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.1, 0.6, 8), flash: flash(0.05, 0.8, 'brightness(180%) sepia(100%) hue-rotate(15deg) saturate(350%)') }
     }),
+    // Take Flight: a rush of air and wing beats; the wings sweep up from the flier and rise away while feathers and gusts scatter round it,
+    // and the flier itself hops up off the ground.
+    "take_flight": anim(1.6, {
+        seconds: true,
+        audio: [sfx(0.02, 'takeFlightSfx', { volume: 1 })],
+        actor: hop(0.05, 0.75, 70, { flash: flash(0.05, 0.6, 'brightness(130%) saturate(120%)') }),
+        vfx: [
+            spawn(0.05, 'takeFlightAnimation', { at: 'source', life: 0.9, move: 'float_up_and_pop', scale: 2.4, blend: 'normal' }),
+            spawn(0.12, 'takeFlightAnimation', { at: 'source', life: 0.7, move: 'expand_and_fade', scale: 3.2, blend: 'screen', alpha: 0.45 }),
+            ...repeat(0.05, 4, 0.12, t => burst(t, { at: 'source', count: 6, color: '#e8f2ff', shape: 'streak', length: 46, scale: 0.6, angle: 270, cone: 70, minSpeed: 260, maxSpeed: 460, minLife: 0.25, maxLife: 0.45, glow: false, envelope: true, offsetY: 40 })),
+            burst(0.1, { at: 'source', count: 12, color: '#f4f7fb', shape: 'fleck', scale: 0.7, minSpeed: 80, maxSpeed: 220, minLife: 0.7, maxLife: 1.1, gravity: 90, spinJitter: 4, glow: false, offsetY: 20 })
+        ]
+    }),
     "claw": anim(1.2, {
         audio: [sfx(0.1, 'clawSfx', { volume: 1, pitch: 1.1 })],
         actor: lunge(0, 0.15, 100),
@@ -250,6 +263,21 @@ export const BattleAnimationDefinitions = {
             spawn(0.1, 'clawAnimation', { life: 0.3, move: 'swipe_diagonal', scale: 1.6, blend: 'normal' })
         ],
         target: { shake: shake(0.1, 0.3, 22), flash: flash(0.1, 0.3, 'brightness(150%) sepia(100%) hue-rotate(330deg) saturate(300%)') }
+    }),
+    // Talon Strike: the attacker lunges; the talons drop onto the target out of the sky, a raking spray and a red flash where they bite.
+    "talon_strike": anim(1.3, {
+        seconds: true,
+        hit: 0.32,
+        audio: [sfx(0.02, 'talonStrikeSfx', { volume: 1 })],
+        actor: lunge(0, 0.3, 110),
+        vfx: [
+            spawn(0.05, 'talonStrikeAnimation', { life: 0.32, move: 'diagonal_drop', drop: [-260, -300], scale: 2.6, blend: 'normal', fadeOut: false }),
+            spawn(0.08, 'talonStrikeAnimation', { life: 0.3, move: 'diagonal_drop', drop: [-260, -300], scale: 2.6, blend: 'normal', alpha: 0.35 }),
+            spawn(0.34, 'clawAnimation', { life: 0.28, move: 'swipe_diagonal', scale: 1.8, blend: 'normal' }),
+            burst(0.34, { count: 14, color: '#c8202a', scale: 0.7, minSpeed: 160, maxSpeed: 380, minLife: 0.3, maxLife: 0.6, gravity: 700, angle: 60, cone: 70, glow: false }),
+            burst(0.34, { count: 8, color: '#ffb070', shape: 'streak', length: 60, scale: 0.7, minSpeed: 380, maxSpeed: 620, minLife: 0.18, maxLife: 0.3, angle: 45, cone: 40, envelope: true })
+        ],
+        target: { shake: shake(0.34, 0.7, 30), flash: flash(0.34, 0.6, 'brightness(170%) sepia(100%) hue-rotate(320deg) saturate(320%)') }
     }),
     "cleave": anim(1.5, {
         audio: [sfx(0.08, 'cleaveSfx', { volume: 1 })],

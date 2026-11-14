@@ -312,6 +312,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     bleedAnimation: './assets/abilityAnimations/bleed.png',
     burnAnimation: './assets/abilityAnimations/burn.png',
     clawAnimation: './assets/abilityAnimations/claw.png',
+    talonStrikeAnimation: './assets/abilityAnimations/talon_strike.png',   // the artist's talons (also the ability's icon)
+    takeFlightAnimation: './assets/abilityAnimations/take_flight.png',     // the artist's wings, as on the Flying status
     earthquakeAnimation: './assets/abilityAnimations/earthquake.png',
     eviscerateAnimation: './assets/abilityAnimations/eviscerate.png',
     firePunchAnimation: './assets/abilityAnimations/fire_punch.png',
@@ -466,6 +468,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     iceBoltCastSfx: './assets/audio/sfx/abilities/ice_bolt/ice_bolt_cast.mp3',
     iceBoltImpactSfx: './assets/audio/sfx/abilities/ice_bolt/ice_bolt_impact.mp3',
     clawSfx: './assets/audio/sfx/abilities/claw.mp3',
+    talonStrikeSfx: './assets/audio/sfx/abilities/talon_strike.mp3',   // a diving whoosh and a raking tear (ElevenLabs)
+    takeFlightSfx: './assets/audio/sfx/abilities/take_flight.mp3',     // heavy wing beats and a rising rush of air (ElevenLabs)
     vineLashSfx: './assets/audio/sfx/abilities/vine_lash.mp3',
     recklessChargeApproachSfx: './assets/audio/sfx/abilities/reckless_charge/reckless_charge_approach.mp3',
     recklessChargeImpactSfx: './assets/audio/sfx/abilities/reckless_charge/reckless_charge_impact.mp3',
