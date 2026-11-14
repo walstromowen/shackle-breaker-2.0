@@ -2,28 +2,12 @@ export const LootTableDefinitions = {
     // ==========================================
     // WEIGHTED POOLS (Pick exactly 1 item per roll)
     // ==========================================
-    "basic_materials_pool": {
-        type: "weighted",
-        items: [
-            { id: "soft_wood", weight: 60, min: 1, max: 3 },
-            { id: "stone", weight: 30, min: 1, max: 2 },
-            { id: "leather", weight: 10 } // Defaults to 1 if min/max omitted
-        ]
-    },
     // What picking up a stick gives: one piece of wood, hard wood one time in four
     "stick_wood": {
         type: "weighted",
         items: [
             { id: "soft_wood", weight: 3 },
             { id: "hard_wood", weight: 1 }
-        ]
-    },
-    "basic_weapons_pool": {
-        type: "weighted",
-        items: [
-            { id: "dagger", weight: 50 },
-            { id: "shortsword", weight: 30 },
-            { id: "spear", weight: 20 }
         ]
     },
     "plains": {
@@ -43,11 +27,10 @@ export const LootTableDefinitions = {
             { id: "fur", weight: 10, min: 1, max: 2 },
 
             // --- CONSUMABLES (Medium Drop Rate, Multiple Quantities) ---
-            { id: "healing_herb", weight: 40, min: 1, max: 2 },
+            { id: "healing_herb", weight: 65, min: 1, max: 2 },
             { id: "invigorating_herb", weight: 40, min: 1, max: 2 },
             { id: "illuminating_herb", weight: 40, min: 1, max: 2 },
             { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
-            { id: "healing_herb", weight: 25, min: 1, max: 2 },
             { id: "torch", weight: 20, min: 1, max: 2 },
             { id: "throwing_knife", weight: 15, min: 1, max: 3 },
             { id: "healing_tonic", weight: 8, min: 1, max: 1 },
@@ -134,11 +117,10 @@ export const LootTableDefinitions = {
             { id: "copper_ingot", weight: 8, min: 1, max: 1 },
 
             // --- CONSUMABLES (Medium Drop Rate, Multiple Quantities) ---
-            { id: "healing_herb", weight: 40, min: 1, max: 2 },
+            { id: "healing_herb", weight: 65, min: 1, max: 2 },
             { id: "invigorating_herb", weight: 40, min: 1, max: 2 },
             { id: "illuminating_herb", weight: 40, min: 1, max: 2 },
             { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
-            { id: "healing_herb", weight: 25, min: 1, max: 2 },
             { id: "torch", weight: 15, min: 1, max: 2 },
             { id: "throwing_knife", weight: 15, min: 1, max: 3 },
             { id: "poison_throwing_knife", weight: 8, min: 1, max: 2 },
@@ -201,7 +183,8 @@ export const LootTableDefinitions = {
             { id: "iron_armor", weight: 5, min: 1, max: 1 },
             { id: "iron_gauntlets", weight: 5, min: 1, max: 1 },
             { id: "iron_greaves", weight: 5, min: 1, max: 1 },
-            { id: "iron_boots", weight: 5, min: 1, max: 1 }
+            { id: "iron_boots", weight: 5, min: 1, max: 1 },
+            { id: "jar_of_shifting_sands", weight: 2, min: 1, max: 1 },   // rare: the sand never settles in it
         ]
     },
 
@@ -226,9 +209,8 @@ export const LootTableDefinitions = {
 
             // --- CONSUMABLES ---
             { id: "torch", weight: 30, min: 1, max: 3 },
-            { id: "healing_herb", weight: 25, min: 1, max: 2 },
+            { id: "healing_herb", weight: 45, min: 1, max: 2 },
             { id: "illuminating_herb", weight: 25, min: 1, max: 2 },
-            { id: "healing_herb", weight: 20, min: 1, max: 2 },
             { id: "healing_tonic", weight: 6, min: 1, max: 1 },
             { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
             { id: "invigorating_tonic", weight: 4, min: 1, max: 1 },
@@ -297,9 +279,8 @@ export const LootTableDefinitions = {
             { id: "plant_fibers", weight: 15, min: 1, max: 3 },
 
             // --- CONSUMABLES ---
-            { id: "healing_herb", weight: 30, min: 1, max: 2 },
+            { id: "healing_herb", weight: 55, min: 1, max: 3 },
             { id: "kurtus_brew", weight: 8, min: 1, max: 1 },
-            { id: "healing_herb", weight: 25, min: 1, max: 3 },
             { id: "healing_tonic", weight: 10, min: 1, max: 1 },
             { id: "invigorating_tonic", weight: 6, min: 1, max: 1 },
             { id: "throwing_knife", weight: 15, min: 1, max: 3 },
@@ -478,6 +459,7 @@ export const LootTableDefinitions = {
             { id: "poison_throwing_knife", weight: 8, min: 3, max: 6 },
             { id: "escape_rope", weight: 5, min: 1, max: 1 },
             { id: "royal_guards_signet", weight: 3, min: 1, max: 1 },   // rare: the Royal Guard kept these chests
+            { id: "shmindolyns_draught", weight: 3, min: 1, max: 1 },   // rare: worth locking away
         ]
     },
 
@@ -498,11 +480,10 @@ export const LootTableDefinitions = {
             { id: "copper_ingot", weight: 8, min: 1, max: 1 },
 
             // --- CONSUMABLES (Medium Drop Rate, Multiple Quantities) ---
-            { id: "healing_herb", weight: 40, min: 1, max: 2 },
+            { id: "healing_herb", weight: 70, min: 1, max: 2 },
             { id: "invigorating_herb", weight: 40, min: 1, max: 2 },
             { id: "illuminating_herb", weight: 40, min: 1, max: 2 },
             { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
-            { id: "healing_herb", weight: 30, min: 1, max: 2 },
             { id: "torch", weight: 25, min: 1, max: 2 },
             { id: "throwing_knife", weight: 10, min: 1, max: 2 },
             { id: "healing_tonic", weight: 10, min: 1, max: 1 },
@@ -571,9 +552,8 @@ export const LootTableDefinitions = {
     "mad_man_drops": {
         type: "independent",
         items: [
-            { id: "healing_herb", dropRate: 0.1, min: 1, max: 2 },
+            { id: "healing_herb", dropRate: 0.172, min: 1, max: 2 },
             { id: "dagger", dropRate: 0.10 },
-            { id: "healing_herb", dropRate: 0.08 },
             { id: "plant_fibers", dropRate: 0.08, min: 1, max: 2 },
             { id: "throwing_knife", dropRate: 0.05 },
             { id: "small_iron_key", dropRate: 0.02 },
@@ -583,9 +563,8 @@ export const LootTableDefinitions = {
     "madman_drops": {
         type: "independent",
         items: [
-            { id: "healing_herb", dropRate: 0.1, min: 1, max: 2 },
+            { id: "healing_herb", dropRate: 0.172, min: 1, max: 2 },
             { id: "dagger", dropRate: 0.10 },
-            { id: "healing_herb", dropRate: 0.08 },
             { id: "plant_fibers", dropRate: 0.08, min: 1, max: 2 },
             { id: "throwing_knife", dropRate: 0.05 },
             { id: "small_iron_key", dropRate: 0.02 },
@@ -601,9 +580,8 @@ export const LootTableDefinitions = {
     "rotter_drops": {
         type: "independent",
         items: [
-            { id: "healing_herb", dropRate: 0.1, min: 1, max: 2 },
+            { id: "healing_herb", dropRate: 0.172, min: 1, max: 2 },
             { id: "dagger", dropRate: 0.10 },
-            { id: "healing_herb", dropRate: 0.08 },
             { id: "plant_fibers", dropRate: 0.08, min: 1, max: 2 },
             { id: "throwing_knife", dropRate: 0.05 },
             { id: "small_iron_key", dropRate: 0.02 },
@@ -617,10 +595,9 @@ export const LootTableDefinitions = {
     "magic_addict_drops": {
         type: "independent",
         items: [
-            { id: "healing_herb", dropRate: 0.1 },
+            { id: "healing_herb", dropRate: 0.145 },
             { id: "dagger", dropRate: 0.05 },
             { id: "insight_of_arcane", dropRate: 0.15 },
-            { id: "healing_herb", dropRate: 0.05 },
             { id: "illuminating_tonic", dropRate: 0.04 },
             { id: "small_iron_key", dropRate: 0.02 },
             // a very rare piece of cloth armor (1% each)
@@ -661,7 +638,7 @@ export const LootTableDefinitions = {
     "scorched_vagrant_drops": {
         type: "independent",
         items: [
-            { id: "healing_herb", dropRate: 0.10 },
+            { id: "healing_herb", dropRate: 0.154 },
             { id: "illuminating_herb", dropRate: 0.10 },
             { id: "stone", dropRate: 0.20, min: 1, max: 2 },
             { id: "insight_of_fire", dropRate: 0.06 },
@@ -672,7 +649,6 @@ export const LootTableDefinitions = {
             { id: "sand", dropRate: 0.25, min: 1, max: 2 },
             { id: "salt", dropRate: 0.1 },
             { id: "cotton", dropRate: 0.1 },
-            { id: "healing_herb", dropRate: 0.06 },
             { id: "throwing_knife", dropRate: 0.04 },
             { id: "small_iron_key", dropRate: 0.02 },
         ]
@@ -835,7 +811,24 @@ export const LootTableDefinitions = {
             { id: "glaive", dropRate: 0.08 },
             { id: "large_iron_key", dropRate: 0.5 },
             { id: "panzerkamfer_saddle", dropRate: 0.35 },        // the war beast's own saddle, cut down
-            { id: "panzerian_spring_inserts", dropRate: 0.15 },   // (Jaeger fights from this table too)
+            { id: "panzerian_spring_inserts", dropRate: 0.15 },
+        ]
+    },
+    // Jaeger (act 3, JAEGER_BOSS): a Panzerian general's kit: his spring boots' inserts, his greatsword, the cold of the north. Beaten, he flees,
+    // and leaves behind what came loose in the fight.
+    "boss_jaeger_drops": {
+        type: "independent",
+        items: [
+            { id: "panzerian_spring_inserts", dropRate: 0.5 },
+            { id: "panzerian_greatsword", dropRate: 0.3 },
+            { id: "insight_of_ice", dropRate: 0.5 },
+            { id: "iron_gauntlets", dropRate: 0.3 },
+            { id: "iron_boots", dropRate: 0.3 },
+            { id: "bronze_ingot", dropRate: 0.5, min: 1, max: 3 },
+            { id: "iron_ingot", dropRate: 0.8, min: 2, max: 5 },
+            { id: "healing_tonic", dropRate: 0.6, min: 1, max: 2 },
+            { id: "kurtus_brew", dropRate: 0.4, min: 1, max: 2 },
+            { id: "large_iron_key", dropRate: 0.5 },
         ]
     },
     // The Dry Kraken: salt and hide from the deep, what it swallowed on the sea floor and under the dunes, and the insights of earth and water.
@@ -941,8 +934,7 @@ export const LootTableDefinitions = {
             { id: "leather", dropRate: 0.25, min: 1, max: 2 },
             { id: "flint", dropRate: 0.15 },
             { id: "torch", dropRate: 0.15 },
-            { id: "healing_herb", dropRate: 0.10 },
-            { id: "healing_herb", dropRate: 0.08 },
+            { id: "healing_herb", dropRate: 0.172 },
             { id: "spear", dropRate: 0.08 },
             { id: "dagger", dropRate: 0.05 },
             { id: "tattered_hood", dropRate: 0.10 },
@@ -1021,7 +1013,7 @@ export const LootTableDefinitions = {
     "watchman_drops": {
         type: "independent",
         items: [
-            { id: "healing_herb", dropRate: 0.10 },
+            { id: "healing_herb", dropRate: 0.19 },
             { id: "leather", dropRate: 0.15, min: 1, max: 2 },
             { id: "iron_ingot", dropRate: 0.10, min: 1, max: 2 },
             { id: "crossbow", dropRate: 0.06 },
@@ -1029,7 +1021,6 @@ export const LootTableDefinitions = {
             { id: "leather_armor", dropRate: 0.04 },
             { id: "iron_helmet", dropRate: 0.02 },
             { id: "torch", dropRate: 0.15 },
-            { id: "healing_herb", dropRate: 0.1 },
             { id: "throwing_knife", dropRate: 0.1, min: 1, max: 2 },
             { id: "bronze_ingot", dropRate: 0.04 },
             { id: "shortbow", dropRate: 0.04 },

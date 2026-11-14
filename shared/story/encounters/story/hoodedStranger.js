@@ -29,16 +29,15 @@
 import { gameState } from '../../../core/gameState.js';
 import { QuestModel } from '../../questModel.js';
 import { movedNorth, heroesOutcome, has as hasMilestone } from '../../heroes.js';
+import { toStage, next } from '../stageKit.js';
 
 const CHAIN = ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'];
 const DESERT = ['codey1', 'codey2', 'codey3'];   // act 2: the search for Codey
 const IMG = { col: 0, row: 0 };
 const TITLE = "The Hooded Stranger";
 
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const leave = (text = "Leave him to his work.") => ({ text, outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] });
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
-const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
 
 /** The stage he opens with, from the player's quests (and, in act 2, the desert search). */
 function opening() {

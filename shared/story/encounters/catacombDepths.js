@@ -11,9 +11,8 @@
    Art: assets/icons/encounters/catacomb_depths.png registered as `encounter_catacomb_depths`, a 4 x 4 grid of 128 px cells:
      (0,0) the locked door  (1,0) the vault open  (2,0) the Sentinel in the dark  (3,0) the Sentinel broken, the lever behind
      (0,1) the vault's two guards rise */
+import { toStage, END } from './stageKit.js';
 
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
-const END = { type: "END_ENCOUNTER", payload: null };
 const OPEN_DOOR = { type: "REPLACE_OBJECT", payload: { objectId: "VAULT_DOOR_OPEN" } };
 const SENTINEL_FIGHT = { type: "START_BATTLE", payload: { tableId: "infernus_sentinel_boss", afterVictory: { encounterId: "infernus_sentinel_fallen" }, bgm: "choirOfTheDeadBgm" } };   // the same track as the stage, so it never stops
 

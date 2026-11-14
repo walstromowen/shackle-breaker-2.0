@@ -26,9 +26,9 @@
                            a failure and it comes at you as before.
    Whatever comes out of the ground, the grave is open: the object is destroyed on the button that hands out the loot or starts the fight. Leaving it be
    (or backing out before the first spade) keeps the stone standing for another try. */
+import { toStage } from './stageKit.js';
 
 const HUMANOID = { type: "has_tag", tag: "HUMANOID" };
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const fight = (tableId) => [{
     weight: 100,
     results: [

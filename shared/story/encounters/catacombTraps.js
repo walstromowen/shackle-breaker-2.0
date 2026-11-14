@@ -12,8 +12,8 @@
      (3,0) (0,1) (1,1) the pit trap: the open pit in the floor, its stakes at the bottom (the same picture for the drop, the catch and the fall)
      (2,1) the blades drop  (3,1) dashed through
      (0,2) the blade strikes */
+import { toStage } from './stageKit.js';
 
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const spend = (objectId, extra = []) => [{ weight: 100, results: [...extra, { type: "REPLACE_OBJECT", payload: { objectId } }, { type: "END_ENCOUNTER", payload: null }] }];
 
 export const arrowTrap = {

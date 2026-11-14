@@ -10,8 +10,7 @@
  * Voiced (shared/story/voiceLines.js): the narrator, and Darius's own words in the vision (long_dark).
  * Pictures are borrowed from the altar's sheet; the stage fields are explained at the top of story/encounters/story/prologue.js.
  */
-const toStage = (stageId) => [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
-const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
+import { toStage, next } from '../stageKit.js';
 
 export const actTwo = {
     id: "act_two",

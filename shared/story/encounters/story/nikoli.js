@@ -33,6 +33,7 @@ import { gameState } from '../../../core/gameState.js';
 import { QuestModel } from '../../questModel.js';
 import { ActSystem } from '../../actSystem.js';
 import { movedNorth, heroesOutcome } from '../../heroes.js';
+import { toStage, next } from '../stageKit.js';
 
 const TITLE = "Nikoli";
 const IMG = { col: 0, row: 0 };
@@ -43,10 +44,8 @@ const BATTLE_BGM = "snowyMountainsBattleBgm";
 const STRANGER_IMG = { sheet: "encounter_hooded_stranger", col: 0, row: 0 };
 const CODEY_IMG = { sheet: "nightbladeHeroPortrait", col: 0, row: 0 };
 
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const end = (results = []) => [{ weight: 100, results: [...results, { type: "END_ENCOUNTER", payload: null }] }];
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
-const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
 
 // his story belongs to the world (story/worldStory.js): in a party everyone meets the same Nikoli
 const has = (id) => ActSystem.hasMilestone(id);

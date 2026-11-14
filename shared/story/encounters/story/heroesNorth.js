@@ -11,9 +11,8 @@
    Voiced (shared/story/voiceLines.js): the narrator, the Stranger, and Jaeger. The world's: their story belongs to the world being played (story/worldStory.js);
    in a party the players near you are pulled in and vote. */
 import { mentorasTaken, has } from '../../heroes.js';
+import { toStage, next } from '../stageKit.js';
 
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
-const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
 const end = (text = "Leave.", results = []) => [{ text, outcomes: [{ weight: 100, results: [...results, { type: "END_ENCOUNTER", payload: null }] }] }];
 const CODEY_IMG = { sheet: "nightbladeHeroPortrait", col: 0, row: 0 };
 const JAEGER_IMG = { sheet: "warlordHeroPortrait", col: 0, row: 0 };

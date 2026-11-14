@@ -14,12 +14,12 @@
    Every find or ambush is announced on its own stage first and the effect is handed out on the button after it. A fight that starts from the
    approach leaves the altar standing (it can be tried again); anything that spends the skull or the meteorite (touching the skull: any of the three
    lights, or Darius) uncovers the catacombs: the altar gives way to the hidden staircase down (CATACOMBS_STAIRS), so there is a catacomb under every altar. */
+import { toStage } from '../stageKit.js';
 
 const HUMANOID = { type: "has_tag", tag: "HUMANOID" };
 /* The altar once the meteorite has been offered at it: it looks the same, and opens on Darius every time until he is beaten (a lost fight costs no
    second stone). Kept in the world's changes, so it is saved and every player of a shared world sees it. */
 const AWAKENED_ALTAR = "MYSTERIOUS_ALTAR_AWAKENED";
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 /* The altar is spent: it gives way to the stair down into the catacombs beneath it. */
 const UNCOVER_CATACOMBS = { type: "REPLACE_OBJECT", payload: { objectId: "CATACOMBS_STAIRS" } };
 const fight = (tableId, spend, afterVictory, bgm) => [{

@@ -10,8 +10,7 @@
                spits out a swarm of thunder locusts. Or shelter behind a dune and let it pass.
 
    Art: assets/icons/encounters/quicksand.png and cyclone.png (one 128 px picture each, placeholders: tools/art/desertHazards.py). */
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
-const END = { type: "END_ENCOUNTER", payload: null };
+import { toStage, END } from './stageKit.js';
 const end = (text, results = []) => [{ text, outcomes: [{ weight: 100, results: [...results, END] }] }];
 const IMG = { col: 0, row: 0 };
 

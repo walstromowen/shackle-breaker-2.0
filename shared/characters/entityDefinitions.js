@@ -1079,7 +1079,7 @@ export const ENTITY_DEFINITIONS = {
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "panzerian_greatsword" },
         currencyReward: { min: 250, max: 600 },
-        lootTableId: "boss_panzerkamfer_drops",
+        lootTableId: "boss_jaeger_drops",
         abilities: ["rest", "cleave", "guard_break", "leaping_slash", "ice_shard", "frigid_gale", "intimidate"],
         tags: [...HUMANOID_TEMPLATE.tags, "PANZERIAN", "BOSS", "ELITE"]
     },

@@ -16,13 +16,12 @@
    he is told (story/worldStory.js).
    Art: the Panzerian warlord's portrait, the same as Nikoli's. */
 import { ActSystem } from '../../actSystem.js';
+import { toStage, next } from '../stageKit.js';
 
 const TITLE = "Nikoli";   // the name he gives
 const IMG = { col: 0, row: 0 };
 
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
-const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
 // the meeting is over (and what the player did, remembered); he stays where he is until the player has gone, and is not there when they come back
 const done = (text, milestones = []) => [{ text, outcomes: [{ weight: 100, results: [
     { type: "GRANT_MILESTONE", payload: { id: "jaeger_met" } },

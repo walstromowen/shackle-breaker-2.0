@@ -14,7 +14,7 @@
      (0,0) the rubble       (1,0) found something  (2,0) path cleared     (3,0) exhausted
      (0,1) rocks fall       (1,1) spider nest
 */
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
+import { toStage } from './stageKit.js';
 const weighted = (...entries) => entries.map(([weight, stageId]) => ({ weight, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }));
 
 export const caveIn = {

@@ -7,8 +7,8 @@
  *                  -> leave the ring
  * A failed attempt wakes the dead, and the ring can only be tried once.
  */
+import { toStage } from './stageKit.js';
 const HUMANOID = { type: "has_tag", tag: "HUMANOID" };
-const toStage = (stageId) => [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const wakeTheDead = [{
     weight: 1,
     results: [

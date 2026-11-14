@@ -9,7 +9,7 @@
 
    Art is borrowed from the Mysterious Altar sheet until the betrayal has pictures of its own (cells (1,1) the dark, (0,0) the altar).
 */
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
+import { toStage } from '../stageKit.js';
 
 export const shackledBetrayal = {
     id: "shackled_betrayal",

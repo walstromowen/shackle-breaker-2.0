@@ -13,15 +13,14 @@
    three rolls of ruined_carriage_valuables (lootTableDefinitions.js), where the draught can turn up too. Once looted the carriage stays where it is, empty (REPLACE_OBJECT: RUINED_CARRIAGE_LOOTED). A fight leaves it as it was, so
    the survivors can search again.
    Art: assets/icons/encounters/ruined_carriage.png registered as `encounter_ruined_carriage` (one 128 px picture). */
+import { toStage, END } from './stageKit.js';
 
 const TITLE = "Ruined Carriage";
 const IMG = { col: 0, row: 0 };
 const STEEDS_IMG = { sheet: "shackledSteedPortrait", col: 0, row: 0 };
 
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
 const LOOTED = { type: "REPLACE_OBJECT", payload: { objectId: "RUINED_CARRIAGE_LOOTED" } };
-const END = { type: "END_ENCOUNTER", payload: null };
 
 /* the herd comes: two, three or four shackled steeds (three most often) */
 const herd = (n) => ({ type: "START_BATTLE", payload: { enemies: Array(n).fill("SHACKLED_STEED"), bgm: "plainsBattleBgm" } });

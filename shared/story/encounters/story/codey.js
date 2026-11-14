@@ -9,13 +9,12 @@
    Codey: a Namuh nightblade, mute; he speaks with his hands (the narrator tells the signs). The Namuh nightblade's portrait stands in for his.
    Narrated (shared/story/voiceLines.js VOICED: no speakers). The world's (story/worldStory.js): the party near you is pulled in, and the fight is theirs too (the fight may still pull in
    the players nearby). */
+import { toStage, next } from '../stageKit.js';
 const TITLE = "The Dry Kraken";
 const KRAKEN_IMG = { sheet: "dryKrakenPortrait", col: 0, row: 0, size: 192 };
 const CODEY_IMG = { sheet: "nightbladeHeroPortrait", col: 0, row: 0 };
 const KRAKEN = ["DRY_KRAKEN", ...Array(8).fill("DRY_KRAKEN_TENTACLE")];
 
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
-const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
 
 export const dryKrakenAmbush = {
     id: "dry_kraken_ambush",

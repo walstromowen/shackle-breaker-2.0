@@ -13,7 +13,7 @@
                          failure -> it_stirs: one to three Hollow Harvesters (the `scarecrow_harvesters` table) climb off the post and attack
    Walking past leaves the scarecrow where it stands (it fires again when you leave its line of sight and come back). Once it has stirred and started a fight,
    it is gone: the stage that starts the battle removes the object (DESTROY_OBJECT) first, so it is not standing there when you win. */
-const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
+import { toStage } from './stageKit.js';
 
 export const peculiarScarecrow = {
     id: "peculiar_scarecrow",
