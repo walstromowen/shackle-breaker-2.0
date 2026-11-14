@@ -3,6 +3,7 @@ import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
 import { drawEmbers } from '../../ui/particles/embers.js';
 import { drawStatTooltip } from '../../ui/statTooltip.js';
+import { portraitFrame } from '../../ui/animatedPortrait.js';
 
 /* The LOOK preview next to the portrait plays the character's South-facing animation from the overworld sprite sheet.
    The sheet layout is the one MapRenderer uses: frames of CONFIG.CHARACTER_FRAME (w x h) in a row of 8, and rows in three sets of four
@@ -156,7 +157,9 @@ export class CharacterCreatorRenderer {
                 const drawY = portraitY + (portraitSize - drawH) / 2;
 
                 ctx.imageSmoothingEnabled = false; // Keeps pixel art crisp when scaled
-                ctx.drawImage(masterSheet, 0, 0, srcW, srcH, drawX, drawY, drawW, drawH);
+                // the battle idle loop, front-facing (ui/animatedPortrait.js)
+                const fr = portraitFrame(masterSheet, { key: look.spritePortrait });
+                ctx.drawImage(masterSheet, fr.sx, fr.sy, srcW, srcH, drawX, drawY, drawW, drawH);
             }
 
             if (overworldSheet) {
@@ -376,8 +379,10 @@ export class CharacterCreatorRenderer {
                     ui.drawArrow(leftArrowX, valY - 10, arrowSize, 'left', arrowColorPrev);
                     ui.drawArrow(rightArrowX, valY - 10, arrowSize, 'right', arrowColorNext);
 
-                    this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, clickSfx: UI_SFX.step });
-                    this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, clickSfx: UI_SFX.step });
+                    // each arrow's area is its own row's height and no more: a 96 px square reached ~35 px into the row below (rows are
+                    // MENU_ITEM_HEIGHT + a few px apart) and sat over it, so pointing at the top of a row changed the row above it
+                    this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: menuY, w: 96, h: MENU_ITEM_HEIGHT, zIndex: 10, clickSfx: UI_SFX.step });
+                    this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: menuY, w: 96, h: MENU_ITEM_HEIGHT, zIndex: 10, clickSfx: UI_SFX.step });
 
                     ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
                 }

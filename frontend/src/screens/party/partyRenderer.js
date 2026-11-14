@@ -1,6 +1,7 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
+import { portraitFrame } from '../../ui/animatedPortrait.js';
 import { StatusTips } from '../../ui/statusTooltip.js';
 
 export class PartyRenderer {
@@ -234,9 +235,9 @@ export class PartyRenderer {
         this.ui.drawRect(pX, pY, pSize, pSize, "rgba(0,0,0,0.5)", true);
 
         if (masterSheet) {
-            const src = this.PORTRAIT_SRC_SIZE;
-            if (isCursed(member)) drawCursedPortrait(ctx, masterSheet, 0, 0, src, src, pX, pY, pSize, pSize);
-            else ctx.drawImage(masterSheet, 0, 0, src, src, pX, pY, pSize, pSize);
+            const { sx, sy, size: src } = portraitFrame(masterSheet, member);   // the battle idle loop (ui/animatedPortrait.js)
+            if (isCursed(member)) drawCursedPortrait(ctx, masterSheet, sx, sy, src, src, pX, pY, pSize, pSize);
+            else ctx.drawImage(masterSheet, sx, sy, src, src, pX, pY, pSize, pSize);
         }
 
         this.ui.drawRect(pX, pY, pSize, pSize, UITheme.colors.border, false);
@@ -355,9 +356,9 @@ export class PartyRenderer {
         this.ui.drawRect(drawX, drawY, pSize, pSize, "rgba(0,0,0,0.6)", true);
 
         if (masterSheet) {
-            const src = this.PORTRAIT_SRC_SIZE;
-            if (isCursed(payload)) drawCursedPortrait(ctx, masterSheet, 0, 0, src, src, drawX, drawY, pSize, pSize);
-            else ctx.drawImage(masterSheet, 0, 0, src, src, drawX, drawY, pSize, pSize);
+            const { sx, sy, size: src } = portraitFrame(masterSheet, payload);
+            if (isCursed(payload)) drawCursedPortrait(ctx, masterSheet, sx, sy, src, src, drawX, drawY, pSize, pSize);
+            else ctx.drawImage(masterSheet, sx, sy, src, src, drawX, drawY, pSize, pSize);
         }
 
         this.ui.drawRect(drawX, drawY, pSize, pSize, UITheme.colors.borderHighlight, false);

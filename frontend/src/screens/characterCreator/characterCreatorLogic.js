@@ -22,25 +22,25 @@ export const CREATION_DATA = {
     BACKGROUNDS: [
         {
             id: "TRAVELER", label: "Traveler",
-            desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom. Those first to arive were amazed by what they saw. Those last to arrive were horrified.",
+            desc: "Travelers from far and wide came to see the incredible discovery of magic in the Altus Kingdom. Those first to arrive were amazed by what they saw. Those last to arrive were horrified.",
             attributes: { vigor: 11, strength: 11, dexterity: 10, intelligence: 9, attunement: 9 }, // Sum: 50
             equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "BLACKSMITH", label: "Blacksmith",
-            desc: "The honest trade of blacksmithing is a profession that was held in high esteem by Alterians, and Panzerians alike. After the discovery of magic, most blacksmiths found themselves unable to find work, but with their sanity intact.",
+            desc: "Blacksmithing was an honest trade, held in high esteem by Alterians and Panzerians alike. After the discovery of magic, most blacksmiths found themselves out of work, but with their sanity intact.",
             attributes: { vigor: 15, strength: 13, dexterity: 8, intelligence: 7, attunement: 7 }, // Sum: 50
             equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "RANGER", label: "Ranger",
-            desc: "Not all were enamored with the discovery of magic. A select few of the populance sought an escape from the people's obsession of it. Many of those that left became rangers, hunting wild animals and later more unnatural things.",
+            desc: "Not all were enamored with the discovery of magic. A select few of the populace sought an escape from the people's obsession with it. Many of those who left became rangers, hunting wild animals and, later, more unnatural things.",
             attributes: { vigor: 10, strength: 9, dexterity: 15, intelligence: 8, attunement: 8 }, // Sum: 50
             equipment: { mainHand: "shortbow", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "SCHOLAR", label: "Scholar",
-            desc: "Almost overnight, the scholars and philosophers of the Altus kingdom abandoned their studies to begin research of magic. Some saw magic as a science, others as life itself.",
+            desc: "Almost overnight, the scholars and philosophers of the Altus Kingdom abandoned their studies to research magic. Some saw magic as a science, others as life itself.",
             attributes: { vigor: 8, strength: 7, dexterity: 9, intelligence: 14, attunement: 12 }, // Sum: 50
             equipment: { mainHand: "insight_of_arcane", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
@@ -52,39 +52,39 @@ export const CREATION_DATA = {
         },
         {
             id: "THIEF", label: "Thief",
-            desc: "Many thought the discovery of magic would mark the end of thievery and poverty. Alas, it only made it easier.",
+            desc: "Many thought the discovery of magic would mark the end of thievery and poverty. Alas, it only made thieving easier.",
             attributes: { vigor: 9, strength: 8, dexterity: 16, intelligence: 9, attunement: 8 }, // Sum: 50
             equipment: { mainHand: "dagger", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "HERMIT", label: "Hermit",
-            desc: "Most of those who studied magic wished to stay as close to the artifact as possible. However, for better or for worse, a handful decided to study magic in solitude.",
+            desc: "Most of those who studied magic wished to stay as close to the artifact as possible. However, for better or for worse, a handful chose to study it in solitude.",
             attributes: { vigor: 10, strength: 7, dexterity: 9, intelligence: 9, attunement: 15 }, // Sum: 50. Attuned to the elements (its Insight of Earth hits with attunement), where the Scholar reasons
             equipment: { mainHand: "insight_of_earth", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "FARMER", label: "Farmer",
-            desc: "While the discovery of magic dramatically changed the populations of big cities, those tending to their fields expereienced little change. As a result, these men and women were most prepared when the Altus kingdom fell.",
+            desc: "While the discovery of magic dramatically changed the populations of the big cities, those tending their fields experienced little change. As a result, these men and women were the most prepared when the Altus Kingdom fell.",
             attributes: { vigor: 15, strength: 12, dexterity: 9, intelligence: 7, attunement: 7 }, // Sum: 50
             equipment: { mainHand: "scythe", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "BOUNTY_HUNTER", label: "Bounty Hunter",
-            desc: "During the years leading up to the fall of Altus Kingdom, The demand for bounty hunters increased dramatically due to the need to deal with those who went mad. Particuarily skilled hunters often weilded rare weapons such as panzerian firearms or special Alterian swords. Ironically, this also made them particularly difficult to hunt when they too went mad.",
+            desc: "In the years leading up to the fall of the Altus Kingdom, the demand for bounty hunters rose dramatically, as someone had to deal with those who went mad. Particularly skilled hunters often wielded rare weapons, such as Panzerian firearms or special Alterian swords. Ironically, this also made them particularly difficult to hunt when they, too, went mad.",
             attributes: { vigor: 12, strength: 11, dexterity: 14, intelligence: 7, attunement: 6 }, // Sum: 50
             equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "DISEASED", label: "Diseased",
-            desc: "During the years of the Alterian-Panzerian War, and prior to the fall of Altus Kingdom, those exhibiting signs of madness were often taken from their homes for treatment. It was believed that magic held the key to curing the the buildup of madness and thus, patients were exposed to even more of the artifact's influence. Still, perhaps being aflicted has its advantages?",
+            desc: "During the Alterian-Panzerian War, and before the fall of the Altus Kingdom, those showing signs of madness were often taken from their homes for treatment. It was believed that magic held the key to curing the buildup of madness, and so patients were exposed to even more of the artifact's influence. Still, perhaps being afflicted has its advantages?",
             attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 }, // Sum: 50
             equipment: {}
         }
     ],
     ORIGINS: [
-        { label: "Alterian", tag: "LANG_ALTERIAN", desc: "Alterians are the oldest people of the known world and the first to discover magic. They are a fearless and adventurous people who hail from the ancient Altus kingdom. Despite their reputation as conquerors, Alterians are actually quite diplomatic. They value strength, honor, and loyalty to one's family. Or at least, they use to." },
-        { label: "Panzerian", tag: "LANG_PANZERIAN", desc: "Panzerians are a creative and powerful people from the icy mountains of Panzeria. They are master engineers who have acomplished a variety of impressive technolgical and architectural feats. Most notably being their weapons of war including cannons, genetically engineered beasts, and the famous Panzerian armor. All of which were eventually used against them." },
-        { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people who communicate only through a form sign language. Not much is known about the Namuh people except for rumors, many of which speaking of a great tragedy befalling the Namuh people and the becoming of a shadow of their former selves." }
+        { label: "Alterian", tag: "LANG_ALTERIAN", desc: "Alterians are the oldest people of the known world and the first to discover magic. They are a fearless and adventurous people who hail from the ancient Altus Kingdom. Despite their reputation as conquerors, Alterians are actually quite diplomatic. They value strength, honor, and loyalty to family. Or at least, they used to." },
+        { label: "Panzerian", tag: "LANG_PANZERIAN", desc: "Panzerians are a creative and powerful people from the icy mountains of Panzeria. They are master engineers who have accomplished a variety of impressive technological and architectural feats, most notably their weapons of war: cannons, genetically engineered beasts, and the famous Panzerian armor, all of which were eventually used against them." },
+        { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people who communicate only through a form of sign language. Little is known about them beyond rumors, many of which speak of a great tragedy that befell the Namuh and left them a shadow of their former selves." }
     ],
     // Each look has a male and a female version: the sprites on the entry are the male's, `female` holds the female's (the SEX row, under LOOK,
     // picks between them). The female sheets are blank placeholders for now, the same size as the male ones, to be painted.

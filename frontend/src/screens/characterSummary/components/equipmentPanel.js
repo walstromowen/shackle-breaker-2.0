@@ -4,6 +4,7 @@ import { TRAIT_DEFINITIONS } from '../../../../../shared/abilities/traitDefiniti
 import { ItemDefinitions } from '../../../../../shared/items/itemDefinitions.js';
 import { Formatting } from '../../../../../shared/core/formatting.js';
 import { isCursed, drawCursedPortrait } from '../../../ui/curseOverlay.js';
+import { portraitFrame } from '../../../ui/animatedPortrait.js';
 import { StatusTips } from '../../../ui/statusTooltip.js';
 
 export class EquipmentPanel {
@@ -141,8 +142,9 @@ export class EquipmentPanel {
     let assetKey = member.spritePortrait;
     const img = this.loader.get(assetKey);
     if (img) {
-      if (isCursed(member)) drawCursedPortrait(this.ui.ctx, img, 0, 0, this.PORTRAIT_SRC_SIZE, this.PORTRAIT_SRC_SIZE, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
-      else this.ui.drawSprite(img, 0, 0, this.PORTRAIT_SRC_SIZE, this.PORTRAIT_SRC_SIZE, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
+      const { sx, sy, size: src } = portraitFrame(img, member);   // the battle idle loop (ui/animatedPortrait.js)
+      if (isCursed(member)) drawCursedPortrait(this.ui.ctx, img, sx, sy, src, src, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
+      else this.ui.drawSprite(img, sx, sy, src, src, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
     }
 
     this._drawStatusEffects(member, pX, pY, this.PORTRAIT_SIZE);
