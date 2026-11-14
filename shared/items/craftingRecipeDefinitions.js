@@ -303,6 +303,15 @@ export const craftingRecipeDefinitions = {
       "coal": 1
     }
   },
+  "recipe_steel_ingot": {
+    id: "recipe_steel_ingot",
+    outputItemId: "steel_ingot",
+    station: "forge",
+    materials: {
+      "iron_ingot": 2,
+      "coal": 2   // the carbon that makes it steel
+    }
+  },
 
   // --- CONSUMABLE RECIPES ---
   "recipe_torch": {

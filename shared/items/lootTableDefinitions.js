@@ -451,6 +451,7 @@ export const LootTableDefinitions = {
             // --- FINE MATERIALS ---
             { id: "bronze_ingot", weight: 14, min: 2, max: 4 },
             { id: "iron_ingot", weight: 18, min: 3, max: 6 },
+            { id: "steel_ingot", weight: 5, min: 1, max: 2 },
             { id: "meteorite", weight: 2, min: 1, max: 1 },
 
             // --- TOOLS OF THE TRADE ---
@@ -807,6 +808,7 @@ export const LootTableDefinitions = {
             { id: "leather_armor", dropRate: 0.20 },
             { id: "leather_leggings", dropRate: 0.20 },
             { id: "bronze_ingot", dropRate: 0.4, min: 1, max: 3 },
+            { id: "steel_ingot", dropRate: 0.3, min: 1, max: 2 },
             { id: "warhammer", dropRate: 0.1 },
             { id: "glaive", dropRate: 0.08 },
             { id: "large_iron_key", dropRate: 0.5 },
@@ -824,7 +826,7 @@ export const LootTableDefinitions = {
             { id: "insight_of_ice", dropRate: 0.5 },
             { id: "iron_gauntlets", dropRate: 0.3 },
             { id: "iron_boots", dropRate: 0.3 },
-            { id: "bronze_ingot", dropRate: 0.5, min: 1, max: 3 },
+            { id: "steel_ingot", dropRate: 0.6, min: 2, max: 4 },   // a general's kit is steel
             { id: "iron_ingot", dropRate: 0.8, min: 2, max: 5 },
             { id: "healing_tonic", dropRate: 0.6, min: 1, max: 2 },
             { id: "kurtus_brew", dropRate: 0.4, min: 1, max: 2 },
@@ -844,6 +846,7 @@ export const LootTableDefinitions = {
             { id: "insight_of_water", dropRate: 0.3 },
             { id: "iron_ingot", dropRate: 0.5, min: 2, max: 4 },
             { id: "bronze_ingot", dropRate: 0.4, min: 1, max: 3 },
+            { id: "steel_ingot", dropRate: 0.4, min: 1, max: 3 },   // blades it swallowed, from soldiers who went down with their ships
             { id: "shmindolyns_draught", dropRate: 0.15 },
             { id: "large_iron_key", dropRate: 0.5 },
             { id: "jar_of_shifting_sands", dropRate: 0.25 },

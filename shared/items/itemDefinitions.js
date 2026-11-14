@@ -1209,6 +1209,17 @@ export const ItemDefinitions = {
     stackable: true,
     maxStack: 99
   },
+  // Iron worked hot with coal until it takes the carbon: harder and keeps an edge. Weapons need it for their last two upgrades.
+  "steel_ingot": {
+    id: "steel_ingot",
+    name: "Steel Ingot",
+    type: "material",
+    description: "Iron folded with coal in a hot forge. Harder than iron, and it holds an edge.",
+    value: 75,
+    icon: { col: 7, row: 1 },            // the dark blue-grey ingot on materials.png, unused until now
+    stackable: true,
+    maxStack: 99
+  },
   "meteorite": {
     id: "meteorite",
     name: "Fallen Meteorite",

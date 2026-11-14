@@ -26,6 +26,7 @@ const { bossHpFactor, PARTY_SCALING } = await import(ROOT + '/shared/battle/spaw
 const { requirementsAt } = await import(ROOT + '/shared/items/weaponRequirements.js');
 const { BattleController } = await import(ROOT + '/frontend/src/screens/battle/battleController.js');
 const K = { ...JSON.parse(process.env.KNOBS || '{}') };
+const WEAPON_CAP = Number(process.env.WEAPON_CAP || 4);   // by the Kraken a party has usually forged enough steel for level 4, rarely 5
 
 // ---- parties, built as tools/playthroughSim.mjs builds them ----
 const CLASSES = {
@@ -50,7 +51,7 @@ function buildCharacter(cls, level) {
         if (!spent) { const tot = ATTRS.reduce((s, k) => s + w[k], 0); let r = Math.random() * tot; for (const k of ATTRS) { r -= w[k]; if (r <= 0) { attrs[k]++; break; } } }
         if (cls.weapon) while (wl < 5 && WEAPON_DUE[wl] <= l && !Object.entries(requirementsAt(cls.weapon, wl + 1)).some(([k, n]) => attrs[k] < n)) wl++;
     }
-    wl = Math.min(wl, 3);   // the game's weapons stop at level 3 for now (their level 4 and 5 need steel ingots, which nothing gives yet)
+    wl = Math.min(wl, WEAPON_CAP);   // WEAPON_CAP=3 for a party that hasn't forged steel yet (levels 4 and 5 need steel ingots)
     const equipment = {};
     if (cls.weapon) { const it = ItemFactory.createItem(cls.weapon); it.level = wl; equipment[it.slot === 'twoHand' ? 'twoHand' : 'mainHand'] = it; }
     const armorLevel = Math.min(5, 1 + Math.floor((level - 4) / 6));
