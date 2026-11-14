@@ -615,7 +615,8 @@ export const QuestDefinitions = {
         turnIn: "HOODED_STRANGER",
         description: "The hooded stranger has come to the desert after someone: a Namuh named Codey, who walked into the sand and did not walk out. The sand stalkers drag what they kill into the dunes. If Codey fell, they will know where.",
         objectives: [
-            { id: "obj_codey_stalkers", type: "kill_enemy", targetId: "SAND_STALKER", amount: 4, description: "Kill sand stalkers" }
+            { id: "obj_codey_stalkers", type: "kill_enemy", targetId: "SAND_STALKER", amount: 4, description: "Kill sand stalkers" },
+            { id: "obj_codey1_level", type: "party_level", targetLevel: 18, amount: 1 }
         ],
         rewards: { exp: 600, currency: 150 }
     },
@@ -625,7 +626,8 @@ export const QuestDefinitions = {
         turnIn: "HOODED_STRANGER",
         description: "A strip of black cloth, and blood that was not Codey's. An old road runs under the sand, walked by calcified crusaders. The stranger thinks Codey took it. Clear the road.",
         objectives: [
-            { id: "obj_codey_crusaders", type: "kill_enemy", targetId: "CALCIFIED_CRUSADER", amount: 3, description: "Clear the old road of calcified crusaders" }
+            { id: "obj_codey_crusaders", type: "kill_enemy", targetId: "CALCIFIED_CRUSADER", amount: 3, description: "Clear the old road of calcified crusaders" },
+            { id: "obj_codey2_level", type: "party_level", targetLevel: 21, amount: 1 }
         ],
         rewards: { exp: 800, currency: 200 }
     },
@@ -633,9 +635,10 @@ export const QuestDefinitions = {
         id: "codey3",
         name: "Behind the Mirage",
         turnIn: "HOODED_STRANGER",
-        description: "Codey's mark, cut into a road-stone: a hand, spread, then closed. The miragewrights hide what they find. Break their illusions, and see what they were hiding.",
+        description: "Codey's mark, cut into a road-stone: a hand, spread, then closed. The miragewrights hide what they find. Break one of their illusions, and see what it was hiding.",
         objectives: [
-            { id: "obj_codey_miragewrights", type: "kill_enemy", targetId: "MIRAGEWRIGHT", amount: 3, description: "Break the miragewrights' illusions" },
+            { id: "obj_codey_miragewrights", type: "kill_enemy", targetId: "MIRAGEWRIGHT", amount: 1, description: "Break a miragewright's illusion" },
+            { id: "obj_codey3_level", type: "party_level", targetLevel: 24, amount: 1 },
             { id: "obj_codey_found", type: "kill_enemy", targetId: "DRY_KRAKEN", amount: 1, description: "Find Codey" }
         ],
         rewards: { exp: 2000, currency: 800, items: [{ id: "shmindolyns_draught", amount: 1 }, { id: "healing_tonic", amount: 3 }] }
@@ -648,7 +651,8 @@ export const QuestDefinitions = {
         name: "The Pursuer",
         description: "The snowy workshop is wrecked and white with frost, and the hooded man is gone. Codey, wounded, signed a big man with a greatsword, a hood, hands bound at the wrist, and then a skull, and steps going down into the dark. Bring him back.",
         objectives: [
-            { id: "obj_pursuer_free", type: "kill_enemy", targetId: "JAEGER_BOSS", amount: 1, description: "Free the hooded man" }
+            { id: "obj_pursuer_free", type: "kill_enemy", targetId: "JAEGER_BOSS", amount: 1, description: "Free the hooded man" },
+            { id: "obj_pursuer_level", type: "party_level", targetLevel: 27, amount: 1 }
         ],
         rewards: { exp: 2500, currency: 600, items: [{ id: "healing_tonic", amount: 3 }] }
     },
@@ -659,7 +663,8 @@ export const QuestDefinitions = {
         turnIn: "NIKOLI",
         description: "Panzeria sent many Panzerkamfers into the war: snow tigers raised on iron and bound in plate, bred to break shield walls. When the Panzerian army broke, they went wild. Nikoli says one of them hunts the snowy mountains. Follow the great tracks through the high snow, kill the beast, and return to Nikoli.",
         objectives: [
-            { id: "obj_kill_panzerkamfer", type: "kill_enemy", targetId: "PANZERKAMFER", amount: 1, description: "Kill the Panzerkamfer" }
+            { id: "obj_kill_panzerkamfer", type: "kill_enemy", targetId: "PANZERKAMFER", amount: 1, description: "Kill the Panzerkamfer" },
+            { id: "obj_beast_level", type: "party_level", targetLevel: 14, amount: 1 }
         ],
         rewards: { exp: 400, currency: 100, items: [{ id: "insight_of_ice", amount: 1 }] }
     }

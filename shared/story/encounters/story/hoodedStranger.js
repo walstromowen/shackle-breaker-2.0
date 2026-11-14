@@ -220,7 +220,7 @@ export const hoodedStranger = {
 
         // ---- codey3: the miragewrights (and, waiting in the open sand, the Dry Kraken) ----
         ...offer('codey3'),
-        give_codey3: give("codey3", "\"The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break them. ...And if you see me out there, it is not me. Probably.\""),
+        give_codey3: give("codey3", "\"The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break one. ...And if you see me out there, it is not me. Probably.\""),
         ...waiting('codey3', "\"Do not trust what you see out there. I stopped trusting my eyes years ago. They have yet to notice.\""),
         // the reunion: Codey is back (the Dry Kraken is dead). The one time his grief slips out.
         // (handing it in also tells the world Codey is back: codey_back, below in codey_back's button)

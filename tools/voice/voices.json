@@ -191,7 +191,6 @@
         "There is an old road under the sand. Calcified crusaders walk it. He would have gone that way. Clear it. ...They have been dead for years, and they still keep better order than I do.": "[measured] There is an old road under the sand. Calcified crusaders walk it. He would have gone that way. Clear it. [pause] [dry, deadpan] ...They have been dead for years, and they still keep better order than I do.",
         "The road. The crusaders will not step aside for you. Do not ask them to.": "[grim, dry] The road. The crusaders will not step aside for you. Do not ask them to.",
         "His mark. He was alive when he made it.": "[quiet, steady, hiding relief] His mark. He was alive when he made it.",
-        "The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break them. ...And if you see me out there, it is not me. Probably.": "[measured] The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break them. [pause] [dry, dark humour] ...And if you see me out there, it is not me. [short pause] Probably.",
         "Do not trust what you see out there. I stopped trusting my eyes years ago. They have yet to notice.": "[dry, weary] Do not trust what you see out there. I stopped trusting my eyes years ago. They have yet to notice.",
         "You took your time.": "[gruff, holding back emotion] You took your time.",
         "...You came back.": "[quiet, almost breaking] ...You came back.",
@@ -212,7 +211,8 @@
         "That is not Nikoli. ...Nikoli has fewer teeth.": "[weary, defiant] That is not Nikoli. [pause] [dry, deadpan] ...Nikoli has fewer teeth.",
         "Go on. I know the way back. I usually do.": "[tired, dry] Go on. I know the way back. I usually do.",
         "You came. ...I did not expect anyone to.": "[quiet, surprised, moved] You came. ...I did not expect anyone to.",
-        "Thank you.": "[quiet, sincere] Thank you."
+        "Thank you.": "[quiet, sincere] Thank you.",
+        "The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break one. ...And if you see me out there, it is not me. Probably.": "[measured] The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break one. [pause] [dry, dark humour] ...And if you see me out there, it is not me. [short pause] Probably."
       }
     },
     "DARIUS": {

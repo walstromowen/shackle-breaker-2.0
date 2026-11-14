@@ -34,9 +34,13 @@ test('three steps, all handed in to him: the stalkers, the old road, the miragew
     for (const id of STRANGER_DESERT) assert.equal(Q[id].turnIn, 'HOODED_STRANGER');
     assert.equal(Q.codey1.objectives[0].targetId, 'SAND_STALKER');
     assert.equal(Q.codey2.objectives[0].targetId, 'CALCIFIED_CRUSADER');
-    assert.deepEqual(Q.codey3.objectives.map(o => o.targetId), ['MIRAGEWRIGHT', 'DRY_KRAKEN']);
-    assert.equal(Q.codey3.objectives[1].description, 'Find Codey', 'the kraken is not named before it rises');
-    for (const o of [Q.codey1, Q.codey2, Q.codey3].flatMap(q => q.objectives)) assert.ok(ENT[o.targetId], o.targetId);
+    assert.deepEqual(Q.codey3.objectives.filter(o => o.type === 'kill_enemy').map(o => o.targetId), ['MIRAGEWRIGHT', 'DRY_KRAKEN']);
+    assert.equal(Q.codey3.objectives[0].amount, 1, 'one miragewright');
+    assert.equal(Q.codey3.objectives.find(o => o.targetId === 'DRY_KRAKEN').description, 'Find Codey', 'the kraken is not named before it rises');
+    // every story quest asks for a level (story/questDefinitions.js), rising through the story
+    const lvl = (id) => (Q[id].objectives.find(o => o.type === 'party_level') || {}).targetLevel;
+    assert.deepEqual(['panzerian_war_beast', 'codey1', 'codey2', 'codey3', 'the_pursuer'].map(lvl), [14, 18, 21, 24, 27]);
+    for (const o of [Q.codey1, Q.codey2, Q.codey3].flatMap(q => q.objectives).filter(o => o.type === 'kill_enemy')) assert.ok(ENT[o.targetId], o.targetId);
     for (const it of Q.codey3.rewards.items) assert.ok(I[it.id], it.id);
 });
 
@@ -55,8 +59,8 @@ test('what he opens with in the desert follows the search, from the first visit 
     finish('codey2');
     assert.equal(S.initialStage(), 'turnin_codey2');
     story({ completed: [...gameState.quests.completed, 'codey2'], active: ['codey3'] });
-    finish('codey3', ['obj_codey_miragewrights']);
-    assert.equal(S.initialStage(), 'waiting_codey3', 'the miragewrights alone are not enough: Codey is still out there');
+    finish('codey3', ['obj_codey_miragewrights', 'obj_codey3_level']);
+    assert.equal(S.initialStage(), 'waiting_codey3', 'the miragewright alone is not enough: Codey is still out there');
     finish('codey3');
     assert.equal(S.initialStage(), 'turnin_codey3', 'the kraken dead: the reunion');
     story({ completed: [...gameState.quests.completed, 'codey3'] });
@@ -90,7 +94,7 @@ test('the Dry Kraken waits on the open sand once the miragewrights are dead, and
     gameState.world.isInterior = false;
     story({ active: ['codey3'] });
     assert.equal(krakenAmbushDue('DESERT'), false, 'not before the miragewrights');
-    finish('codey3', ['obj_codey_miragewrights']);
+    finish('codey3', ['obj_codey_miragewrights', 'obj_codey3_level']);
     assert.equal(krakenAmbushDue('DESERT'), true);
     assert.equal(krakenAmbushDue('PLAINS'), false, 'only in the desert');
     gameState.world.isInterior = true;

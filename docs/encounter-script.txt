@@ -1838,7 +1838,7 @@ STRANGER: "His mark. He was alive when he made it."
   > Continue.
 
 [give_codey3]
-STRANGER: "The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break them. ...And if you see me out there, it is not me. Probably."
+STRANGER: "The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break one. ...And if you see me out there, it is not me. Probably."
   > "I'll see it done."
 
 [offer_codey3]

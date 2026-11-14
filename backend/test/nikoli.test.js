@@ -92,7 +92,8 @@ test('the Panzerian War Beast: asking starts it, killing a Panzerkamfer complete
     const quest = Q.panzerian_war_beast;
     assert.equal(quest.name, 'Panzerian War Beast');
     assert.equal(quest.turnIn, 'NIKOLI');
-    assert.deepEqual(quest.objectives.map(o => [o.type, o.targetId, o.amount]), [['kill_enemy', 'PANZERKAMFER', 1]]);
+    assert.deepEqual(quest.objectives.filter(o => o.type === 'kill_enemy').map(o => [o.type, o.targetId, o.amount]), [['kill_enemy', 'PANZERKAMFER', 1]]);
+    assert.equal(quest.objectives.find(o => o.type === 'party_level').targetLevel, 14);
     assert.ok(quest.rewards.items.some(i => i.id === 'insight_of_ice'), 'the second Insight of Ice');
     assert.ok(N.stages.beast.decisions.some(d => /Panzerkamfer\?/.test(d.text)), 'the option to inquire');
     const hunt = N.stages.beast_3.decisions.find(d => /hunt it/.test(d.text));
@@ -102,7 +103,7 @@ test('the Panzerian War Beast: asking starts it, killing a Panzerkamfer complete
     story({ milestones: ['nikoli_met'], active: { panzerian_war_beast: { progress: { obj_kill_panzerkamfer: 0 } } } });
     assert.equal(N.initialStage(), 'beast_waiting');
     assert.ok(!offered(N.stages.again).some(t => /war beast/.test(t)), 'not offered again once taken');
-    story({ milestones: ['nikoli_met', 'nikoli_told', 'act2'], active: { panzerian_war_beast: { progress: { obj_kill_panzerkamfer: 1 } } } });
+    story({ milestones: ['nikoli_met', 'nikoli_told', 'act2'], active: { panzerian_war_beast: { progress: { obj_kill_panzerkamfer: 1, obj_beast_level: 1 } } } });
     assert.equal(N.initialStage(), 'beast_done', 'the beast dead: handed in wherever he is');
     assert.ok(results(N.stages.beast_done.decisions[0]).some(x => x.type === 'COMPLETE_QUEST' && x.payload.questId === 'panzerian_war_beast'));
     assert.equal(ENTITY_DEFINITIONS.NIKOLI.properName, true, '"Return to Nikoli"');
