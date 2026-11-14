@@ -627,7 +627,9 @@ export class SceneManager {
 
                 // a boss is tuned for three players: with fewer it has a share of its health (PARTY_SCALING.BOSS_HP_BY_PLAYERS)
                 const enemyDef = ENTITY_DEFINITIONS[enemyId];
-                if (enemyDef && (enemyDef.tags || []).includes('BOSS')) {
+                // ... and so do its limbs (an enemy that `fallsWith` a boss: the Dry Kraken's tentacles)
+                const bossOrLimb = enemyDef && ((enemyDef.tags || []).includes('BOSS') || (enemyDef.fallsWith && (ENTITY_DEFINITIONS[enemyDef.fallsWith]?.tags || []).includes('BOSS')));
+                if (bossOrLimb) {
                     const factor = bossHpFactor(multiplayerSocial.playerCount());
                     if (factor !== 1) {
                         const base = { ...(enemyDef.baseStats || {}), ...(factoryOverrides.baseStats || {}) };

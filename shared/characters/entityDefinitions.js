@@ -1120,7 +1120,7 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
             maxHp: 80, maxStamina: 40, maxInsight: 20, speed: 5, critical: 0.08,
-            maxHpMultiplier: 2,
+            maxHpMultiplier: 1.5,   // tuned with tools/krakenSim.mjs: about as tough as Darius alone, a little more forgiving to a party of players
             baseDefense: {
                 ...BEAST_TEMPLATE.baseStats.baseDefense,
                 blunt: 6, slash: 1, pierce: 2, earth: 8, water: 8, fire: -2, lightning: 0
@@ -1129,10 +1129,10 @@ export const ENTITY_DEFINITIONS = {
             // so after all eight it is softer than most beasts. Fire, which dries it out, was always its weakest point.
             baseResistance: {
                 ...BEAST_TEMPLATE.baseStats.baseResistance,
-                blunt: 0.5, slash: 0.4, pierce: 0.5, fire: 0.2, ice: 0.5, lightning: 0.4, earth: 0.7, water: 0.7,
-                wind: 0.5, arcane: 0.5, dark: 0.5, light: 0.4
+                blunt: 0.375, slash: 0.3, pierce: 0.375, fire: 0.15, ice: 0.375, lightning: 0.3, earth: 0.525, water: 0.525,
+                wind: 0.375, arcane: 0.375, dark: 0.375, light: 0.3
             },
-            baseAttack: { blunt: 6, pierce: 8, earth: 6, water: 4 }
+            baseAttack: { blunt: 4.8, pierce: 6.4, earth: 4.8, water: 3.2 }
         },
         currencyReward: { min: 300, max: 700 },
         lootTableId: "boss_dry_kraken_drops",
@@ -1159,14 +1159,17 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
             maxHp: 18, maxStamina: 24, maxInsight: 0, speed: 8, critical: 0.05,
+            // small next to the head (tuned with tools/krakenSim.mjs, so cutting all eight is a real way to win), and scaled with the players as the
+            // head is (a boss's limbs: sceneManager START_BATTLE)
+            maxHpMultiplier: 0.12,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 5, slash: 0, pierce: 2, earth: 6, water: 6 },
             // heavily resistant to everything: cutting them down is the slow, safe way to open the head up
             baseResistance: {
                 ...BEAST_TEMPLATE.baseStats.baseResistance,
-                blunt: 0.5, slash: 0.4, pierce: 0.5, fire: 0.3, ice: 0.5, lightning: 0.5, earth: 0.6, water: 0.6,
-                wind: 0.5, arcane: 0.5, dark: 0.5, light: 0.5
+                blunt: 0.375, slash: 0.3, pierce: 0.375, fire: 0.225, ice: 0.375, lightning: 0.375, earth: 0.45, water: 0.45,
+                wind: 0.375, arcane: 0.375, dark: 0.375, light: 0.375
             },
-            baseAttack: { blunt: 7, earth: 2 }
+            baseAttack: { blunt: 3.85, earth: 1.1 }
         },
         currencyReward: { min: 0, max: 0 },
         lootTableId: null,

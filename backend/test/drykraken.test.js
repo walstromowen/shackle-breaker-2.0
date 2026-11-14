@@ -151,8 +151,8 @@ test('every tentacle cut down tears the head open: 8% off each of its resistance
     const head = s.enemyRoster[0];
     const res = () => StatCalculator.calculateDetailed(head.originalEntity).resistance;
     const before = res();
-    assert.ok(before.slash >= 0.4 && before.blunt >= 0.5, 'hard to hurt at first');
-    for (const t of s.enemyRoster.filter(e => e.templateId === 'DRY_KRAKEN_TENTACLE')) assert.ok(StatCalculator.calculateDetailed(t.originalEntity).resistance.slash >= 0.4, 'the tentacles shrug off most blows');
+    assert.ok(before.slash >= 0.3 && before.blunt >= 0.35, 'hard to hurt at first');
+    for (const t of s.enemyRoster.filter(e => e.templateId === 'DRY_KRAKEN_TENTACLE')) assert.ok(StatCalculator.calculateDetailed(t.originalEntity).resistance.slash >= 0.3, 'the tentacles shrug off much of every blow');
     const cut = (n) => { for (const t of s.enemyRoster.filter(e => e.templateId === 'DRY_KRAKEN_TENTACLE' && !e.isDead()).slice(0, n)) { t.modifyResource('hp', -99999); queueDeath(s, t); } };
     cut(1);
     const sev = () => head.statusEffects.find(e => e.id === 'severed');
@@ -164,4 +164,14 @@ test('every tentacle cut down tears the head open: 8% off each of its resistance
     assert.ok(res().slash < 0 && res().blunt < 0, 'all eight: the head takes more than full damage');
     assert.ok(sev().isInfinite, 'it lasts the whole fight');
     assert.ok(!head.isDead(), 'the tentacles gone, the head fights on: only its death ends it');
+});
+
+test('tuned (tools/krakenSim.mjs): small, sturdy tentacles next to the head; a boss\'s limbs scale with the players as the boss does', async () => {
+    assert.equal(E.DRY_KRAKEN.baseStats.maxHpMultiplier, 1.5);
+    assert.ok(E.DRY_KRAKEN_TENTACLE.baseStats.maxHpMultiplier < 0.2, 'each tentacle small next to the head');
+    const head = EntityFactory.create('DRY_KRAKEN', 25), tentacle = EntityFactory.create('DRY_KRAKEN_TENTACLE', 25);
+    assert.ok(tentacle.maxHp * 5 < head.maxHp, `a tentacle (${tentacle.maxHp}) is a small part of the head (${head.maxHp})`);
+    const scene = fs.readFileSync(new URL('../../frontend/src/engine/sceneManager.js', import.meta.url), 'utf8');
+    assert.match(scene, /enemyDef\.fallsWith && \(ENTITY_DEFINITIONS\[enemyDef\.fallsWith\]\?\.tags \|\| \[\]\)\.includes\('BOSS'\)/);
+    assert.ok(fs.existsSync(new URL('../../tools/krakenSim.mjs', import.meta.url)), 'the tuning tool is kept');
 });
