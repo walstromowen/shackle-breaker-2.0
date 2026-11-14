@@ -8,8 +8,10 @@ import { Voices } from '../../../shared/story/voices.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
 import { audioManager } from './audioManager.js';
 
+export const WHISPER_CLIPS = ['whisper1', 'whisper2', 'whisper3', 'whisper4', 'whisper5', 'whisper6'];   // main.js
+
 export class VoicesPlayer {
-    constructor({ rand = Math.random, play = (v, r, p) => audioManager.playWhisper(v, r, p) } = {}) {
+    constructor({ rand = Math.random, play = (v, r, p, key) => audioManager.playWhisper(v, r, p, key) } = {}) {
         this.rand = rand;
         this.play = play;
         this.wait = null;          // seconds until the next whisper
@@ -30,7 +32,9 @@ export class VoicesPlayer {
     /** One whisper: from one side or the other, at a pitch of its own, louder the louder the voices are. */
     whisper(level) {
         const pan = (this.rand() < 0.5 ? -1 : 1) * (0.35 + 0.65 * this.rand());
-        this.play(0.12 + 0.55 * level, 0.8 + 0.4 * this.rand(), pan);
+        const clip = WHISPER_CLIPS[Math.floor(this.rand() * WHISPER_CLIPS.length) % WHISPER_CLIPS.length];
+        // the clips are levelled faint already (about -31 dB); this sets how far above the edge of hearing a whisper rises
+        this.play(0.25 + 0.65 * level, 0.9 + 0.2 * this.rand(), pan, clip);
         this.heard++;
     }
 }

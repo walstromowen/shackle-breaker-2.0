@@ -401,6 +401,14 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     rockThud: './assets/audio/sfx/encounters/rock_thud.mp3',
     glowSwell: './assets/audio/sfx/encounters/glow_swell.mp3',
     whispers: './assets/audio/sfx/encounters/whispers.mp3',
+    // the voices (engine/voicesPlayer.js): six dark, ghostly, faint whispers, one chosen at random each time (ElevenLabs sound effects, darkened,
+    // echoed and levelled with ffmpeg: tools/voice/makeWhispers.sh)
+    whisper1: './assets/audio/sfx/voices/whisper_1.mp3',
+    whisper2: './assets/audio/sfx/voices/whisper_2.mp3',
+    whisper3: './assets/audio/sfx/voices/whisper_3.mp3',
+    whisper4: './assets/audio/sfx/voices/whisper_4.mp3',
+    whisper5: './assets/audio/sfx/voices/whisper_5.mp3',
+    whisper6: './assets/audio/sfx/voices/whisper_6.mp3',
     hoofbeats: './assets/audio/sfx/encounters/hoofbeats.mp3',
     snowSteps: './assets/audio/sfx/encounters/snow_steps.mp3',
 
