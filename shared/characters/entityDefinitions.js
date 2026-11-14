@@ -897,18 +897,19 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "poachersNightmareCry",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 22, strength: 18, dexterity: 14, intelligence: 6, attunement: 8
+            vigor: 22, strength: 38, dexterity: 14, intelligence: 6, attunement: 8
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
             maxHp: 35, maxStamina: 30, maxInsight: 10, speed: 10, critical: 0.20,
+            maxHpMultiplier: 4.5,   // tuned with tools/krakenSim.mjs (BOSS=POACHERS_NIGHTMARE, level 10)
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 1, slash: -1, pierce: -1, earth: 6, dark: 5 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, earth: 0.5, dark: 0.4, fire: -0.3 },
             baseAttack: { blunt: 6, slash: 7, pierce: 5, dark: 4 }
         },
         currencyReward: { min: 350, max: 800 },
         lootTableId: "boss_poachers_nightmare_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "eviscerate", "earthquake", "claw", "vine_lash"],
+        abilities: [...BEAST_TEMPLATE.abilities, "eviscerate", "earthquake", "claw", "vine_lash", "rampage", "mass_fear"],
         tags: [...BEAST_TEMPLATE.tags, "BOSS", "ELITE"]
     },
 
@@ -931,6 +932,7 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
             maxHp: 40, maxStamina: 28, maxInsight: 0, speed: 8, critical: 0.12,
+            maxHpMultiplier: 4.5,   // tuned with tools/krakenSim.mjs (BOSS=PANZERKAMFER, level 14): a real chance of a wipe alone or in a party
             baseDefense: {
                 ...BEAST_TEMPLATE.baseStats.baseDefense,
                 blunt: 2, slash: 7, pierce: 6, ice: 6, water: 3, lightning: -3, fire: -2
@@ -939,11 +941,11 @@ export const ENTITY_DEFINITIONS = {
                 ...BEAST_TEMPLATE.baseStats.baseResistance,
                 ice: 0.5, slash: 0.15, lightning: -0.3, fire: -0.25
             },
-            baseAttack: { blunt: 6, slash: 9, pierce: 4, ice: 3 }
+            baseAttack: { blunt: 8.7, slash: 13, pierce: 5.8, ice: 4.4 }
         },
         currencyReward: { min: 250, max: 600 },
         lootTableId: "boss_panzerkamfer_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "claw", "eviscerate", "reckless_charge"],
+        abilities: [...BEAST_TEMPLATE.abilities, "claw", "eviscerate", "reckless_charge", "rampage", "mass_fear"],
         tags: [...BEAST_TEMPLATE.tags, "FELINE", "BOSS", "ELITE", "ARMORED", "PANZERIAN"]
     },
 
@@ -1015,7 +1017,7 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 90, maxStamina: 40, maxInsight: 30, speed: 5, critical: 0.06,
-            maxHpMultiplier: 2,
+            maxHpMultiplier: 4,   // tuned with tools/krakenSim.mjs (BOSS=INFERNUS_SENTINEL ACT2=1, level 18)
             // living stone: very hard to hurt with anything. Hammers (blunt) and the earth still crack it; blades, arrows and the elements barely mark it.
             baseDefense: {
                 ...HUMANOID_TEMPLATE.baseStats.baseDefense,
@@ -1028,14 +1030,14 @@ export const ENTITY_DEFINITIONS = {
                 fire: 0.4, ice: 0.35, lightning: 0.35, earth: 0.15, wind: 0.4, water: 0.25,
                 arcane: 0.5, dark: 0.45, light: 0.25
             },
-            baseAttack: { blunt: 4, earth: 6 }
+            baseAttack: { blunt: 5.6, earth: 8.4 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment },
         currencyReward: { min: 220, max: 520 },
         lootTableId: "boss_sentinel_drops",
         // Its moveset, exactly: Sapping Slam (blunt and earth, drains the target's insight into its own), Mass Fear (Intimidate on every enemy),
         // Bolster (its stone hardens further), Reckless Charge, Wild Swing. ("rest" is only the AI's fallback when it can afford nothing.)
-        abilities: ["rest", "sapping_slam", "mass_fear", "bolster", "reckless_charge", "wild_swing"],
+        abilities: ["rest", "sapping_slam", "mass_fear", "bolster", "reckless_charge", "wild_swing", "earthquake"],
         tags: ["HUMANOID", "CONSTRUCT", "MAGICAL", "BOSS", "ELITE"]
     },
 
@@ -1072,15 +1074,15 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 80, maxStamina: 40, maxInsight: 30, speed: 7, critical: 0.1,
-            maxHpMultiplier: 2,
+            maxHpMultiplier: 5.5,   // tuned with tools/krakenSim.mjs (BOSS=JAEGER_BOSS ACT2=1, level 27): a real chance of a wipe alone or in a party
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 4, pierce: 4, blunt: 3, ice: 8, fire: -1 },
             baseResistance: { ice: 0.6, slash: 0.15, pierce: 0.15, fire: -0.2 },
-            baseAttack: { slash: 8, blunt: 2, ice: 6 }
+            baseAttack: { slash: 12.8, blunt: 3.2, ice: 9.6 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "panzerian_greatsword" },
         currencyReward: { min: 250, max: 600 },
         lootTableId: "boss_jaeger_drops",
-        abilities: ["rest", "cleave", "guard_break", "leaping_slash", "ice_shard", "frigid_gale", "intimidate"],
+        abilities: ["rest", "cleave", "guard_break", "leaping_slash", "ice_shard", "frigid_gale", "intimidate", "whirlwind_slash"],
         tags: [...HUMANOID_TEMPLATE.tags, "PANZERIAN", "BOSS", "ELITE"]
     },
 

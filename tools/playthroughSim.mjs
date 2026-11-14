@@ -217,7 +217,7 @@ function encounter(level, fighters = 1) {
     const b = pick(biomes);
     const night = rnd() < 0.3;
     const table = act2 && night && rnd() < 0.6 ? `${b}_battles_blood_moon` : `${b}_battles_${night ? 'night' : 'day'}`;
-    const model = SpawnTableFactory.generateBattle(table, DIFF, { fighters }, SCALE);
+    const model = SpawnTableFactory.generateBattle(table, DIFF, { fighters, ambush: true }, SCALE);   // an overworld ambush, as BiomeModel.getBattle rolls it (AMBUSH_SIZE)
     const base = level + DIFF_OFFSET + ActSystem.getEnemyLevelOffset();
     return (model.enemies || []).map(cfg => {
         const id = cfg.id; const { id: _, levelOffset = 0, ...rest } = cfg;

@@ -334,12 +334,12 @@ test('caves and catacombs have more fights than anywhere outside; traps hurt bad
     for (const [id, pct] of hurt) assert.ok(pct >= 40, `${id}: ${pct}% of max HP`);
 });
 
-test('the Infernus Sentinel: a stone wall of blunt and earth that saps magic, with Mass Fear, Bolster, Reckless Charge and Wild Swing', async () => {
+test('the Infernus Sentinel: a stone wall of blunt and earth that saps magic, with Mass Fear, Bolster, Reckless Charge, Wild Swing and Earthquake', async () => {
     const { ENTITY_DEFINITIONS } = await import('../../shared/characters/entityDefinitions.js');
     const { AbilityDefinitions } = await import('../../shared/abilities/abilityDefinitions.js');
     const { BattleAnimationDefinitions } = await import('../../shared/battle/animation/battleAnimationDefinition.js');
     const S = ENTITY_DEFINITIONS.INFERNUS_SENTINEL, D = ENTITY_DEFINITIONS.DARIUS_THE_GROVELER;
-    assert.deepEqual(S.abilities.filter(id => id !== 'rest').sort(), ['bolster', 'mass_fear', 'reckless_charge', 'sapping_slam', 'wild_swing']);
+    assert.deepEqual(S.abilities.filter(id => id !== 'rest').sort(), ['bolster', 'earthquake', 'mass_fear', 'reckless_charge', 'sapping_slam', 'wild_swing']);
     for (const id of S.abilities) {
         assert.ok(AbilityDefinitions[id], `${id} exists`);
         assert.ok(BattleAnimationDefinitions[AbilityDefinitions[id].animationId], `${id} has its animation`);

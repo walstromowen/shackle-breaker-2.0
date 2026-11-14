@@ -200,6 +200,22 @@ export const AbilityDefinitions = {
         accuracy: 0.85,
         effects: [{ type: "damage", damageType: "slash", power: 1.1 }]
     },
+    // A great beast's answer to a line of fighters (the Panzerkamfer, bred to break shield walls): claws and armoured bulk through all of them.
+    "rampage": {
+        id: "rampage",
+        name: "Rampage",
+        description: "Tear through the whole line with claws and armoured bulk, cutting every enemy on the field.",
+        range: "melee",
+        tags: ["physical", "contact", "slash", "beast", "aoe"],
+        battleMessage: "{user} rampages through the line!",
+        icon: { col: 5, row: 0 },   // Claw's: the same claws, through every one of them
+        animationId: "whirlwind_slash",
+        speedModifier: 0.9,
+        targeting: { scope: "all_enemies", select: "auto" },
+        cost: { stamina: 24 },
+        accuracy: 0.85,
+        effects: [{ type: "damage", damageType: "slash", power: 1.0 }]
+    },
     // A cut at the legs: it can take the target off their feet (they lose their next turn), make them bleed, or both.
     "low_sweep": {
         id: "low_sweep",

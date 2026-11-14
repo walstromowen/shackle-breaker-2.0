@@ -26,6 +26,8 @@ const { bossHpFactor, PARTY_SCALING } = await import(ROOT + '/shared/battle/spaw
 const { requirementsAt } = await import(ROOT + '/shared/items/weaponRequirements.js');
 const { BattleController } = await import(ROOT + '/frontend/src/screens/battle/battleController.js');
 const K = { ...JSON.parse(process.env.KNOBS || '{}') };
+const { MAX_LINEUP } = await import(ROOT + '/shared/core/multiplayerParty.js');
+const FIGHTERS = Number(process.env.FIGHTERS || 3);   // each player's fighters (the player and their recruits)
 const WEAPON_CAP = Number(process.env.WEAPON_CAP || 4);   // by the Kraken a party has usually forged enough steel for level 4, rarely 5
 
 // ---- parties, built as tools/playthroughSim.mjs builds them ----
@@ -68,7 +70,10 @@ const BOSS = process.env.BOSS || null;
 function buildBoss(players) {
     const lvl = LEVEL + (ENTITY_DEFINITIONS[BOSS].tags.includes('BOSS') ? 0 : 0) + (players - 1) * PARTY_SCALING.LEVELS_PER_PLAYER + (process.env.ACT2 ? 1 : 0);
     const def = ENTITY_DEFINITIONS[BOSS];
-    return [EntityFactory.create(BOSS, { level: lvl, baseStats: { ...def.baseStats, maxHpMultiplier: (def.baseStats.maxHpMultiplier || 1) * bossHpFactor(players) } })];
+    const b = def.baseStats;   // knobs for any boss: bossHp (times its maxHpMultiplier), bossAtk (attack stats times this), bossRes (resistances times this)
+    return [EntityFactory.create(BOSS, { level: lvl, baseStats: { ...b, maxHpMultiplier: (b.maxHpMultiplier || 1) * (K.bossHp ?? 1) * bossHpFactor(players),
+        baseAttack: scaleAtk(b.baseAttack, K.bossAtk), baseResistance: scaleRes(b.baseResistance || {}, K.bossRes) }, ...(K.bossAbilities ? { abilities: K.bossAbilities } : {}),
+        ...(K.bossAttrs ? { attributes: Object.fromEntries(Object.entries(def.attributes).map(([k, v]) => [k, v + (K.bossAttrs[k] || 0)])) } : {}) })];   // bossAbilities: moves to add; bossAttrs: attribute points to add
 }
 // knobs: headHp (maxHpMultiplier), tentacleHp (base maxHp), tentHpMult (the tentacles' maxHpMultiplier), headRes / tentRes (every resistance times this), headAtk / tentAtk (attack stats times this)
 const scaleRes = (r, f) => (f === undefined ? r : Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v * f])));
@@ -87,7 +92,8 @@ function buildKraken(players) {
 // ---- one fight, played by a strategy ----
 const power = (a) => (a.effects || []).filter(e => e.type === 'damage').reduce((s, e) => s + (e.power || 1), 0) * Math.max(1, a.targeting?.count || (a.targeting?.select === 'all' ? 2 : 1));
 function fight(players, strategy) {
-    gameState.party.members = Array.from({ length: 3 * players }, () => buildCharacter(randomClass(), LEVEL));
+    // a shared fight's line-up holds six at most (shared/core/multiplayerParty.js MAX_LINEUP: three each for two players, two each for three)
+    gameState.party.members = Array.from({ length: players > 1 ? Math.min(MAX_LINEUP, FIGHTERS * players) : FIGHTERS }, () => buildCharacter(randomClass(), LEVEL));
     gameState.party.inventory.length = 0;
     const foes = BOSS ? buildBoss(players) : buildKraken(players);
     const bc = new BattleController({}, { TILE_SIZE: 64 }, {});
