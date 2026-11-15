@@ -98,7 +98,7 @@ export const suspiciousMerchant = {
             tone: "arcane",
             sfx: "gemChime",
             image: { col: 2, row: 1 },
-            text: "He rips his cloak open, giggling wildly! \"Look! The pretties! They sing in the dark! Buy them before they bite me again!\" Hee hee!",
+            text: "He rips his cloak open, giggling wildly! \"Look! The pretties! They sing in the dark! Buy them before they bite me again! Hee hee!\"",
             decisions: [
                 {
                     text: "Trade with the merchant.",

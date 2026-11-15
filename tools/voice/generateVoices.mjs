@@ -60,6 +60,9 @@ const FX = {
     hall: 'aecho=0.8:0.75:70|160|300:0.35|0.25|0.18,highpass=f=80,lowpass=f=9000,volume=1.1',
     // nightmare: the hall echo, darker, with a faint copy of the voice a fourth lower under it (same timing): the shrill mania stays on top,
     // something deeper speaks along beneath it
+    // cursed: the voices in a madman's head speaking along with him: faint copies of his voice, one higher and one lower and a little behind,
+    // with a short close echo (the words stay clear on top)
+    cursed: 'asplit=3[v][hi][lo];[hi]asetrate=44100*1.12,aresample=44100,atempo=0.8929,adelay=35|35,highpass=f=300,volume=0.16[h];[lo]asetrate=44100*0.84,aresample=44100,atempo=1.1905,adelay=60|60,lowpass=f=2200,volume=0.22[l];[v][h][l]amix=inputs=3:normalize=0,aecho=0.8:0.6:45|110:0.22|0.12,highpass=f=70,lowpass=f=8500',
     nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.85:80|190|340|520:0.32|0.23|0.16|0.09,highpass=f=60,lowpass=f=7000,volume=1.0'
 };
 /* Every clip's loudness: integrated loudness (LUFS) and true peak (dBTP). Speech in a game sits well at about -19 LUFS. */

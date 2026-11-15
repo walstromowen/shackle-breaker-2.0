@@ -300,6 +300,55 @@
         "Brother. Always you leave trail child could follow.": "[cold, quiet contempt] Brother. Always you leave trail child could follow.",
         "Is not finished, brother.": "[wounded, cold, quiet fury] Is not finished, brother."
       }
+    },
+    "MADMAN": {
+      "id": "XflHJL08JT5zppX9dKiP",
+      "name": "Cursed Madman (Shackle Breaker): designed for him, an eccentric old townsman of a gothic Victorian horror city, like a Bloodborne character: aged, raspy, theatrical and old-world, wry and genteel at rest, then lurching into cackling, tearful pleading or shrill excitement; the cursed treatment puts the voices in his head under his own",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.0
+      },
+      "fx": "cursed",
+      "directions": {
+        "It's really you...": "[a sharp, shaky gasp] [hushed, awed, eyes welling] It's... [a broken, giddy little giggle] [voice cracking] really you... [laughing and weeping at once, manic]",
+        "Magic tell me things! Hee Hee! Tell me what magic say!": "[murmuring, genteel, as if sharing a dreadful secret] Magic tell me things... [manic giggling bubbling over] Hee hee! [a long unhinged cackle] [lurching close, wide-eyed, hungry] Tell me what magic say! [giggling madly]",
+        "Freak? .. Friend! Magic know many freak friend! You be freak friend too!": "[startled, quick and jittery, sniffing] Freak? [short pause] [bursting into manic laughter] ..Friend! [cackling, theatrical, sing-song] Magic know many freak friend! [shrieking with joy, wild laughter] You be freak friend too!",
+        "Magic like you! So me like you! Hahahaha! Me give these now!": "[gasping, overjoyed, giggling] Magic like you! [giddy, bouncing] So me like you! [wild, manic, rising cackle that goes on too long] Hahahaha! [suddenly hushed and courtly, a little bow, one last giggle] Me give these now.",
+        "Hahaha! Magic no like you! So me no like neither!": "[cruel, shrill, manic cackle] Hahaha! Magic no like you! [sullen muttering, turning away] So me no like neither... [a low, unhinged snicker]",
+        "No no! No hurt! Me help magic! Me help!": "[panicked, very fast, breathless, words tumbling over each other] No no! No hurt! [rapid, frantic, hyperventilating, a hysterical laugh breaking through the panic] Me help magic! [gasping, pleading, faster still, half laughing, half sobbing] Me help!",
+        "No hear magic! Me hurt you now!": "[the laughter stops; cold, quiet and lucid] No hear magic. [a low, trembling snarl] Me hurt you now. [a slow, creeping manic giggle]"
+      }
+    },
+    "MERCHANT": {
+      "id": "5GKLs5NRY2u1NuttoOep",
+      "name": "Suspicious Merchant (Shackle Breaker): designed for him, a nasal, hissing, sing-song peddler who giggles under his breath and talks to his wares",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "directions": {
+        "Psst! You! Yes, you with the eyes!": "[hissing whisper] Psst! You! [sly] Yes, you with the eyes!",
+        "The shiny things whisper to me! They say you need them... yes, yes, they want you to have them!": "[conspiratorial] The shiny things whisper to me! They say you need them... [nodding quickly, giggling] yes, yes, they want you to have them!",
+        "Look! The pretties! They sing in the dark! Buy them before they bite me again! Hee hee!": "[giggling wildly] Look! The pretties! [sing-song] They sing in the dark! [nervous, quick] Buy them before they bite me again! [giggles] Hee hee!",
+        "Lies! The stones are just sleeping! Hush! Take the loud coins and leave us be!": "[shrill, offended] Lies! The stones are just sleeping! [hissing] Hush! [frantic] Take the loud coins and leave us be!",
+        "The big ones! The scary ones! They eat the magic!": "[terrified shriek] The big ones! The scary ones! [panicked] They eat the magic!",
+        "The voices say you have too much blood... Come out, friends! Let's let it out!": "[soft, dead calm, giggling quietly] The voices say you have too much blood... [calling out, gleeful] Come out, friends! Let's let it out!",
+        "Hee hee!": "[manic giggling] Hee hee!"
+      }
+    },
+    "SURVIVOR": {
+      "id": "b8CLtjW2Cjk42q6dXfeC",
+      "name": "Legionary Survivor (Shackle Breaker): designed for him, a low, rough, gravelly veteran, weary and dry, a soldier's grim humour",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "directions": {
+        "What do you want?": "[wary, tired] What do you want?",
+        "Safe! Heh. You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others.": "[bitter laugh] Safe! Heh. [dry] You won't last long out here. [weary] I can't remember the last time I felt safe, much less so traveling with others.",
+        "Hmm... I am not convinced...": "[skeptical, slow] Hmm... I am not convinced...",
+        "Fine. Put like that, I suppose I can find the time. Lead on.": "[sighs] Fine. [grudging] Put like that, I suppose I can find the time. [gruff] Lead on."
+      }
     }
   }
 }

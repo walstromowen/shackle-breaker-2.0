@@ -27,7 +27,15 @@ export const VOICED = {
     pursuer_won: [[/./, 'STRANGER']],
     dry_kraken_ambush: [],   // the narrator only: Codey speaks with his hands
     codey_freed: [],
-    jaeger: [[/./, 'JAEGER']]   // Nikoli's brother, posing as him: Nikoli's voice, played cold
+    jaeger: [[/./, 'JAEGER']],   // Nikoli's brother, posing as him: Nikoli's voice, played cold
+    // the world's encounters: the narrator, and the few who speak
+    a_disturbing_sight: [[/./, 'MADMAN']],          // the cursed madmen of the grass and the villages
+    suspicious_merchant: [[/./, 'MERCHANT']],       // the mad peddler (and the giggling of his friends)
+    aftermath: [[/./, 'SURVIVOR']],                 // the legionary left standing
+    wounded_mutt: [], bonfire: [], wild_hunt: [], treasure_chest: [], strange_obelisk: [], iron_chest: [], tracks_in_the_snow: [],
+    quicksand: [], cyclone: [], cyclone_heart: [], ruined_carriage: [], ruined_carriage_cleared: [], peculiar_scarecrow: [], old_gravestone: [],
+    cave_in: [], arrow_trap: [], pit_trap: [], swinging_axes: [], catacomb_vault_door: [], infernus_sentinel: [], infernus_sentinel_fallen: [],
+    shackled_betrayal: [], shackled_betrayal_end: []   // the narrator only (the carriage's journal and the sentinel's last whisper are read by him)
 };
 
 /* Who speaks the quoted words of a stage (also used by tools/dialogueScript.mjs for the script's NAME: tags) */
@@ -40,7 +48,10 @@ export const SPEAKERS = {
     brothers_won: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
     pursuer: [[/^captive_3$|^freed/, 'STRANGER'], [/./, 'JAEGER']],
     pursuer_won: [[/./, 'STRANGER']],
-    jaeger: [[/./, 'JAEGER']]
+    jaeger: [[/./, 'JAEGER']],
+    a_disturbing_sight: [[/./, 'MADMAN']],
+    suspicious_merchant: [[/./, 'MERCHANT']],
+    aftermath: [[/./, 'SURVIVOR']]
 };
 
 export function speakerOf(encounterId, stageId) {
