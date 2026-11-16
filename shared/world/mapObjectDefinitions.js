@@ -60,6 +60,51 @@ export const MAP_OBJECTS_DEFINITIONS = {
     /* the workshop: a main gable (5 wide, with the door) and a lower side wing (3 wide) */
     CRAFTING_HOUSE: { sheet: 'objCraftingHouse', spriteX: 5, spriteY: 7, width: 7, height: 6, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 4, h: 2 } /* the wall right of the door, wing included */] },
     /* the blacksmith's house: house A's size and door gap in fieldstone under a slate roof; its door is the blacksmith's door art and leads into an ordinary house */
+    /* the castle town's house (castleLayout.js): the abandoned house's size, door gap and walls, in the keep's gothic stone under slate */
+    CASTLE_TOWNHOUSE: { sheet: 'objCastleTownhouse', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
+    /* and seen from the side (its long wall to the south): sealed, no door, the whole wall solid; Left / Right differ in where the chimney, dormer and windows are */
+    CASTLE_TOWNHOUSE_LEFT: { sheet: 'objCastleTownhouseLeft', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 5, h: 2 }] },
+    CASTLE_TOWNHOUSE_RIGHT: { sheet: 'objCastleTownhouseRight', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 5, h: 2 }] },
+    /* A ruined castle's tall pieces (castleSites.js writes them, tools/art/castleObjects.py draws their sheets). Nothing about them is solid but the keep:
+       a tower and the gatehouse stand over cells the castle's levels already wall in (a tower is walked through along its wall, the gatehouse's arch walked
+       under). CASTLE_TOWER_n: one frame of the tower sheet each (0 a door on the ground, 1 none, 2-4 its foot stopping where a wall runs south of it),
+       4 x 15 tiles, standing on its footprint's last row and drawn 28 px lower, so its foot hangs into the row below as a wall's face does.
+       CASTLE_KEEP: 20 x 22, on the last row of its footprint (20 x 10, all solid). CASTLE_GATEHOUSE: 6 x 11, on the gate's face row; two frames, 0 open, 1 its portcullis down: the renderer shows
+       the closed one while that gate is shut (castleGate: WorldManager.castleGatesShut, which also bars the way through; all open for now). */
+    CASTLE_TOWER_0: { sheet: 'objCastleTower', spriteX: 0, spriteY: 0, width: 4, height: 15, frames: 5, frame: 0, spriteDy: 28, isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
+    CASTLE_TOWER_1: { sheet: 'objCastleTower', spriteX: 0, spriteY: 0, width: 4, height: 15, frames: 5, frame: 1, spriteDy: 28, isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
+    CASTLE_TOWER_2: { sheet: 'objCastleTower', spriteX: 0, spriteY: 0, width: 4, height: 15, frames: 5, frame: 2, spriteDy: 28, isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
+    CASTLE_TOWER_3: { sheet: 'objCastleTower', spriteX: 0, spriteY: 0, width: 4, height: 15, frames: 5, frame: 3, spriteDy: 28, isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
+    CASTLE_TOWER_4: { sheet: 'objCastleTower', spriteX: 0, spriteY: 0, width: 4, height: 15, frames: 5, frame: 4, spriteDy: 28, isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
+    CASTLE_KEEP: { sheet: 'objCastleKeep', spriteX: 0, spriteY: 0, width: 20, height: 22, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -9, w: 20, h: 10 }] },
+    CASTLE_GATEHOUSE: { sheet: 'objCastleGatehouse', spriteX: 0, spriteY: 0, width: 6, height: 11, frames: 2, frame: 0, castleGate: 'outer', isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
+    // the inner ward's smaller gatehouse (castle_gatehouse_inner_obj.png, 4 x 8), on the inner wall's last row, the flight up ending at the foot of its arch;
+    // two frames like the gatehouse's (closed while the inner gate is shut: WorldManager.castleGatesShut('inner'))
+    CASTLE_GATEHOUSE_INNER: { sheet: 'objCastleGatehouseInner', spriteX: 0, spriteY: 0, width: 4, height: 8, frames: 2, frame: 0, castleGate: 'inner', isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
+    /* the castle's armory (tools/art/castleTownVariants.py, ARMORY), one in every castle: 11 x 9 (a round stair turret on its right corner), a front view like the town house, its walls the bottom two rows,
+       solid but for the door gap in column 5 (its CASTLE_DOOR stands there; the one cell above the door is wall) */
+    CASTLE_ARMORY: { sheet: 'objCastleArmory', spriteX: 0, spriteY: 0, width: 11, height: 9, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 5, h: 2 }, { xOffset: 5, yOffset: -1, w: 1, h: 1 }, { xOffset: 6, yOffset: -1, w: 5, h: 2 }] },
+    /* the castle town's other houses (tools/art/castleTownVariants.py): side views, sealed, the whole wall (the bottom two rows) solid. NARROW 3 x 5, HALL 7 x 5,
+       TALL 4 x 6 (two storeys), TOWER 4 x 7 (a tower house), ROW 6 x 5 (two houses as one), RUIN 5 x 5 (fallen in at one end) */
+    CASTLE_HOUSE_NARROW: { sheet: 'objCastleHouseNarrow', spriteX: 0, spriteY: 0, width: 3, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 3, h: 2 }] },
+    CASTLE_HOUSE_HALL: { sheet: 'objCastleHouseHall', spriteX: 0, spriteY: 0, width: 7, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 7, h: 2 }] },
+    CASTLE_HOUSE_TALL: { sheet: 'objCastleHouseTall', spriteX: 0, spriteY: 0, width: 4, height: 6, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 4, h: 2 }] },
+    CASTLE_HOUSE_TOWER: { sheet: 'objCastleHouseTower', spriteX: 0, spriteY: 0, width: 4, height: 7, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 4, h: 2 }] },
+    CASTLE_HOUSE_ROW: { sheet: 'objCastleHouseRow', spriteX: 0, spriteY: 0, width: 6, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 6, h: 2 }] },
+    CASTLE_HOUSE_RUIN: { sheet: 'objCastleHouseRuin', spriteX: 0, spriteY: 0, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 5, h: 2 }] },
+    /* the castle town's market (tools/art/castleMarket.py): wooden shop stands, 3 x 3 (their counter and the row behind it solid, the awning over it walked
+       under), the same seen from behind (BACK) and from the side (SIDE_E: its counter facing east, SIDE_W: west; 2 x 3, its bottom 2 x 2 solid), the square's
+       well (2 x 3, its bottom 2 x 2 solid), and wheelbarrows (2 x 2 sprites, the barrow's body the bottom row, solid) */
+    MARKET_STALL_BACK: { sheet: 'objMarketStallBack', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 } },
+    MARKET_STALL_SIDE_E: { sheet: 'objMarketStallSideE', spriteX: 0, spriteY: 0, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 2, h: 2 } },
+    MARKET_STALL_SIDE_W: { sheet: 'objMarketStallSideW', spriteX: 0, spriteY: 0, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 2, h: 2 } },
+    MARKET_WELL: { sheet: 'objMarketWell', spriteX: 0, spriteY: 0, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 2, h: 2 } },
+    WHEELBARROW_1: { sheet: 'objWheelbarrow1', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
+    WHEELBARROW_2: { sheet: 'objWheelbarrow2', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
+    WHEELBARROW_3: { sheet: 'objWheelbarrow3', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
+    MARKET_STALL_1: { sheet: 'objMarketStall1', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 } },
+    MARKET_STALL_2: { sheet: 'objMarketStall2', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 } },
+    MARKET_STALL_3: { sheet: 'objMarketStall3', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 } },
     ABANDONED_SMITHY: { sheet: 'objAbandonedSmithy', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
     /* THE SIDE VIEWS: the same houses seen from the side, for the plots beside a north-south road (the gable with the door faces the road, so only the long wall shows). They have no
        door: the whole wall (the bottom two rows) is solid and the house is a sealed shell. Left / Right differ only in where the chimney and the windows are. Each is as tall as its front view. */
@@ -246,6 +291,12 @@ export const MAP_OBJECTS_DEFINITIONS = {
       sheet: 'objHouseDoorWooden',
       spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
       interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'HOUSE_INTERIOR', isRepeatable: true }
+    },
+    /* the castle town house's door: plates of dark iron, strapped and studded (tools/art/castleDoor.py); it leads into an ordinary house */
+    CASTLE_DOOR: {
+        sheet: 'objCastleDoor',
+        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
+        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'HOUSE_INTERIOR', isRepeatable: true }
     },
     /* the blacksmith's door: the blacksmith's door art on an ordinary house door (it leads into a plain house interior) */
     SMITHY_DOOR: {

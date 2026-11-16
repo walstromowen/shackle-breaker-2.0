@@ -6,6 +6,7 @@ import { gameState } from '../core/gameState.js';
 import { mapObjectFactory } from './mapObjectsFactory.js';
 import { WeatherFactory } from './weatherFactory.js';
 import { TerrainGenerator } from './terrainGenerator.js';
+import { biomeFactory } from './biomeFactory.js';
 /* --- NEW: Import the Factory instead of the old Generator --- */
 import { InteriorFactory } from './interiorFactory.js';
 import { VillagePlanner } from './villagePlanner.js';
@@ -16,6 +17,8 @@ import { StructureSpawner } from './structureSpawner.js';
    are not reported: every player's browser builds the same villages from the same seed. */
 export { worldSync } from '../core/worldSync.js';   // (it lives in core so the story can use it: shared/story/worldStory.js)
 import { worldSync } from '../core/worldSync.js';
+import { ActSystem } from '../story/actSystem.js';
+import { CASTLE_SITES } from './castleSites.js';
 const reportChange = (key, value) => { if (worldSync.onLocalChange) worldSync.onLocalChange(key, value); };
 
 const MASK_DIRECTIONS = [
@@ -84,6 +87,9 @@ export class WorldManager {
         return this.terrain.getTileAt(col, row);
     }
     getBiomeAt(col, row) {
+        // inside a ruined castle (castleSites.js) the cells are the castle's own biome: drawn with its tile set, growing nothing of the plains'
+        const castles = this.terrain.castles;
+        if (castles && castles.isCastleCell(col, row)) return biomeFactory.getBiome('CASTLE_RUINS');
         return this.terrain.getBiomeAt(col, row);
     }
     ensureChunkLoaded(col, row) {
@@ -403,7 +409,9 @@ export class WorldManager {
     // a cell of a village street on a cliff level: drawn as dirt (it cannot be a dirt tile there, a dirt tile is the low ground); see VillagePlanner._paveRoads
     isLevelPath(col, row) {
         const p = gameState.world.levelPaths;
-        return !!p && p[this._s(col, row)] === 1;
+        if (p && p[this._s(col, row)] === 1) return true;
+        const castles = this.terrain.castles;   // a castle's cobbled yards, on the plateau's level and the inner ward's
+        return !!castles && castles.levelPathAt(col, row);
     }
     _nearStair(col, row) {
         if (!this.terrain || !this.terrain.getStairAt) return false;
@@ -501,6 +509,7 @@ export class WorldManager {
             if (this.isBiomeEdge(c, row) || this.isBiomeEdge(c, row + 1)) return false;
             for (let r = row - 3; r <= row + 1; r++) {
                 if (this._nearStair(c, r)) return false;
+                if (this.terrain.castles && this.terrain.castles.isCastleCell(c, r)) return false;   // never painted into a castle's walls
                 if (gameState.world.changes && gameState.world.changes[this._s(c, r)] !== undefined) return false;
             }
         }
@@ -617,7 +626,28 @@ export class WorldManager {
         const obj = this.getObjectAt(col, row);
         return obj && obj.isSolid !== false ? obj : null;
     }
+    /* Whether a castle's gate is shut (its gatehouse showing the portcullis down, the way through barred). 'outer': every way into a castle, shut
+       before act CASTLE_SITES.OPEN_ACT when GATES_SHUT; 'inner': the inner ward's gate at (col, row), shut when INNER_SHUT until openInnerGate.
+       Both open for now (act 4 is not in the game yet). */
+    castleGatesShut(kind = 'outer', col = 0, row = 0) {
+        if (kind === 'inner') return CASTLE_SITES.INNER_SHUT && !this._innerOpened(col, row);
+        return CASTLE_SITES.GATES_SHUT && ActSystem.getAct() < CASTLE_SITES.OPEN_ACT;
+    }
+    _innerOpened(col, row) {
+        const site = this.terrain.castles && this.terrain.castles.siteAt(col, row);
+        return !!site && !!(gameState.world.castleGatesOpened || {})[site.id];
+    }
+    /* Opens the inner gate of the castle at (col, row) for good (an encounter at the gate calls this). */
+    openInnerGate(col, row) {
+        const site = this.terrain.castles && this.terrain.castles.siteAt(col, row);
+        if (!site) return false;
+        if (!gameState.world.castleGatesOpened) gameState.world.castleGatesOpened = {};
+        gameState.world.castleGatesOpened[site.id] = true;
+        return true;
+    }
     canMove(fromCol, fromRow, toCol, toRow, direction) {
+        const gateKind = this.terrain.castles ? this.terrain.castles.gateKindAt(toCol, toRow) : null;
+        if (gateKind && this.castleGatesShut(gateKind, toCol, toRow)) return false;   // a castle's gate, its portcullis down
         const fromElev = this.getElevation(fromCol, fromRow);
         const toElev = this.getElevation(toCol, toRow);
         if (toElev === -999) return false;

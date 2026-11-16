@@ -12,9 +12,12 @@ export class MapObjectModel {
         this.spriteX = definition.spriteX || 0;
         this.spriteY = definition.spriteY || 0;
         this.frames = definition.frames || 1;
+        if (definition.frame !== undefined) this.currentFrame = definition.frame;   // a fixed frame of a sheet of several (a castle tower's way of meeting its walls)
+        this.spriteDy = definition.spriteDy || 0;   // drawn this many pixels lower than its cell's bottom edge (a castle tower's foot hangs into the row below)
         this.speed = definition.speed || 0.2;
         this.sheet = sheet; // resolved loader key (string), never the per-biome map
         this.character = definition.character || null; // an NPC drawn from a character sheet's idle row: { sheet, facing } (see MapRenderer.drawCharacterObject)
+        this.castleGate = definition.castleGate || null; // a castle's gatehouse ('outer' / 'inner'): shown closed (frame 1) while that gate is shut (WorldManager.castleGatesShut)
         this.connects = definition.connects || null; // objects of the same kind next to each other join up (the fence): the renderer picks the frame
         this.isAnchor = definition.isAnchor !== undefined ? definition.isAnchor : true;
 

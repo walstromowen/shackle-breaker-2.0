@@ -26,6 +26,23 @@ ui_icons: './assets/icons/ui_icons.png',
     plainsWaterAnim:        './assets/tilesets/plains/water_blob47_anim.png',
     plainsWaterInterior:    './assets/tilesets/plains/water_interior_anim.png',
     plainsCliffStairs: './assets/tilesets/plains/cliff_stairs.png',   // after plainsCliffShadow
+    // the ruined castles that stand on the plains' great plateaus (biome CASTLE_RUINS: tools/art/castleRuinsTileset.py and the castle art scripts)
+    castlePrimaryFloor: './assets/tilesets/castle_ruins_exterior/primary_floor_blob47.png',
+    castleSecondaryFloor: './assets/tilesets/castle_ruins_exterior/secondary_floor_blob47.png',
+    castleSecondaryOnLevel: './assets/tilesets/castle_ruins_exterior/secondary_floor_on_level.png',
+    castleCliffFloor: './assets/tilesets/castle_ruins_exterior/cliff_blob47_floor.png',
+    castleCliffWall: './assets/tilesets/castle_ruins_exterior/cliff_blob47_wall.png',
+    castleCliffExt: './assets/tilesets/castle_ruins_exterior/cliff_blob47_ext.png',
+    castleCliffExtStep: './assets/tilesets/castle_ruins_exterior/cliff_blob47_ext_step.png',
+    castleCliffShadow: './assets/tilesets/castle_ruins_exterior/cliff_blob47_shadow.png',
+    castleCliffStairs: './assets/tilesets/castle_ruins_exterior/cliff_stairs.png',
+    castleCliffFront: './assets/tilesets/castle_ruins_exterior/cliff_blob47_front.png',
+    castleWaterAnim: './assets/tilesets/castle_ruins_exterior/water_blob47_anim.png',
+    castleWaterInterior: './assets/tilesets/castle_ruins_exterior/water_interior_anim.png',
+    objCastleTower: './assets/tilesets/castle_ruins_exterior/castle_tower_obj.png',       // (tools/art/castleObjects.py)
+    objCastleKeep: './assets/tilesets/castle_ruins_exterior/castle_keep_obj.png',
+    objCastleGatehouse: './assets/tilesets/castle_ruins_exterior/castle_gatehouse_obj.png',
+    objCastleGatehouseInner: './assets/tilesets/castle_ruins_exterior/castle_gatehouse_inner_obj.png',
 
 
     /* desert */
@@ -128,6 +145,29 @@ ui_icons: './assets/icons/ui_icons.png',
     objStoneWorkshop: './assets/mapObjects/objStoneWorkshop.png',   // the stone house as the workshop: lit windows, a smouldering chimney
     objCraftingHouse: './assets/mapObjects/objCraftingHouse.png',
     objAbandonedSmithy: './assets/mapObjects/objAbandonedSmithy.png',
+    objCastleTownhouse: './assets/mapObjects/objCastleTownhouse.png',   // a house of the castle's town, in the keep's stone (tools/art/castleTownhouse.py)
+    objCastleTownhouseLeft: './assets/mapObjects/objCastleTownhouseLeft.png',     // its side views (tools/art/castleTownhouseSide.py)
+    objCastleTownhouseRight: './assets/mapObjects/objCastleTownhouseRight.png',
+    // the castle town's other houses, every one a sealed side view (tools/art/castleTownVariants.py)
+    objCastleHouseNarrow: './assets/mapObjects/objCastleHouseNarrow.png',
+    objCastleHouseHall: './assets/mapObjects/objCastleHouseHall.png',
+    objCastleHouseTall: './assets/mapObjects/objCastleHouseTall.png',
+    objCastleHouseTower: './assets/mapObjects/objCastleHouseTower.png',
+    objCastleHouseRow: './assets/mapObjects/objCastleHouseRow.png',
+    objCastleHouseRuin: './assets/mapObjects/objCastleHouseRuin.png',
+    objCastleDoor: './assets/mapObjects/objCastleDoor.png',             // the town house's iron door (tools/art/castleDoor.py)
+    objCastleArmory: './assets/mapObjects/objCastleArmory.png',       // every castle's armory (tools/art/castleTownVariants.py, ARMORY)
+    // the castle town's market (tools/art/castleMarket.py)
+    objMarketStall1: './assets/mapObjects/objMarketStall1.png',
+    objMarketStall2: './assets/mapObjects/objMarketStall2.png',
+    objMarketStall3: './assets/mapObjects/objMarketStall3.png',
+    objWheelbarrow1: './assets/mapObjects/objWheelbarrow1.png',
+    objWheelbarrow2: './assets/mapObjects/objWheelbarrow2.png',
+    objWheelbarrow3: './assets/mapObjects/objWheelbarrow3.png',
+    objMarketStallBack: './assets/mapObjects/objMarketStallBack.png',
+    objMarketStallSideE: './assets/mapObjects/objMarketStallSideE.png',
+    objMarketStallSideW: './assets/mapObjects/objMarketStallSideW.png',
+    objMarketWell: './assets/mapObjects/objMarketWell.png',
     objAbandonedHouse1Left: './assets/mapObjects/objAbandonedHouse1Left.png',
     objAbandonedHouse1Right: './assets/mapObjects/objAbandonedHouse1Right.png',
     objAbandonedStoneHouseLeft: './assets/mapObjects/objAbandonedStoneHouseLeft.png',

@@ -306,6 +306,8 @@ export const SaveManager = {
                 strangerSnowHome: world.strangerSnowHome || null,       // act 3: the snowy house Mentoras and Codey go to (story/heroes.js)
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
+                castlesBuilt: clone(world.castlesBuilt || {}),   // the castles whose objects are written into the world (StructureSpawner._buildCastle)
+                castleGatesOpened: clone(world.castleGatesOpened || {}),   // the castles whose inner gate has been opened
                 weather: serializeWeather(world.currentWeather),
                 biomeWeather: clone(world.biomeWeather || {}),   // each biome's remembered weather
                 weatherBiome: world.weatherBiome || null,
@@ -432,6 +434,8 @@ export const SaveManager = {
             discoveredChunks: data.world.discoveredChunks || [],
             // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
             structureChunks: data.world.structureChunks,
+            castlesBuilt: data.world.castlesBuilt || {},
+            castleGatesOpened: data.world.castleGatesOpened || {},
             currentWeather: weather,           // null -> WorldManager creates clear skies
             biomeWeather: data.world.biomeWeather || {},
             weatherBiome: data.world.weatherBiome || null

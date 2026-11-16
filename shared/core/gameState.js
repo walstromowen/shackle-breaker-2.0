@@ -33,6 +33,8 @@ export const gameState = {
         discoveredChunks: [],
         waypoints: [],       // the banners the party has planted: { id, col, row, biome } (shared/world/waypoints.js)
         structureChunks: {}, // chunks ('cx,cy') whose village / graveyard has been generated, so a reload never builds them again (structureSpawner.js)
+        castlesBuilt: {},    // the ruined castles ('rx,ry' of their region) whose objects have been written into the world (castleSites.js)
+        castleGatesOpened: {},   // the castles whose inner gate has been opened (WorldManager.openInnerGate; it is only shut when CASTLE_SITES.INNER_SHUT)
         currentWeather: null,
         biomeWeather: {},      // the weather each biome was left with (TimeSystem.syncBiomeWeather)
         weatherBiome: null     // the biome the current weather belongs to
@@ -98,6 +100,8 @@ export function resetWorldForNewGame() {
     w.jaegerCatacomb = null;       // nor has Jaeger found his catacombs
     w.strangerSnowHome = null;     // nor have Mentoras and Codey gone north (act 3)
     w.structureChunks = {};
+    w.castlesBuilt = {};
+    w.castleGatesOpened = {};
     w.currentWeather = null;
     w.biomeWeather = {};
     w.weatherBiome = null;

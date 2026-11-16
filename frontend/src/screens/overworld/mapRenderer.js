@@ -166,9 +166,11 @@ export class MapRenderer {
         for (let i = 0; i < objects.length; i++) {
             const obj = objects[i];
             if (obj.isGround || !obj.isAnchor) continue;
-            if (this.isInBounds(obj.col, obj.row, bounds)) {
+            // a big object (a castle's keep, a tower) is drawn while any of it is in view, not only its cell
+            if (this.isInBounds(obj.col, obj.row, bounds) || ((obj.w > 3 || obj.h > 6) && obj.col + obj.w > bounds.objStartCol && obj.col <= bounds.objEndCol && obj.row >= bounds.objStartRow && obj.row - obj.h < bounds.objEndRow)) {
                 const tileData = worldManager.getTileData(obj.col, obj.row);
                 if (obj.connects) obj.currentFrame = this.connectedFrame(obj, worldManager);
+                if (obj.castleGate) obj.currentFrame = worldManager.castleGatesShut && worldManager.castleGatesShut(obj.castleGate, obj.col, obj.row) ? 1 : 0;   // its portcullis down while that gate is shut
                 const visualBottomOffset = 1;
                 if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
                 const item = this.renderList[renderIdx++];
@@ -195,6 +197,17 @@ export class MapRenderer {
             item.type = 'ENTITY';
             item.data = entity;
         }
+        // a castle's battlements (BlobTerrainRenderer.frontPieces): sorted by the bottom of their cell, just after whatever stands in that row,
+        // so they hide the legs of whoever walks the wall behind them and are hidden by whoever stands south of the wall
+        this._fronts = this.blobTerrain.frontPieces(worldManager, bounds, this._fronts ? (this._fronts.length = 0, this._fronts) : []);
+        for (let i = 0; i < this._fronts.length; i++) {
+            const piece = this._fronts[i];
+            if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
+            const item = this.renderList[renderIdx++];
+            item.y = (piece.r + 1) * TILE_SIZE * scale + 0.2;
+            item.type = 'FRONT';
+            item.data = piece;
+        }
         this.renderList.length = renderIdx;
         this.renderList.sort((a, b) => a.y - b.y);
         for (let i = 0; i < renderIdx; i++) {
@@ -203,6 +216,8 @@ export class MapRenderer {
                 this.drawObject(item.data, item.x, item.dy, totalTime, item.objectSheetId);
             } else if (item.type === 'ENTITY') {
                 this.drawEntity(item.data, camera, interpolationFactor);
+            } else if (item.type === 'FRONT') {
+                this.blobTerrain.drawFront(this.ctx, item.data, camX, camY, scale);
             }
         }
     }
@@ -224,7 +239,7 @@ export class MapRenderer {
         const hTiles = obj.h || 1;
         const dW = Math.ceil(wTiles * OBJECT_SIZE * scale);
         const dH = Math.ceil(hTiles * OBJECT_SIZE * scale);
-        const drawY = Math.floor(dy - (hTiles - 1) * OBJECT_SIZE * scale);
+        const drawY = Math.floor(dy - (hTiles - 1) * OBJECT_SIZE * scale + (obj.spriteDy || 0) * scale);
 
         let frameOffset = 0;
         if (obj.frames > 1) {

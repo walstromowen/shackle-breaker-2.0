@@ -2,9 +2,13 @@ import { CONFIG } from '../core/constants.js';
 import { gameState } from '../core/gameState.js';
 import { biomeFactory } from './biomeFactory.js';
 import { BIOME_DEFINITIONS, isPlateau } from './biomeDefinitions.js';
+import { CastleSites, CASTLE_SITES } from './castleSites.js';
 export class TerrainGenerator {
     constructor(seed) {
         this.seed = seed;
+        /* The ruined castles on the plains' great plateaus (castleSites.js): where one stands its plan sets the level of every cell exactly (the
+           slope limit and the sliver clean-up leave them alone), and its stairs are the terrain's. */
+        this.castles = new CastleSites(this);
         this.offsetX = (this.seed % 10000) * 13.7;
         this.offsetY = (this.seed % 10000) * 19.3;
         this.TILES = CONFIG.TILE_TYPES;
@@ -111,6 +115,11 @@ export class TerrainGenerator {
         }
     }
     getBiomeAt(col, row) {
+        // a castle's plateau and the ring round its foot are plains whatever lies beside them (castleSites.js picks mostly-plains ground for them)
+        if (this.castles && this.castles.levelAt(col, row) >= 0) return biomeFactory.getBiome('PLAINS');
+        return this._naturalBiomeAt(col, row);
+    }
+    _naturalBiomeAt(col, row) {
         const key = this._s(col, row);
         if (this._biomeCache.has(key)) return this._biomeCache.get(key);
         const BIOME_FREQ = 0.0028;   // biome regions are a few hundred cells across
@@ -374,6 +383,7 @@ export class TerrainGenerator {
         if (gameState.world.terrainOverrides[key] !== undefined) {
             return gameState.world.terrainOverrides[key];
         }
+        { const cl = this.castles.levelAt(col, row); if (cl >= 0) return cl; }
         if (this._rawElevCache.has(key)) return this._rawElevCache.get(key);
         const finalNoise = this.getBlendedElevationNoise(col, row);
         let level = this.GLOBAL_ELEVATION_MAP.length - 1;
@@ -436,7 +446,7 @@ export class TerrainGenerator {
            The cell above such a cell is raised onto the level, which gives the face a rim and a grass top. Structures keep their tiles. */
         const below = this._getLevel(col, row + 1);
         const wanted = level + 1;
-        if (wanted >= 3 && below >= wanted && this._getLevel(col, row + 2) < wanted) {
+        if (wanted >= 3 && below >= wanted && this._getLevel(col, row + 2) < wanted && this.castles.levelAt(col, row) < 0) {   // (a castle keeps its tiles)
             const overrides = gameState.world.terrainOverrides;
             if (overrides[key] === undefined && overrides[this._s(col, row + 1)] === undefined) level = wanted;
         }
@@ -468,6 +478,7 @@ export class TerrainGenerator {
        Only where a cliff level (3+) is involved: water, dirt and ground keep their natural outline. One pass can leave a new 1-cell strip beside the fixed
        one, so it runs four times (each pass reads the pass before it, so the result does not depend on the order cells are asked for). */
     _smoothLevel(col, row, passes) {
+        { const cl = this.castles.levelAt(col, row); if (cl >= 0) return cl; }   // a castle's cells are exactly what its plan says
         if (passes === 0) return this._baseLevel(col, row);
         const key = passes + ':' + this._s(col, row);
         let v = this._smoothCache.get(key);
@@ -525,6 +536,8 @@ export class TerrainGenerator {
     getStairAt(col, row) {
         const vs = this._villageStairAt(col, row);
         if (vs) return vs;
+        const cs = this.castles.stairAt(col, row);
+        if (cs) return cs;
         const B = this.STAIR_BLOCK;
         const bx = Math.floor(col / B), by = Math.floor(row / B);
         const key = bx + ',' + by;
@@ -646,6 +659,7 @@ export class TerrainGenerator {
                 for (let c = cd.ox - 1; c <= cd.ox + cd.w && ok; c++) {
                     if (this.getBiomeAt(c, r) !== biome) ok = false;
                     if (gameState.world.terrainOverrides[this._s(c, r)] !== undefined) ok = false;
+                    if (this.castles.levelAt(c, r) >= 0) ok = false;   // none on a castle's plateau or round its foot: its own stair is the way up
                 }
             if (!ok || this._overlapsVillageStair(cd, 3)) continue;
             cd.score = this._hash(cd.ox, cd.oy, 43);
@@ -665,6 +679,20 @@ export class TerrainGenerator {
             out.push(cd);
         }
         return out;
+    }
+    /* The renderer asks this before it draws a castle's battlements over a cell (BlobTerrainRenderer.frontPieces): not where a tower, the keep, the
+       gatehouse or the inner wall's step stands over them. */
+    // a castle's walls and raised wards are flagstones all across (the pack's fullCliffFloor); on the plateau's own level (its yards, the cobbles
+    // before its gates) the floor under the cobbles is the grass
+    fullCliffFloorAt(col, row) {
+        return this.castles.levelAt(col, row) > CASTLE_SITES.BASE;
+    }
+    // round a castle's gatehouses the walls' faces are plain (BlobTerrainRenderer: the pack's plainVariants only)
+    plainWallAt(col, row) {
+        return this.castles.plainWallAt(col, row);
+    }
+    coversFront(col, row) {
+        return this.castles.coverAt(col, row);
     }
     invalidateTile(key) {
         { const [kc, kr] = key.split(',').map(Number); this._dropStairBlocksNear(kc, kr, kc, kr); }

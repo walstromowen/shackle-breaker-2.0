@@ -11,6 +11,19 @@
 //              wavy edge (ties go by sheet name). Every outdoor biome blends with every other on its own; this only picks the side (see _planBlend).
 //   levelTop   'void' for interiors: the top of a cliff level (the roof of a wall) is void instead of floor, so only the wall face
 //              (wall + ext) is drawn on those cells
+//   cliffFront an image key: battlements (a castle's walls). Over every south face, a parapet piece FRONT_H px tall that rises FRONT_RISE px
+//              above its cell, drawn not with the terrain but sorted with the map objects and characters (frontPieces / drawFront), so it
+//              hides the legs of whoever walks the wall behind it and is hidden by whoever stands in front of the wall. Not over a stair's cells.
+//   fullCliffFloor true: the cliff floor sheet has a tile for a cell walled in on every side (mask 255), used in place of the ground's tile
+//   stackShadows true: a level that stands on the last row of the level under it (a two-tall wall over its step) casts its shadow past that row
+//                    onto the ground, so the shadow is as long as the face is tall
+//   cliffExtStep: a sheet like cliffExt with no foot, used where a level's face hangs over a one-row step of the level beneath, so the two faces
+//                    read as one taller wall
+//   hashVariants true: the cliff sheets' variants are picked by a hash of the cell (not on a 4 x 2 beat), so rare variants (a castle's cracked
+//                    stones) turn up anywhere along a wall
+//   plainVariants n: with hashVariants, where terrain.plainWallAt(col, row) only the first n variants (the plain ones) are drawn
+//   (terrain.coversFront(col, row), if the terrain has it: true where something stands over a wall's battlements, a castle's tower)
+//   stairRects { kind: [[x, y, w, h], ...] }: the pack's own stair pieces (a castle's stone flights, kind 'C'), in place of STAIR_RECTS
 //
 // How the game's terrain maps onto the tilesets
 //   LAYER_0  water   ground water patch (animated; always sits on a ground of dirt, so the shore fringe tints dirt)
@@ -64,6 +77,9 @@ const OFFS8 = [
 // Set to false to switch it off. It wraps round the cliffs the stairs make (see _stairCarved).
 const SHADOW_WIN = Object.keys(SHADOW_WIN_TABLE).length > 0;   // this tile set has the window shadow table (flat shadows)
 const DRAW_CLIFF_SHADOWS = true;
+// a pack's battlements (cliffFront): each piece is 32 x FRONT_H in its sheet (8 x 6 per variant, like the other cliff sheets), drawn FRONT_RISE px above its cell
+export const FRONT_H = 40;
+export const FRONT_RISE = 24;
 
 // A corner only counts when both of its sides are set (Godot's own blob-47 reduction).
 function reduce(bm) {
@@ -144,6 +160,7 @@ const SLOT = {
     waterAnim: 7,
     waterInterior: 8,
     cliffStairs: 9,
+    cliffExtStep: 10,
 };
 const PACK_KEYS = [
     'primaryFloor',
@@ -156,6 +173,7 @@ const PACK_KEYS = [
     'waterAnim',
     'waterInterior',
     'cliffStairs',
+    'cliffExtStep',
 ];
 
 export class BlobTerrainRenderer {
@@ -338,7 +356,18 @@ export class BlobTerrainRenderer {
 
                 // shadow: raw (unreduced) neighbour mask + whether the cell itself is in the level. The cells a stair is cut out of count as NOT in
                 // the level here, so the shadow wraps round the cliff the stair makes (its notch walls and the ends of the cliff beside it).
-                const sh = (a, b) => get(a, b) && !this._stairCarved(a, b);
+                // pack.stackShadows (a castle's walls, two levels tall over a narrow step): the step (a cell of a level beside the level above it) casts no
+                // shadow of its own; it is counted in the level above, so the two-tall face (its face running on down over the step's) throws one shadow,
+                // starting where the step's face ends on the ground, as a one-tall wall's starts under its own face (and no doubled bands beside it)
+                const stack = pack.stackShadows;
+                const above = stack && li + 1 < this._levels ? inLevel(li + 1) : null, lower = stack && li > 0 ? inLevel(li - 1) : null;
+                const near8 = (f, a, b) => f(a - 1, b - 1) || f(a, b - 1) || f(a + 1, b - 1) || f(a - 1, b) || f(a + 1, b) || f(a - 1, b + 1) || f(a, b + 1) || f(a + 1, b + 1);
+                // a step: a cell between the level above it and lower ground, both within a cell (the ledge at a wall's foot, not a yard beside it)
+                const notGet = (a, b) => !get(a, b), notLower = (a, b) => !lower(a, b);
+                const ownStep = (a, b) => above && !above(a, b) && near8(above, a, b) && near8(notGet, a, b);                // a step of this level
+                const lowerStep = (a, b) => lower && lower(a, b) && !get(a, b) && near8(get, a, b) && near8(notLower, a, b);   // a step of the level below
+                // (and a cell of the level above casts the shadow there, not this level too: one shadow on the ground, not two laid over each other)
+                const sh = (a, b) => !this._stairCarved(a, b) && ((get(a, b) && !ownStep(a, b) && !(above && above(a, b))) || lowerStep(a, b));
                 // pack.shadowErode (a cave): the overworld's rock hangs a whole cell below its last row (wall + ext), a cave's rock is one row tall (cliff_height 1). So the shadow
                 // is computed as if every level ended one row earlier: the sides and the south edge of the shadow then start right at the cave's rock, and the north side,
                 // which does not depend on the last row, stays exactly where the overworld puts it
@@ -381,10 +410,18 @@ export class BlobTerrainRenderer {
                     const open = bm !== 255;
                     if (open) {
                         cell.push([SLOT.cliffWall, tp[0], tp[1], 0]);
-                        if (!(bm & S)) cell.push([SLOT.cliffExt, tp[0], tp[1], 1]); // the face hangs into the cell below
+                        // the face hangs into the cell below; over a one-row step of the level beneath (pack.cliffExtStep), with no foot: it runs on down
+                        // over the step's face, one taller wall
+                        const onStep = pack.cliffExtStep && li > 0 && inLevel(li - 1)(x, y + 1) && !inLevel(li - 1)(x, y + 2);
+                        if (!(bm & S)) cell.push([onStep ? SLOT.cliffExtStep : SLOT.cliffExt, tp[0], tp[1], 1]);
                     }
+                    if (pack.cliffFront && open && !(bm & S)) lp.front = tp;   // the battlements over this south face (frontPieces)
                     if (voidTop) cell.unshift([SLOT.void, 0, 0, 0]);
-                    else cell.push(open ? [SLOT.cliffFloor, tp[0], tp[1], 0] : [SLOT.primary, tp[0], tp[1], 0]);
+                    // a cell with the level on every side shows the ground's own tile, unless the pack's cliff floor has a tile for it (fullCliffFloor:
+                    // a castle's wall-walk is flagstones all the way across, not grass)
+                    // (terrain.fullCliffFloorAt, if the terrain has it, narrows that: a castle's yards and the cobbles before its gates, on the plateau's
+                    // level, stand on the grass, so where their cobbles end the grass shows, not flagstones)
+                    else cell.push(open || (pack.fullCliffFloor && !(this._wm.terrain && this._wm.terrain.fullCliffFloorAt && !this._wm.terrain.fullCliffFloorAt(x, y))) ? [SLOT.cliffFloor, tp[0], tp[1], 0] : [SLOT.primary, tp[0], tp[1], 0]);
                     if (!voidTop && isDirt(x, y)) {
                         const o = OVERLAY_TABLE[bm * 256 + dirtMask(bm, dirtEff, x, y)];
                         cell.push([SLOT.onLevel, o[0], o[1], 0]);
@@ -417,9 +454,10 @@ export class BlobTerrainRenderer {
     _images(pack) {
         let imgs = this._imgCache.get(pack);
         if (imgs) return imgs;
-        const need = pack.water === false ? 7 : PACK_KEYS.length; // packs without water need no water sheets
+        const need = pack.water === false ? 7 : 10; // packs without water need no water sheets (and cliffExtStep is optional)
         imgs = PACK_KEYS.map((k) => (pack[k] ? this.loader.get(pack[k]) : null));
         if (imgs.slice(0, need).some((im) => !im)) return null; // not loaded yet: draw nothing for this pack this frame
+        if (pack.cliffExtStep && !imgs[SLOT.cliffExtStep]) return null;
         this._imgCache.set(pack, imgs);
         return imgs;
     }
@@ -470,6 +508,7 @@ export class BlobTerrainRenderer {
         const styled = this._wm && this._wm.terrain;
         const wallStyle = styled && styled.getWallStyle ? (c, r) => styled.getWallStyle(c, r) : null;
         const floorStyle = styled && styled.getFloorStyle ? (c, r) => styled.getFloorStyle(c, r) : null;
+        const plainWall = styled && styled.plainWallAt ? (c, r) => styled.plainWallAt(c, r) : null;
         // draw(imgs, op, c, r, pack) draws an op into its cell on the screen; `to` = [ctx, x, y, w, h] draws it somewhere else (a blend's own canvas)
         const draw = (imgs, op, c, r, pack, to = null) => {
             if (op[0] < 0) {
@@ -484,10 +523,14 @@ export class BlobTerrainRenderer {
             // Cliff sheets may hold 8 variants side by side (see "variants" in blob47_manifest.json): the variant is the part of the long rock
             // strip under the cell, (column & 3) + 4 * (row & 1), so a straight run of cliff never repeats on a one-tile beat. A sheet
             // that is only one variant wide (the older sets) is drawn as before.
-            if (op[0] === SLOT.cliffFloor || op[0] === SLOT.cliffWall || op[0] === SLOT.cliffExt || op[0] === SLOT.onLevel) {
+            if (op[0] === SLOT.cliffFloor || op[0] === SLOT.cliffWall || op[0] === SLOT.cliffExt || op[0] === SLOT.cliffExtStep || op[0] === SLOT.onLevel) {
                 const baseW = (op[0] === SLOT.onLevel ? OVERLAY_COLS : BLOB_SHEET_COLS) * BLOB_TILE_PX;
                 const nv = Math.round(img.width / baseW);
-                if (wallStyle && nv >= 16 && op[0] !== SLOT.onLevel) sx += (((c & 3) + 4 * ((r + op[3]) & 1)) % 8 + (wallStyle(c, r) === 'natural' ? 8 : 0)) * baseW;
+                if (pack && pack.hashVariants && nv > 1) {
+                    const n = pack.plainVariants && plainWall && plainWall(c, r + op[3]) ? Math.min(nv, pack.plainVariants) : nv;   // round a gatehouse: plain stone only
+                    sx += (((Math.imul(c, 73856093) ^ Math.imul(r + op[3], 19349663)) >>> 0) % n) * baseW;
+                }   // (pack.hashVariants: a variant by the cell's place, so rare ones, the cracked, fall anywhere)
+                else if (wallStyle && nv >= 16 && op[0] !== SLOT.onLevel) sx += (((c & 3) + 4 * ((r + op[3]) & 1)) % 8 + (wallStyle(c, r) === 'natural' ? 8 : 0)) * baseW;
                 else if (nv > 1) sx += ((c & 3) + 4 * ((r + op[3]) & 1)) % nv * baseW;
             } else if ((op[0] === SLOT.primary || op[0] === SLOT.secondary) && img.width >= 2 * BLOB_SHEET_COLS * BLOB_TILE_PX) {
                 // Floor variants: a floor sheet may hold several copies of its blob set side by side (the caves' and catacombs' do); a cell takes the one its
@@ -609,7 +652,8 @@ export class BlobTerrainRenderer {
                     const pack = this._pack(st.ox, st.oy);
                     const imgs = pack && this._images(pack);
                     const sheet = imgs && imgs[SLOT.cliffStairs];
-                    const rect = STAIR_RECTS[st.kind] && STAIR_RECTS[st.kind][st.style];
+                    const rects = (pack.stairRects || STAIR_RECTS)[st.kind];
+                    const rect = rects && rects[st.style % rects.length];
                     if (!sheet || !rect) continue;
                     ctx.drawImage(sheet, rect[0], rect[1], rect[2], rect[3], px(st.ox), py(st.oy), px(st.ox + rect[2] / BLOB_TILE_PX) - px(st.ox), py(st.oy + rect[3] / BLOB_TILE_PX) - py(st.oy));
                 }
@@ -627,6 +671,34 @@ export class BlobTerrainRenderer {
             ctx.fillStyle = 'rgba(' + (ds.color || '0,0,8') + ',' + a + ')';
             ctx.fillRect(px(c), py(r), pw(c), ph(r));
         }
+    }
+
+    /** The battlements to draw in front of things (packs with cliffFront), for the cells of `bounds` (and a row past it each way):
+     *  [{ c, r, pos: [sheetCol, sheetRow], pack }]. MapRenderer sorts them with the objects and characters by the bottom of their cell. */
+    frontPieces(worldManager, bounds, out = []) {
+        this._sync(worldManager);
+        for (let r = bounds.startRow - 1; r < bounds.endRow + 1; r++)
+            for (let c = bounds.startCol; c < bounds.endCol; c++) {
+                const p = this.plan(c, r);
+                if (!p.pack || !p.pack.cliffFront || !p.levels) continue;
+                if (this._stairCarved(c, r)) continue;   // a stair goes up through the parapet
+                const terrain = this._wm && this._wm.terrain;
+                if (terrain && terrain.coversFront && terrain.coversFront(c, r)) continue;   // a tower stands there (castleLayout's towers)
+                for (const lp of p.levels) if (lp && lp.front) out.push({ c, r, pos: lp.front, pack: p.pack });
+            }
+        return out;
+    }
+    /** One battlement piece (from frontPieces), on screen: FRONT_RISE px above its cell to FRONT_H - FRONT_RISE px into it. */
+    drawFront(ctx, piece, camX, camY, scale) {
+        const img = this.loader.get(piece.pack.cliffFront);
+        if (!img || !img.width) return;
+        const TILE = this.config.TILE_SIZE, base = BLOB_SHEET_COLS * BLOB_TILE_PX;
+        const nv = Math.max(1, Math.round(img.width / base));
+        const sx = piece.pos[0] * BLOB_TILE_PX + (((piece.c & 3) + 4 * (piece.r & 1)) % nv) * base;
+        const sy = piece.pos[1] * FRONT_H;
+        const x0 = Math.floor((piece.c * TILE - camX) * scale), x1 = Math.floor(((piece.c + 1) * TILE - camX) * scale);
+        const y0 = Math.floor((piece.r * TILE - FRONT_RISE - camY) * scale), y1 = Math.floor((piece.r * TILE - FRONT_RISE + FRONT_H - camY) * scale);
+        ctx.drawImage(img, sx, sy, BLOB_TILE_PX, FRONT_H, x0, y0, x1 - x0, y1 - y0);
     }
 
     // true for a cell the stair there cuts out of the plateau (see `carve` in TerrainGenerator.getStairAt): only the cast shadow looks at this
@@ -661,4 +733,4 @@ export class BlobTerrainRenderer {
             this._dirtFns.clear();
         }
     }
-}
+}

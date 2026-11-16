@@ -78,6 +78,15 @@ export class StructureSpawner {
         const startRow = cy * this.CHUNK_SIZE;
         const centerCol = startCol + Math.floor(this.CHUNK_SIZE / 2);
         const centerRow = startRow + Math.floor(this.CHUNK_SIZE / 2);
+        /* a chunk a castle's plateau reaches (castleSites.js): the castle is written into the world (once), and nothing else is built there */
+        const castles = this.terrain && this.terrain.castles;
+        if (castles) {
+            const sites = castles.sitesIn(startCol, startRow, startCol + this.CHUNK_SIZE - 1, startRow + this.CHUNK_SIZE - 1);
+            if (sites.length) {
+                for (const site of sites) this._buildCastle(site);
+                return;
+            }
+        }
         const biome = this.getBiomeAt(centerCol, centerRow);
         const structureRng = this.pseudoRandom(cx * 137, cy * 193);
         /* a chunk with no village may get a landmark (a graveyard), on its own roll */
@@ -111,6 +120,22 @@ export class StructureSpawner {
                 }
                 if (warm && ++tried % 8 === 0) yield;
             }
+        }
+    }
+    /* A castle's map objects written into the world's changes, once per world (gameState.world.castlesBuilt): its towers, keep and gatehouse, its
+       houses and their doors, its clutter. Whatever the plains had put on those cells goes. */
+    _buildCastle(site) {
+        const world = gameState.world;
+        if (!world.castlesBuilt) world.castlesBuilt = {};
+        if (world.castlesBuilt[site.id]) return;
+        world.castlesBuilt[site.id] = site.bx + ',' + site.by;
+        if (!world.changes) world.changes = {};
+        for (const o of this.terrain.castles.objects(site)) {
+            if (!MAP_OBJECTS_DEFINITIONS[o.id]) continue;
+            const key = this._s(o.col, o.row);
+            if (this.objects.has(key)) this.modifyWorld(o.col, o.row, null);
+            world.changes[key] = o.id;
+            this._placeObject(o.col, o.row, o.id);
         }
     }
     /* The tiles and natural stairs within `radius` cells of (col, row), worked out a row at a time. Nothing in the world changes: it only fills the

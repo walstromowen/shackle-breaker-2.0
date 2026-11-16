@@ -36,9 +36,10 @@ test('old battlefields (the Aftermath) are a little commoner on the plains, and 
 });
 
 test('the strange obelisks can stand on the top layer of every exterior biome', () => {
+    // (the ruined castle's biome is only ever a castle's own cells, its levels set by its plan)
     // the top layer of each: the plains' hills rise three levels (LAYER_5), the desert's mesas two (LAYER_4), the snowy mountains five (LAYER_7)
     const TOP = { PLAINS: 5, DESERT: 4, SNOWY_MOUNTAINS: 7 };
-    const exterior = Object.entries(BIOME_DEFINITIONS).filter(([id]) => !/INTERIOR/.test(id)).map(([id]) => id);
+    const exterior = Object.entries(BIOME_DEFINITIONS).filter(([id, b]) => !/INTERIOR/.test(id) && !b.castleOnly).map(([id]) => id);
     assert.deepEqual(exterior.sort(), Object.keys(TOP).sort(), 'every exterior biome is covered');
     for (const id of exterior) {
         const rules = (BIOME_DEFINITIONS[id].mapObjects || {})._ALTITUDE || [];
