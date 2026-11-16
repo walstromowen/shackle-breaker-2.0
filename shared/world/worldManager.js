@@ -89,7 +89,7 @@ export class WorldManager {
     getBiomeAt(col, row) {
         // inside a ruined castle (castleSites.js) the cells are the castle's own biome: drawn with its tile set, growing nothing of the plains'
         const castles = this.terrain.castles;
-        if (castles && castles.isCastleCell(col, row)) return biomeFactory.getBiome('CASTLE_RUINS');
+        if (castles && castles.isCastleCell(col, row)) return biomeFactory.getBiome('CASTLE_GROUNDS');
         return this.terrain.getBiomeAt(col, row);
     }
     ensureChunkLoaded(col, row) {

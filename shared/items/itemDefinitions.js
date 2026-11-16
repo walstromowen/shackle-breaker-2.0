@@ -346,6 +346,34 @@ export const ItemDefinitions = {
       5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
     }
   },
+  // The castle executioners' axe (EXECUTIONER carries it, and now and then drops it): a long-hafted headsman's axe. (Icon: the handaxe's for now.)
+  "executioners_axe": {
+    id: "executioners_axe",
+    name: "Executioner's Axe",
+    slot: "twoHand",
+    type: "weapon",
+    description: 'A long-hafted headsman\'s axe, its broad blade notched from years at the block. It was never meant for a fair fight.',
+    value: 180,
+    icon: { col: 2, row: 0 },
+    attack: { slash: 9, blunt: 3 },
+    requirements: { strength: 13, vigor: 11 },
+    requirementGrowth: { strength: 3, vigor: 2 },
+    grantedAbilities: ["slash", "cleave"],
+    maxLevel: 5,
+    statGrowth: {
+      attack: { slash: 4, blunt: 1 }
+    },
+    abilityUnlocks: {
+      2: ["guard_break"],
+      3: ["execute"]
+    },
+    upgradeCosts: {
+      2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
+      3: { currency: 150, materials: { "bronze_ingot": 5, "hard_wood": 10, "soft_wood": 15 } },
+      4: { currency: 300, materials: { "iron_ingot": 5, "bronze_ingot": 10, "hard_wood": 15 } },
+      5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
+    }
+  },
   "glaive": {
     id: "glaive",
     name: "Glaive",

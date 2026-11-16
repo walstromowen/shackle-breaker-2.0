@@ -609,6 +609,32 @@ export const LootTableDefinitions = {
             { id: "cloth_shoes", dropRate: 0.01 },
         ]
     },
+    // the castle grounds' executioner and abductor (entityDefinitions EXECUTIONER, ABDUCTOR)
+    "executioner_drops": {
+        type: "independent",
+        items: [
+            { id: "executioners_axe", dropRate: 0.03 },
+            { id: "iron_ingot", dropRate: 0.12, min: 1, max: 2 },
+            { id: "leather", dropRate: 0.15, min: 1, max: 2 },
+            { id: "healing_herb", dropRate: 0.15 },
+            { id: "tattered_hood", dropRate: 0.04 },
+            { id: "small_iron_key", dropRate: 0.04 },
+            { id: "iron_helmet", dropRate: 0.01 },
+        ]
+    },
+    "abductor_drops": {
+        type: "independent",
+        items: [
+            { id: "cotton", dropRate: 0.15, min: 1, max: 2 },
+            { id: "plant_fibers", dropRate: 0.2, min: 1, max: 3 },
+            { id: "leather", dropRate: 0.1 },
+            { id: "healing_herb", dropRate: 0.15 },
+            { id: "bandage", dropRate: 0.08 },
+            { id: "escape_rope", dropRate: 0.06 },
+            { id: "wooden_club", dropRate: 0.05 },
+            { id: "small_iron_key", dropRate: 0.03 },
+        ]
+    },
     "hollow_harvester_drops": {
         type: "independent",
         items: [

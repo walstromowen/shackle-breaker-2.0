@@ -717,4 +717,132 @@ export const SpawnTableDefinitions = {
             members: [{ id: 'INFERNUS_SENTINEL', weight: 100 }]
         }]
     },
+    /* THE CASTLE GROUNDS: the wards and courtyards of the ruined castles (biome CASTLE_GROUNDS). Two kinds of foe haunt them: what is left of the
+       garrison (legionaries, the watch, the executioner at his block) and the townsfolk the curse took (madmen, magic addicts, rotters, and the
+       abductor who drags the living away). By night the garrison thins and the abductors come out; under the blood moon the executioners walk. */
+    // ==========================================
+    // CASTLE GROUNDS BATTLES - DAY
+    // ==========================================
+    "castle_grounds_battles_day": {
+        type: "faction_pool",
+        pools: [
+            // the garrison, still at its posts
+            {
+                factionId: "shackled",
+                weight: 55,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 2, maxSize: 5 }
+                },
+                members: [
+                    { id: 'LEGIONARY', weight: 40, modifiers: { levelOffset: { chance: 0.3, min: 0, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.4 }], traits: [{ id: 'iron_willed', chance: 0.2 }] } },
+                    { id: 'WATCHMAN', weight: 35 },
+                    { id: 'EXECUTIONER', weight: 12, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                ]
+            },
+            // the cursed townsfolk
+            {
+                factionId: "shackled",
+                weight: 45,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 2, maxSize: 5 }
+                },
+                members: [
+                    { id: 'MAD_MAN', weight: 35, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } },
+                    { id: 'MAGIC_ADDICT', weight: 30 },
+                    { id: 'ROTTER', weight: 25 },
+                    { id: 'ABDUCTOR', weight: 10 }
+                ]
+            }
+        ]
+    },
+
+    // ==========================================
+    // CASTLE GROUNDS BATTLES - NIGHT
+    // ==========================================
+    "castle_grounds_battles_night": {
+        type: "faction_pool",
+        pools: [
+            // the night watch
+            {
+                factionId: "shackled",
+                weight: 40,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 2, maxSize: 5 }
+                },
+                members: [
+                    { id: 'LEGIONARY', weight: 30, modifiers: { levelOffset: { chance: 0.3, min: 0, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.4 }], traits: [{ id: 'iron_willed', chance: 0.2 }] } },
+                    { id: 'WATCHMAN', weight: 40 },
+                    { id: 'EXECUTIONER', weight: 15, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                ]
+            },
+            // the townsfolk, and the abductors at their work
+            {
+                factionId: "shackled",
+                weight: 60,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 2, maxSize: 5 }
+                },
+                members: [
+                    { id: 'MAD_MAN', weight: 25, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } },
+                    { id: 'MAGIC_ADDICT', weight: 20 },
+                    { id: 'ROTTER', weight: 35 },
+                    { id: 'ABDUCTOR', weight: 30 }
+                ]
+            }
+        ]
+    },
+
+    // ==========================================
+    // CASTLE GROUNDS BATTLES - BLOOD MOON
+    // ==========================================
+    "castle_grounds_battles_blood_moon": {
+        type: "faction_pool",
+        pools: [
+            // the executioners walk
+            {
+                factionId: "shackled",
+                weight: 50,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'LEGIONARY', weight: 30, modifiers: { levelOffset: { chance: 0.3, min: 0, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.4 }], traits: [{ id: 'iron_willed', chance: 0.2 }] } },
+                    { id: 'WATCHMAN', weight: 30 },
+                    { id: 'EXECUTIONER', weight: 30, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                ]
+            },
+            // the townsfolk, maddened
+            {
+                factionId: "shackled",
+                weight: 50,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'MAD_MAN', weight: 20, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } },
+                    { id: 'MAGIC_ADDICT', weight: 20 },
+                    { id: 'ROTTER', weight: 30 },
+                    { id: 'ABDUCTOR', weight: 35 }
+                ]
+            }
+        ]
+    },
 };

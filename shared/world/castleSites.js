@@ -14,7 +14,7 @@
      levelAt(col, row)     the cell's level index (2 the open ground of the ring, 3 the plateau and the castle's yards, 4 its walls and the inner ward,
                            5 the inner wall and the keep's skirt, 6 the keep's core), or -1 where the castle does not reach (the terrain's own)
      levelPathAt           a cobbled yard on a level (WorldManager.isLevelPath: drawn with the pack's cobbles)
-     isCastleCell          inside the castle (its walls, towers, yards, the gate's approach): the CASTLE_RUINS biome
+     isCastleCell          inside the castle (its walls, towers, yards, the gate's approach): the CASTLE_GROUNDS biome
      coverAt               no battlements drawn here (a tower, the keep, the gatehouse's piers, the inner wall's step stand over them)
      stairAt               the castle's stone flights (kind 'C') and the stair up the plateau (kind 'S')
      gateKindAt            'outer' / 'inner' on the way through one of its gates (WorldManager bars it while that gate is shut), else null

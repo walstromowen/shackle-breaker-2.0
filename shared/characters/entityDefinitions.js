@@ -342,6 +342,60 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER", "CURSED", "ALTERIAN"]
     },
 
+    // The castle grounds' headsman: a cursed executioner of the Alterian garrison, hooded, still at his block. Slow and heavy: a two-handed axe,
+    // and Execute for whoever he has worn down. Spawns only in the castles (spawnTableDefinitions castle_grounds_battles_*).
+    "EXECUTIONER": {
+        ...HUMANOID_TEMPLATE,
+        name: "Executioner",
+        level: 1,
+        spritePortrait: "executionerPortrait",
+        crySound: "executionerCry",
+        deathSound: "executionerCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 15, strength: 15, dexterity: 6, intelligence: 5, attunement: 9
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 20, maxStamina: 14, speed: 3, critical: 0.1, corruption: 15,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: 2, slash: 2, pierce: 1, dark: 3, light: -3 },
+            baseResistance: { dark: 0.2, light: -0.2 },
+            baseAttack: { blunt: 3, slash: 5, pierce: 1, dark: 1 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "executioners_axe", head: "tattered_hood" },
+        currencyReward: { min: 8, max: 20 },
+        lootTableId: "executioner_drops",
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "execute", "intimidate"],
+        tags: [...HUMANOID_TEMPLATE.tags, "CURSED", "ALTERIAN"]
+    },
+
+    // The castle grounds' abductor: a gaunt, stooped kidnapper with a sack, who takes the living away. Snatch throws the sack over a head (bound,
+    // weakened); a club for the rest. Mostly by night (spawnTableDefinitions castle_grounds_battles_*).
+    "ABDUCTOR": {
+        ...HUMANOID_TEMPLATE,
+        name: "Abductor",
+        level: 1,
+        spritePortrait: "abductorPortrait",
+        crySound: "abductorCry",
+        deathSound: "abductorCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 13, strength: 13, dexterity: 11, intelligence: 6, attunement: 7
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 20, maxStamina: 16, speed: 6, critical: 0.06, corruption: 12,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: 2, slash: 1, pierce: 1, dark: 2, light: -2 },
+            baseResistance: { dark: 0.15, light: -0.15 },
+            baseAttack: { blunt: 4, slash: 1, pierce: 1 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "wooden_club" },
+        currencyReward: { min: 6, max: 16 },
+        lootTableId: "abductor_drops",
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "sack_snatch", "low_sweep"],
+        tags: [...HUMANOID_TEMPLATE.tags, "CURSED"]
+    },
+
     "HOLLOW_HARVESTER": {
         ...HUMANOID_TEMPLATE,
         name: "Hollow Harvester",

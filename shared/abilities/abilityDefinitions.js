@@ -519,6 +519,23 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "ranged", power: 0.1 }],
         statusEffects: [{ id: "bound", chance: 1.0, duration: 2 }]
     },
+    // The Abductor's (castle grounds) way of taking someone: a sack over the head, hauled tight.
+    "sack_snatch": {
+        id: "sack_snatch",
+        name: "Snatch",
+        description: "Throw a sack over the target's head and haul on it. Deals blunt damage, with a strong chance to bind them so they lose their next turn, and may leave them weakened as they struggle.",
+        range: "melee",
+        tags: ["physical", "contact", "blunt", "utility"],
+        battleMessage: "{user} throws a sack over {target}'s head!",
+        icon: { col: 3, row: 8 },
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 14 },
+        speedModifier: 1.1,
+        accuracy: 0.85,
+        animationId: "item_throw_net",
+        effects: [{ type: "damage", damageType: "blunt", power: 0.7 }],
+        statusEffects: [{ id: "bound", chance: 0.6, duration: 1 }, { id: "weakened", chance: 0.4, duration: 2 }]
+    },
     "loose_arrow": {
         id: "loose_arrow",
         name: "Loose Arrow",

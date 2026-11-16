@@ -134,9 +134,11 @@ export const BIOME_DEFINITIONS = {
     /* The ruined castles of the plains (world/castleSites.js): the cells inside a castle's walls, on its great plateau, take this biome so they are drawn
        with the castle's own tile set (walls, battlements, cobbled yards) and grow nothing of the plains'. It is never chosen by the biome fields: the
        world sets it over a castle's footprint. Its sounds, weather, battles and battle grounds are the plains' (a castle stands in them). */
-    CASTLE_RUINS: {
-        id: 'CASTLE_RUINS',
-        name: 'The Ruined Castle',
+    /* The castle grounds: the wards and courtyards of a ruined castle, its walls and yards (castleSites.js marks its cells; a castle's interiors
+       will be a biome of their own). Its own foes (spawnTableDefinitions castle_grounds_battles_*): what is left of the garrison and the cursed townsfolk. */
+    CASTLE_GROUNDS: {
+        id: 'CASTLE_GROUNDS',
+        name: 'The Castle Grounds',
         castleOnly: true,         // never laid by the biome map: only a castle's own cells (castleSites.js) are this biome
         defaultLootTable: 'plains',
         blobTileset: {
@@ -162,12 +164,12 @@ export const BIOME_DEFINITIONS = {
         minimap: { grass: '#5b9448', dirt: '#77706a', water: '#3b73a6', rock: '#a29b8e', stair: '#f2e27a' },
         allowedWeather: ['rain', 'thunderstorm', 'fog'],
         music: { day: 'plainsBgmDay', night: 'plainsBgmNight', battle: 'plainsBattleBgm' },
-        battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' },
+        battleBackgrounds: { day: 'castleGroundsBattleDayBg', dusk: 'castleGroundsBattleDuskBg', night: 'castleGroundsBattleNightBg' } /* its courtyard (tools/art/battleBackgrounds.py) */,
         shapeElevation: (noise) => noise,
         structures: { rate: 0, pools: [] },
         mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [], _WALLS: [] } /* the castle's plan places everything in it */,
         encounters: { rate: 0, pools: [] },
-        battles: { rate: 0.01, tables: { day: 'plains_battles_day', dusk: 'plains_battles_day', night: 'plains_battles_night', bloodMoon: 'plains_battles_blood_moon' } },
+        battles: { rate: 0.01, tables: { day: 'castle_grounds_battles_day', dusk: 'castle_grounds_battles_day', night: 'castle_grounds_battles_night', bloodMoon: 'castle_grounds_battles_blood_moon' } },
     },
     DESERT: {
         id: 'DESERT',

@@ -26,7 +26,7 @@ ui_icons: './assets/icons/ui_icons.png',
     plainsWaterAnim:        './assets/tilesets/plains/water_blob47_anim.png',
     plainsWaterInterior:    './assets/tilesets/plains/water_interior_anim.png',
     plainsCliffStairs: './assets/tilesets/plains/cliff_stairs.png',   // after plainsCliffShadow
-    // the ruined castles that stand on the plains' great plateaus (biome CASTLE_RUINS: tools/art/castleRuinsTileset.py and the castle art scripts)
+    // the ruined castles that stand on the plains' great plateaus (biome CASTLE_GROUNDS: tools/art/castleRuinsTileset.py and the castle art scripts)
     castlePrimaryFloor: './assets/tilesets/castle_ruins_exterior/primary_floor_blob47.png',
     castleSecondaryFloor: './assets/tilesets/castle_ruins_exterior/secondary_floor_blob47.png',
     castleSecondaryOnLevel: './assets/tilesets/castle_ruins_exterior/secondary_floor_on_level.png',
@@ -319,6 +319,8 @@ ui_icons: './assets/icons/ui_icons.png',
     grimStagPortrait: './assets/sprites/grim_stag/grim_stag_portrait.png',
     poachersNightmarePortrait: './assets/sprites/poachers_nightmare/poachers_nightmare_portrait.png',
     hollowHarvesterPortrait: './assets/sprites/hollow_harvester/hollow_harvester_portrait.png',
+    executionerPortrait: './assets/sprites/executioner/executioner_portrait.png',   // the castle grounds' foes (stand-in sheets: tools/art/castleFoesPlaceholder.py)
+    abductorPortrait: './assets/sprites/abductor/abductor_portrait.png',
     skeletalWarriorPortrait: './assets/sprites/skeletal_warrior/skeletal_warrior_portrait.png',
     floatingSkullPortrait: './assets/sprites/floating_skull/floating_skull_portrait.png',
     shackledSpiritPortrait: './assets/sprites/shackled_spirit/shackled_spirit_portrait.png',
@@ -416,6 +418,11 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     snowyMountainsBattleDayBg: './assets/backgrounds/snowy_mountains_battle_day_bg.png',
     snowyMountainsBattleDuskBg: './assets/backgrounds/snowy_mountains_battle_dusk_bg.png',
     snowyMountainsBattleNightBg: './assets/backgrounds/snowy_mountains_battle_night_bg.png',
+    // painted in code (tools/art/battleBackgrounds.py): a ruined castle's courtyard at three hours, and inside an abandoned house
+    castleGroundsBattleDayBg: './assets/backgrounds/castle_grounds_battle_day_bg.png',
+    castleGroundsBattleDuskBg: './assets/backgrounds/castle_grounds_battle_dusk_bg.png',
+    castleGroundsBattleNightBg: './assets/backgrounds/castle_grounds_battle_night_bg.png',
+    houseInteriorBg: './assets/backgrounds/house_interior_battle_bg.png',
     caveBattleBg: './assets/backgrounds/cave_battle_bg.png', // one background for every hour: it is always dark down there
     shackle_breaker_theme_1: './assets/audio/music/Shackle_Breaker_Theme_1.mp3',
     shackledMarchBgm: './assets/audio/music/shackled_march.mp3',
@@ -579,6 +586,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     grimStagCry: './assets/audio/sfx/cries/grim_stag_cry.mp3',
     poachersNightmareCry: './assets/audio/sfx/cries/poachers_nightmare_cry.mp3',
     hollowHarvesterCry: './assets/audio/sfx/cries/hollow_harvester_cry.mp3',
+    executionerCry: './assets/audio/sfx/cries/executioner_cry.mp3',
+    abductorCry: './assets/audio/sfx/cries/abductor_cry.mp3',
     rotterCry: './assets/audio/sfx/cries/rotter_cry.mp3',
     duneMawCry: './assets/audio/sfx/cries/dune_maw_cry.mp3',
     scorchedVagrantCry: './assets/audio/sfx/cries/scorched_vagrant_cry.mp3',
