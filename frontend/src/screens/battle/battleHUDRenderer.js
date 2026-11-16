@@ -19,7 +19,13 @@ export class BattleHUDRenderer {
       BAR_HEIGHT: 10,
       BAR_WIDTH: 180,
       PADDING_X: 24,
-      PADDING_Y: 14
+      PADDING_Y: 14,
+      // the party's cards down the left, a little more compact than the enemies' (more of the fight shows): the name, three bars, a strip for
+      // status icons
+      PARTY_W: 330,
+      PARTY_H: 130,
+      PARTY_GAP: 8,
+      PARTY_MARGIN: 24
     };
     this.displayStats = new WeakMap();
     this.BAR_LERP_SPEED = 5.0;
@@ -154,10 +160,11 @@ export class BattleHUDRenderer {
   }
 
   drawPartyCards(party, state, hitboxes = []) {
-    const targetX = 36;
-    const hiddenX = -this.HUD.CARD_W - 48;
-    const startY = 36;
-    const spacingY = 20;
+    const W = this.HUD.PARTY_W, H = this.HUD.PARTY_H;
+    const targetX = this.HUD.PARTY_MARGIN;
+    const hiddenX = -W - 48;
+    const startY = this.HUD.PARTY_MARGIN;
+    const spacingY = 18;
     const activeChar = state.activeParty?.[state.activePartyIndex];
     const selectedAbility = state.selectedAction || (activeChar?.abilities?.[state.menuIndex]);
     const targetGroup = selectedAbility?.targetGroup || state.targetGroup;
@@ -169,7 +176,7 @@ export class BattleHUDRenderer {
       if (slideProgress <= 0) return;
 
       const currentX = hiddenX + ((targetX - hiddenX) * Math.pow(slideProgress, 0.5));
-      const y = startY + (index * (this.HUD.CARD_H + this.HUD.GAP));
+      const y = startY + (index * (H + this.HUD.PARTY_GAP));
 
       let isValidTarget = true;
       if (state.phase === 'SELECT_TARGET') {
@@ -183,10 +190,10 @@ export class BattleHUDRenderer {
           id: targetId,
           x: currentX,
           y: y,
-          w: this.HUD.CARD_W,
-          h: this.HUD.CARD_H,
-          width: this.HUD.CARD_W,
-          height: this.HUD.CARD_H,
+          w: W,
+          h: H,
+          width: W,
+          height: H,
           cursor: isValidTarget ? 'pointer' : 'not-allowed'
         });
       }
@@ -197,29 +204,38 @@ export class BattleHUDRenderer {
         this.ctx.globalAlpha = 0.4;
       }
 
-      this.drawDarkPanel(currentX, y, this.HUD.CARD_W, this.HUD.CARD_H);
+      this.drawDarkPanel(currentX, y, W, H);
 
       // The target being aimed at (mouse hover or keyboard cursor) is "highlighted"; targets already picked are "selected"
       if (state.phase === 'SELECT_TARGET') {
         const flags = this.ui.flags(targetId, isValidTarget ? state.hoveredElement?.id : null, { selected: !!isAlreadySelected });
-        this.ui.drawStateBox(currentX, y, this.HUD.CARD_W, this.HUD.CARD_H, flags);
+        this.ui.drawStateBox(currentX, y, W, H, flags);
       }
 
-      this.ctx.font = UITheme.fonts.body;
+      this.ctx.font = UITheme.fonts.small;
       this.ctx.fillStyle = UITheme.colors.textMain;
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'alphabetic';
-      this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 40);
+      // a long name is squeezed to fit the card rather than run off it
+      const nameRoom = W - this.HUD.PADDING_X * 2;
+      const nameW = this.ctx.measureText(member.name).width;
+      if (nameW > nameRoom) {
+        this.ctx.save();
+        this.ctx.translate(currentX + this.HUD.PADDING_X, y + 34);
+        this.ctx.scale(nameRoom / nameW, 1);
+        this.ctx.fillText(member.name, 0, 0);
+        this.ctx.restore();
+      } else this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
 
       // Status icons have a strip of their own along the bottom of the card, so they can never run into the name or off the edge
-      this.drawStatusEffects(member, currentX + this.HUD.PADDING_X, y + 110, { maxWidth: this.HUD.CARD_W - this.HUD.PADDING_X * 2 });
+      this.drawStatusEffects(member, currentX + this.HUD.PADDING_X, y + 96, { maxWidth: W - this.HUD.PADDING_X * 2 });
 
       const displayHp = this.getDisplayStat(member, 'hp', member.hp || 0);
       const displayStam = this.getDisplayStat(member, 'stamina', member.stamina || 0);
       const displayIns = this.getDisplayStat(member, 'insight', member.insight || 0);
 
       const barX = currentX + this.HUD.PADDING_X;
-      let currentY = y + 56;
+      let currentY = y + 44;
 
       this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, member.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
       this.drawBarText(displayHp, member.maxHp, barX, currentY);
@@ -309,7 +325,7 @@ export class BattleHUDRenderer {
   drawBarText(current, max, barX, barY) {
     this.ctx.save();
     // the room between the bar and the card's right edge: a big number is shortened or made smaller (CanvasUI.fitFraction) instead of running off the card
-    const room = this.HUD.CARD_W - this.HUD.PADDING_X * 2 - this.HUD.BAR_WIDTH - 19;
+    const room = this.HUD.PARTY_W - this.HUD.PADDING_X * 2 - this.HUD.BAR_WIDTH - 19;   // (only the party's cards show the numbers)
     const fit = this.ui.fitFraction(current, max, room, UITheme.fonts.cardMono);
     this.ctx.font = fit.font;
     this.ctx.fillStyle = UITheme.colors.textMuted;

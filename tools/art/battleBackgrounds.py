@@ -2,7 +2,7 @@
 # band): drawn at 480 x 270 and set 4x larger (1920 x 1080), each pixel a 4 px block, quantized to a small palette.
 #   python3 tools/art/battleBackgrounds.py frontend/src/assets/backgrounds
 # writes
-#   castle_grounds_battle_day_bg.png / _dusk_bg.png / _night_bg.png   a ruined castle's courtyard: its cobbles running back to the inner wall,
+#   castle_grounds_battle_night_bg.png   (day and dusk are hand-made art now)   a ruined castle's courtyard: its cobbles running back to the inner wall,
 #                                                                     towers along it and the keep rising behind; rubble, moss, a broken cart
 #   house_interior_battle_bg.png                                       inside an abandoned house: plank floor, half-timbered walls with the plaster
 #                                                                     falling away, a cold hearth, a shuttered window letting in a shaft of light
@@ -421,6 +421,7 @@ def house():
         if 0 <= x < W and 0 <= y < H: img[y, x] = lerp(img[y, x], (255, 244, 214), 0.6)
     finish(img, 'house_interior_battle_bg.png', colors=60)
 
-for t in ('day', 'dusk', 'night'):
+# (the castle grounds' day and dusk backgrounds are now hand-made art: only the night one is still painted here)
+for t in ('night',):
     castle(t)
 house()

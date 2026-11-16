@@ -418,7 +418,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     snowyMountainsBattleDayBg: './assets/backgrounds/snowy_mountains_battle_day_bg.png',
     snowyMountainsBattleDuskBg: './assets/backgrounds/snowy_mountains_battle_dusk_bg.png',
     snowyMountainsBattleNightBg: './assets/backgrounds/snowy_mountains_battle_night_bg.png',
-    // painted in code (tools/art/battleBackgrounds.py): a ruined castle's courtyard at three hours, and inside an abandoned house
+    // a ruined castle's courtyard at three hours (day and dusk hand-made; night, and the abandoned house's interior, painted by tools/art/battleBackgrounds.py)
     castleGroundsBattleDayBg: './assets/backgrounds/castle_grounds_battle_day_bg.png',
     castleGroundsBattleDuskBg: './assets/backgrounds/castle_grounds_battle_dusk_bg.png',
     castleGroundsBattleNightBg: './assets/backgrounds/castle_grounds_battle_night_bg.png',
