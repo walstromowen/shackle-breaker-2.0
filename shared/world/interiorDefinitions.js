@@ -68,6 +68,26 @@ export const INTERIOR_DEFINITIONS = {
             }
         ]
     },
+    /* Inside a ruined castle's keep and its armory (generators/castleInteriorGenerator.js), through their doors (CASTLE_KEEP_DOOR, CASTLE_ARMORY_DOOR):
+       stone rooms in the castle's own tiles (biome CASTLE_INTERIOR), the floor cobbled throughout (LAYER_1, the castle's cobbles), its walls the castle's.
+       The keep: a pillared great hall and two wings (its treasury's iron chests the best of it); the armory: a hall of counters and lockers, a smithy
+       (forge and anvil) and a storeroom. Out through the iron door (CASTLE_EXIT_DOOR); chests roll the castle's loot (biome CASTLE_INTERIOR: 'castle'). */
+    KEEP_INTERIOR: {
+        generatorType: 'KEEP',
+        biome: 'CASTLE_INTERIOR',
+        floorTile: 'LAYER_1',
+        wallTile: 'LAYER_3',
+        exitObject: 'CASTLE_EXIT_DOOR',
+        lootObject: 'WOODEN_CHEST'
+    },
+    ARMORY_INTERIOR: {
+        generatorType: 'ARMORY',
+        biome: 'CASTLE_INTERIOR',
+        floorTile: 'LAYER_1',
+        wallTile: 'LAYER_3',
+        exitObject: 'CASTLE_EXIT_DOOR',
+        lootObject: 'WOODEN_CHEST'
+    },
     /* The catacombs under a mysterious altar: only reached from inside a cave, down the hidden staircase (CATACOMBS_STAIRS) that the altar gives way to once
        Darius the Groveler is beaten. A dungeon (generators/catacombGenerator.js): built rooms of stone brick and natural caverns joined by halls and tunnels, and a
        main chamber at the far end behind a gate that only opens once a lever has been pulled in each of the dungeon's farthest rooms (world/catacombPuzzle.js);

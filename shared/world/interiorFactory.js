@@ -4,11 +4,12 @@ import { HouseGenerator } from './generators/houseGenerator.js';
 import { CaveGenerator } from './generators/caveGenerator.js';
 import { CraftingHouseGenerator } from './generators/craftingHouseGenerator.js';
 import { CatacombGenerator } from './generators/catacombGenerator.js';
+import { KeepGenerator, ArmoryGenerator } from './generators/castleInteriorGenerator.js';
 import { gameState } from '../core/gameState.js';
 import { ActSystem } from '../story/actSystem.js';
 import { movedNorth, snowHouseResidents, catacombResidents } from '../story/heroes.js';
 
-const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator, CATACOMBS: CatacombGenerator };
+const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator, CATACOMBS: CatacombGenerator, KEEP: KeepGenerator, ARMORY: ArmoryGenerator };
 
 /* The places in a world that a story character takes as theirs the first time the player comes upon one (saved with the world; in multiplayer
    the host's world decides, see multiplayerSession):
@@ -98,7 +99,7 @@ export class InteriorFactory {
         }
 
         const Generator = GENERATORS[config.generatorType];
-        if (!Generator) throw new Error(`[InteriorFactory] ${type} has unknown generatorType "${config.generatorType}" (use HOUSE, CRAFTING_HOUSE, CAVE or CATACOMBS)`);
+        if (!Generator) throw new Error(`[InteriorFactory] ${type} has unknown generatorType "${config.generatorType}" (use HOUSE, CRAFTING_HOUSE, CAVE, CATACOMBS, KEEP or ARMORY)`);
         return new Generator(seed, type, config, interiorId);
     }
 }

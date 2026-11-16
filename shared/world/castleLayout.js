@@ -98,7 +98,7 @@ export const CASTLE = {
         { id: 'CASTLE_HOUSE_RUIN', w: 5, h: 5, weight: 2 },
     ],
     MAX_DOORS: 4,
-    ARMORY: { id: 'CASTLE_ARMORY', w: 11, h: 9, door: 'CASTLE_DOOR', doorIdx: 5 },   // every castle has one: in the inner ward if it fits, else the bailey
+    ARMORY: { id: 'CASTLE_ARMORY', w: 11, h: 9, door: 'CASTLE_ARMORY_DOOR', doorIdx: 5 },   // (its door leads into the armory: ARMORY_INTERIOR)   // every castle has one: in the inner ward if it fits, else the bailey
     ROW_H: [[5, 0.55], [6, 0.25], [7, 0.2]],   // a row's height (its tallest house), by chance
     BLOCK: [1, 5],            // houses shoulder to shoulder in a block
     LANE: [[1, 0.66], [2, 0.27], [3, 0.07]],   // a row's lane, how many cells wide, by chance

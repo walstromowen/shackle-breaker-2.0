@@ -76,7 +76,13 @@ export const MAP_OBJECTS_DEFINITIONS = {
     CASTLE_TOWER_2: { sheet: 'objCastleTower', spriteX: 0, spriteY: 0, width: 4, height: 15, frames: 5, frame: 2, spriteDy: 28, isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
     CASTLE_TOWER_3: { sheet: 'objCastleTower', spriteX: 0, spriteY: 0, width: 4, height: 15, frames: 5, frame: 3, spriteDy: 28, isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
     CASTLE_TOWER_4: { sheet: 'objCastleTower', spriteX: 0, spriteY: 0, width: 4, height: 15, frames: 5, frame: 4, spriteDy: 28, isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
-    CASTLE_KEEP: { sheet: 'objCastleKeep', spriteX: 0, spriteY: 0, width: 20, height: 22, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -9, w: 20, h: 10 }] },
+    // (its footprint all solid but its door, columns 9 and 10 of its last row: CASTLE_KEEP_DOOR stands there)
+    CASTLE_KEEP: { sheet: 'objCastleKeep', spriteX: 0, spriteY: 0, width: 20, height: 22, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -9, w: 20, h: 9 }, { xOffset: 0, yOffset: 0, w: 9, h: 1 }, { xOffset: 11, yOffset: 0, w: 9, h: 1 }] },
+    /* the keep's great door (tools/art/castleKeepDoor.py: cut out of the keep's own art, then its leaves swinging in): 2 x 4, standing on the terrace
+       before the keep and drawn a cell higher (spriteDy -32) over the painted door, its hitbox the door's two cells; stepping in opens it and leads
+       into the keep's hall (KEEP_INTERIOR). Out again, you stand on the terrace (returnDy 0: the row it stands on). */
+    CASTLE_KEEP_DOOR: { sheet: 'objCastleKeepDoor', spriteX: 0, spriteY: 0, width: 2, height: 4, frames: 4, speed: 0.17, spriteDy: -32, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 2, h: 1 },
+        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'KEEP_INTERIOR', returnDy: 0, isRepeatable: true } },
     CASTLE_GATEHOUSE: { sheet: 'objCastleGatehouse', spriteX: 0, spriteY: 0, width: 6, height: 11, frames: 2, frame: 0, castleGate: 'outer', isSolid: false, isGround: false, isAnchor: true, hitboxes: [] },
     // the inner ward's smaller gatehouse (castle_gatehouse_inner_obj.png, 4 x 8), on the inner wall's last row, the flight up ending at the foot of its arch;
     // two frames like the gatehouse's (closed while the inner gate is shut: WorldManager.castleGatesShut('inner'))
@@ -297,6 +303,18 @@ export const MAP_OBJECTS_DEFINITIONS = {
         sheet: 'objCastleDoor',
         spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
         interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'HOUSE_INTERIOR', isRepeatable: true }
+    },
+    // the armory's door: the same iron door (it swings open as you step in), into the armory (ARMORY_INTERIOR)
+    CASTLE_ARMORY_DOOR: {
+        sheet: 'objCastleDoor',
+        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
+        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ARMORY_INTERIOR', isRepeatable: true }
+    },
+    // the way out of the keep and the armory: the iron door seen from inside (as HOUSE_EXIT_DOOR: anchored under the doorway, its hitbox on the doorway cell)
+    CASTLE_EXIT_DOOR: {
+        sheet: 'objCastleDoor',
+        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: true, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 1, h: 1 },
+        interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true }
     },
     /* the blacksmith's door: the blacksmith's door art on an ordinary house door (it leads into a plain house interior) */
     SMITHY_DOOR: {

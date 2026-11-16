@@ -279,7 +279,10 @@ export class CastleSites {
             const f = t.frame === 0 ? 0 : !wb.length ? 1 : wb.length >= 4 ? 4 : !wb.includes(0) ? 2 : 3;
             out.push({ col: ox + t.col, row: oy + t.row + 3, id: 'CASTLE_TOWER_' + f });
         }
-        if (plan.keep) out.push({ col: ox + plan.keep.col, row: oy + plan.keep.row + plan.keep.h - 1, id: 'CASTLE_KEEP' });
+        if (plan.keep) {
+            out.push({ col: ox + plan.keep.col, row: oy + plan.keep.row + plan.keep.h - 1, id: 'CASTLE_KEEP' });
+            out.push({ col: ox + plan.keep.col + 9, row: oy + plan.keep.row + plan.keep.h, id: 'CASTLE_KEEP_DOOR' });   // on the terrace, over the keep's painted door
+        }
         for (const g of plan.gates || (plan.gate ? [plan.gate] : [])) out.push({ col: ox + g.col, row: oy + g.row, id: 'CASTLE_GATEHOUSE' });
         if (plan.inner && plan.inner.gatehouse) out.push({ col: ox + plan.inner.gatehouse.col, row: oy + plan.inner.gatehouse.row, id: 'CASTLE_GATEHOUSE_INNER' });
         for (const b of plan.buildings) {

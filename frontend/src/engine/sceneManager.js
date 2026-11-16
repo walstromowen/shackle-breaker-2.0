@@ -558,10 +558,11 @@ export class SceneManager {
                             try { const biome = this.worldManager && this.worldManager.getBiomeAt(data.context.col, data.context.row); w.interiorBiome = (biome && biome.id) || null; }
                             catch (e) { w.interiorBiome = null; }
                             // Save Overworld state
+                            // out again a row below the door (`returnDy` on the warp: another row, the keep's door standing on the terrace itself)
                             w.savedOverworld = {
                                 seed: gameState.seed,
                                 returnCol: data.context.col,
-                                returnRow: data.context.row + 1
+                                returnRow: data.context.row + (data.returnDy ?? 1)
                             };
                             w.interiorStack = [];
                             // Shift into interior state

@@ -1186,6 +1186,35 @@ LootTableDefinitions.container_wardrobe = {
     ]
 };
 
+// Chests inside a ruined castle (biome CASTLE_INTERIOR's defaultLootTable): the garrison's stores, its arms and armour, coin's worth of metal
+LootTableDefinitions.castle = {
+    type: "weighted",
+    items: [
+        { id: "iron_ingot", weight: 40, min: 1, max: 3 },
+        { id: "bronze_ingot", weight: 25, min: 1, max: 2 },
+        { id: "steel_ingot", weight: 6, min: 1, max: 1 },
+        { id: "leather", weight: 25, min: 1, max: 2 },
+        { id: "healing_herb", weight: 40, min: 1, max: 3 },
+        { id: "bandage", weight: 25, min: 1, max: 2 },
+        { id: "healing_tonic", weight: 10, min: 1, max: 1 },
+        { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
+        { id: "torch", weight: 20, min: 1, max: 2 },
+        { id: "throwing_knife", weight: 18, min: 1, max: 3 },
+        { id: "shortsword", weight: 8 },
+        { id: "spear", weight: 7 },
+        { id: "warhammer", weight: 6 },
+        { id: "glaive", weight: 5 },
+        { id: "crossbow", weight: 5 },
+        { id: "executioners_axe", weight: 2 },
+        { id: "leather_armor", weight: 8 },
+        { id: "iron_helmet", weight: 6 },
+        { id: "iron_armor", weight: 4 },
+        { id: "iron_gauntlets", weight: 5 },
+        { id: "iron_greaves", weight: 5 },
+        { id: "iron_boots", weight: 5 }
+    ]
+};
+
 // The HOUSE_INTERIOR biome's defaultLootTable is "house"; point it at the house_interior table.
 LootTableDefinitions.house = LootTableDefinitions.house_interior;
 

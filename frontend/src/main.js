@@ -156,6 +156,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objCastleHouseRow: './assets/mapObjects/objCastleHouseRow.png',
     objCastleHouseRuin: './assets/mapObjects/objCastleHouseRuin.png',
     objCastleDoor: './assets/mapObjects/objCastleDoor.png',             // the town house's iron door (tools/art/castleDoor.py)
+    objCastleKeepDoor: './assets/mapObjects/objCastleKeepDoor.png',     // the keep's great door, opening (tools/art/castleKeepDoor.py)
     objCastleArmory: './assets/mapObjects/objCastleArmory.png',       // every castle's armory (tools/art/castleTownVariants.py, ARMORY)
     // the castle town's market (tools/art/castleMarket.py)
     objMarketStall1: './assets/mapObjects/objMarketStall1.png',
@@ -418,7 +419,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     snowyMountainsBattleDayBg: './assets/backgrounds/snowy_mountains_battle_day_bg.png',
     snowyMountainsBattleDuskBg: './assets/backgrounds/snowy_mountains_battle_dusk_bg.png',
     snowyMountainsBattleNightBg: './assets/backgrounds/snowy_mountains_battle_night_bg.png',
-    // a ruined castle's courtyard at three hours (day and dusk hand-made; night, and the abandoned house's interior, painted by tools/art/battleBackgrounds.py)
+    // painted in code (tools/art/battleBackgrounds.py): a ruined castle's courtyard at three hours, and inside an abandoned house
     castleGroundsBattleDayBg: './assets/backgrounds/castle_grounds_battle_day_bg.png',
     castleGroundsBattleDuskBg: './assets/backgrounds/castle_grounds_battle_dusk_bg.png',
     castleGroundsBattleNightBg: './assets/backgrounds/castle_grounds_battle_night_bg.png',
@@ -552,6 +553,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     snowyMountainsBattleBgm: './assets/audio/music/snowy_mountains_battle_1.mp3',
     snowyMountainsBgmDay: './assets/audio/music/snowy_mountains_overworld_day.mp3',
     snowyMountainsBgmNight: './assets/audio/music/snowy_mountains_overworld_night.mp3',
+    castleGroundsBgm: './assets/audio/music/abandoned_town.mp3',   // the castle grounds, at every hour
 
     caveBattleBgm: './assets/audio/music/cave_battle_1.mp3',
     caveBgm: './assets/audio/music/cave_bgm.mp3',
