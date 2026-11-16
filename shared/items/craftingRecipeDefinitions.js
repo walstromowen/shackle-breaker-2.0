@@ -373,7 +373,7 @@ export const craftingRecipeDefinitions = {
     outputItemId: "kurtus_brew",
     station: "any",
     materials: {
-      "meteorite": 1,
+      "illuminating_herb": 3,   // (no meteorite: that stone is kept for freeing the shackled)
       "coal": 2,      // To deeply char and steep the brew
       "sand": 1       // Adds a terrible texture, fits the "bad decisions" theme
     }

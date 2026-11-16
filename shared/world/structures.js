@@ -287,9 +287,8 @@ function villageModules(suffix) {
         { prefab: n('ABANDONED_COTTAGE'), weight: 3, verticalWeight: 1 },
         { prefab: n('ABANDONED_FARMHOUSE'), weight: 2, verticalWeight: 0.8 },
         { prefab: n('ABANDONED_HUT'), weight: 2, verticalWeight: 0.8 },
-        { prefab: n('ABANDONED_SMITHY'), weight: 1.5, verticalWeight: 0.8, max: 3 },
         ...sides('ABANDONED_HOUSE', 3.5),
-        ...sides('ABANDONED_SMITHY', 1, 3),
+        // (no other blacksmith houses, nor their side views: a village has exactly one, its required workshop, lit, where the Hooded Stranger lives)
     ];
 }
 

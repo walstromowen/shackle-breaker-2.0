@@ -48,18 +48,14 @@ export const MAP_OBJECTS_DEFINITIONS = {
        is placed in that gap by the yard (structures.js). The object's cell is the bottom-left tile of the sprite. Only the walls are solid: the bottom two rows, except the gap, whose own
        door object is the way in (the one cell above it is wall). The roof rows above are not solid, so you can walk behind a house and it draws over you. */
     ABANDONED_HOUSE_1: { sheet: 'objAbandonedHouse1', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 } /* the wall left of the door */, { xOffset: 2, yOffset: -1, w: 1, h: 1 } /* the wall above the door */, { xOffset: 3, yOffset: -1, w: 2, h: 2 } /* the wall right of the door */] },
-    /* the stone-walled house: the same size, door gap and walls as ABANDONED_HOUSE_1, with fieldstone instead of planks. It is the WORKSHOP (structures.js):
-       someone still works there, so its windows glow and its chimney smoulders (objStoneWorkshop, the stone house lit), and it gives off a faint warm
-       light at the gable window, on the ground before the lower window (the wall itself blocks light) and above the chimney (`lights`: tiles from its top left). */
-    ABANDONED_STONE_HOUSE: { sheet: 'objStoneWorkshop',
-        lights: [
-            { hasLight: true, dx: 2.5, dy: 2.85, radius: 2.6, maxAlpha: 0.55, color: '255, 170, 80', flickerAmp: 0.12, flickerSpeed: 0.06 },
-            { hasLight: true, dx: 1.25, dy: 5.1, radius: 2.2, maxAlpha: 0.42, color: '255, 165, 75', flickerAmp: 0.12, flickerSpeed: 0.06 },
-            { hasLight: true, dx: 3.6, dy: 0.9, radius: 1.8, maxAlpha: 0.45, color: '255, 115, 45', flickerAmp: 0.35, flickerSpeed: 0.12 },
-        ], spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
+    /* the stone-walled house: the same size, door gap and walls as ABANDONED_HOUSE_1, with fieldstone instead of planks. Dark, like every house but the blacksmith's
+       (it was the lit workshop once; villages no longer build it, but the ones already in a world stay, unlit) */
+    ABANDONED_STONE_HOUSE: { sheet: 'objAbandonedStoneHouse', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
     /* the workshop: a main gable (5 wide, with the door) and a lower side wing (3 wide) */
     CRAFTING_HOUSE: { sheet: 'objCraftingHouse', spriteX: 5, spriteY: 7, width: 7, height: 6, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 4, h: 2 } /* the wall right of the door, wing included */] },
-    /* the blacksmith's house: house A's size and door gap in fieldstone under a slate roof; its door is the blacksmith's door art and leads into an ordinary house */
+    /* the blacksmith's house: house A's size and door gap in fieldstone under a slate roof; its door (the blacksmith's door art) leads into the workshop with every crafting
+       station, where the Hooded Stranger lives. The only lit house: its window glows and its chimney smoulders (in the art), and it gives off a warm light at the window,
+       on the ground before it (the wall itself blocks light) and above the chimney (`lights` on ABANDONED_SMITHY: tiles from its top left) */
     /* the castle town's house (castleLayout.js): the abandoned house's size, door gap and walls, in the keep's gothic stone under slate */
     CASTLE_TOWNHOUSE: { sheet: 'objCastleTownhouse', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
     /* and seen from the side (its long wall to the south): sealed, no door, the whole wall solid; Left / Right differ in where the chimney, dormer and windows are */
@@ -111,7 +107,12 @@ export const MAP_OBJECTS_DEFINITIONS = {
     MARKET_STALL_1: { sheet: 'objMarketStall1', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 } },
     MARKET_STALL_2: { sheet: 'objMarketStall2', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 } },
     MARKET_STALL_3: { sheet: 'objMarketStall3', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 } },
-    ABANDONED_SMITHY: { sheet: 'objAbandonedSmithy', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
+    ABANDONED_SMITHY: { sheet: 'objAbandonedSmithy',
+        lights: [
+            { hasLight: true, dx: 1.35, dy: 4.15, radius: 2.4, maxAlpha: 0.5, color: '255, 165, 75', flickerAmp: 0.14, flickerSpeed: 0.07 },
+            { hasLight: true, dx: 1.35, dy: 5.1, radius: 2.2, maxAlpha: 0.42, color: '255, 160, 70', flickerAmp: 0.14, flickerSpeed: 0.07 },
+            { hasLight: true, dx: 3.45, dy: 1.0, radius: 1.8, maxAlpha: 0.45, color: '255, 115, 45', flickerAmp: 0.35, flickerSpeed: 0.12 },
+        ], spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
     /* THE SIDE VIEWS: the same houses seen from the side, for the plots beside a north-south road (the gable with the door faces the road, so only the long wall shows). They have no
        door: the whole wall (the bottom two rows) is solid and the house is a sealed shell. Left / Right differ only in where the chimney and the windows are. Each is as tall as its front view. */
     ABANDONED_HOUSE_1_LEFT: { sheet: 'objAbandonedHouse1Left', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 5, h: 2 }] },
