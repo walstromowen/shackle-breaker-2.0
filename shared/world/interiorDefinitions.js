@@ -15,7 +15,8 @@ export const INTERIOR_DEFINITIONS = {
         doorObject: 'HOUSE_EXIT_DOOR',
         lootObject: 'WOODEN_CHEST'
     },
-    // The village's one workshop: every crafting station stands in a row against the north wall, in this order (left to right)
+    // Inside a village's blacksmith house (SMITHY_DOOR, WORKSHOP_DOOR): every crafting station stands in a row against the north wall, in this order (left to right).
+    // The Hooded Stranger lives in the first one the player walks into.
     ABANDONED_WORKSHOP: {
         generatorType: 'CRAFTING_HOUSE',
         floorTile: 'LAYER_2',

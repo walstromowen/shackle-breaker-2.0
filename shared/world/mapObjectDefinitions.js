@@ -317,12 +317,13 @@ export const MAP_OBJECTS_DEFINITIONS = {
         interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true }
     },
     /* the blacksmith's door: the blacksmith's door art on an ordinary house door (it leads into a plain house interior) */
+    // a blacksmith house's door: inside, the workshop with every crafting station (the Hooded Stranger lives in the first one entered: InteriorFactory)
     SMITHY_DOOR: {
         sheet: 'objBlacksmithDoor',
         spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
-        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'HOUSE_INTERIOR', isRepeatable: true }
+        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_WORKSHOP', isRepeatable: true }
     },
-    /* the village's one workshop (every crafting station inside); it uses the blacksmith's door art until it gets one of its own: change `sheet` */
+    /* the door of the village's one required workshop, which is a blacksmith house too (structures.js WORKSHOP): the same door, the same room */
     WORKSHOP_DOOR: {
         sheet: 'objBlacksmithDoor',
         spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },

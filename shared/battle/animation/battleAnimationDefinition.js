@@ -1107,18 +1107,6 @@ export const BattleAnimationDefinitions = {
         ]
     }),
     // Uses the new "hop" actor motion (BattleAnimationModel).
-    "take_flight": anim(1.7, {
-        audio: [
-            sfx(0.1, 'bowReleaseSfx', { volume: 0.7, pitch: 0.6 }),
-            sfx(0.2, 'smokeSfx', { volume: 0.6, pitch: 1.5 })
-        ],
-        actor: hop(0, 0.9, 70, { flash: flash(0.2, 1.2, 'brightness(140%) saturate(60%) drop-shadow(0 0 8px white)') }),
-        vfx: [
-            spawn(0.1, 'smokeAnimation', { life: 0.6, scale: 1.5, blend: 'normal' }),
-            burst(0.3, { count: 10, color: '#ffffff', scale: 0.7, minSpeed: 50, maxSpeed: 150, minLife: 0.5, maxLife: 0.9, gravity: -60 }),
-            burst(0.15, { count: 10, color: '#e8f0ff', scale: 0.9, minSpeed: 60, maxSpeed: 180, gravity: 120 })
-        ]
-    }),
     "thrust": anim(1.5, {
         audio: [sfx(0.133, 'thrustSfx', { volume: 1 })],
         actor: lunge(0, 0.2, 96),

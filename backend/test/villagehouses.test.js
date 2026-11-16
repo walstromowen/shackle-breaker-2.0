@@ -38,7 +38,8 @@ test('a side house is as tall as its front view, has no door and is solid along 
         for (const b of front.hitboxes) for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) cells.add(`${b.xOffset + x},${b.yOffset + y}`);
         assert.ok(!cells.has('2,0') && cells.has('2,-1'), `${h}: the door cell is open and the wall above it is solid`);
     }
-    assert.equal(D.SMITHY_DOOR.interaction.roomType, 'HOUSE_INTERIOR');
+    assert.equal(D.SMITHY_DOOR.interaction.roomType, 'ABANDONED_WORKSHOP', 'a blacksmith house holds every crafting station');
+    assert.equal(D.WORKSHOP_DOOR.interaction.roomType, 'ABANDONED_WORKSHOP');
 });
 
 test('every yard variant leaves the prefab through the gate in its fence, and has a gap of at most one empty column or row beside the fence', () => {
@@ -74,7 +75,7 @@ test('the door of a front yard is on the bottom row of its house and has a footp
     }
 });
 
-test('every module of every village exists, the side houses stand only beside north-south streets, and the one workshop (the stone house) is required', () => {
+test('every module of every village exists, the side houses stand only beside north-south streets, and the one workshop (a blacksmith house) is required', () => {
     for (const id of ['ABANDONED_VILLAGE', 'ABANDONED_VILLAGE_DESERT', 'ABANDONED_VILLAGE_SNOWY']) {
         const mods = STRUCTURES[id].modules;
         for (const m of mods) assert.ok(STRUCTURES[m.prefab], `${id}: ${m.prefab} exists`);
@@ -82,7 +83,7 @@ test('every module of every village exists, the side houses stand only beside no
         assert.equal(sides.length, 4, `${id}: two modules of each of the plank house and the smithy (the stone house is the workshop now: no plain or side ones)`);
         assert.ok(!mods.some(m => /^ABANDONED_STONE_HOUSE/.test(m.prefab)), `${id}: no plain stone house`);
         const workshop = STRUCTURES[mods.find(m => m.required).prefab];
-        assert.ok(JSON.stringify(workshop).includes('ABANDONED_STONE_HOUSE'), `${id}: the workshop is the stone house`);
+        assert.ok(JSON.stringify(workshop).includes('ABANDONED_SMITHY') && !JSON.stringify(workshop).includes('ABANDONED_STONE_HOUSE'), `${id}: the workshop is a blacksmith house`);
         for (const m of sides) assert.equal(m.horizontalWeight, 0, `${m.prefab} is never beside an east-west street`);
         for (const m of mods.filter(x => !/_SIDE_/.test(x.prefab))) assert.ok((m.horizontalWeight ?? m.weight) > 0, `${m.prefab} may stand beside an east-west street`);
         assert.equal(mods.filter(m => m.required).length, 1);

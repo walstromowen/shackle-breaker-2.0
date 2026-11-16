@@ -243,9 +243,9 @@ const STONE_HOUSE_SPEC = houseSpec('ABANDONED_STONE_HOUSE', 'HOUSE_DOOR_WOODEN',
 
 const SMITHY_SPEC = houseSpec('ABANDONED_SMITHY', 'SMITHY_DOOR', [[2, 5, 'BARREL'], [5, 5, 'CRATE']]);
 
-/* the workshop is the stone house (lit at its windows and chimney: ABANDONED_STONE_HOUSE in mapObjectDefinitions.js); the plain stone houses and side shells
-   are no longer built, so the stone house always means the workshop */
-const WORKSHOP = (door, props) => houseSpec('ABANDONED_STONE_HOUSE', door, props);
+/* the workshop is a blacksmith house (ABANDONED_SMITHY): every blacksmith house holds every crafting station, and the Hooded Stranger lives in the
+   first one the player walks into (InteriorFactory.claimStrangerHome). Each village has at least this one; the stone house is no longer built */
+const WORKSHOP = (door, props) => houseSpec('ABANDONED_SMITHY', door, props);
 
 const CROP_FIELD = (herb) => ({
     w: 8, h: 8, anchor: [3, 2], gateRow: 5, scatterRect: { x: 2, y: 5, w: 4, h: 1 }, scatterPool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'],
@@ -363,7 +363,7 @@ export const STRUCTURES = {
             { prefab: 'ABANDONED_CROP_FIELD_INVIGORATING',  weight: 1.6 },
             { prefab: 'ABANDONED_CROP_FIELD_ILLUMINATING',  weight: 1.6 },
 
-            // The one workshop: its interior holds every crafting station (see ABANDONED_WORKSHOP in interiorDefinitions.js)
+            // The one required blacksmith house (every blacksmith house's interior holds every crafting station: ABANDONED_WORKSHOP in interiorDefinitions.js)
             { prefab: 'ABANDONED_WORKSHOP',   weight: 1.5, required: true, max: 1 },
         ],
 

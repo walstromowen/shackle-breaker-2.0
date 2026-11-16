@@ -38,14 +38,19 @@ export function statAt(rects, point) {
  * @returns {{ w:number, h:number, desc:object, descLines:string[], detailLines:string[], noteLines:string[], flavorLines:string[] } | null}
  */
 export function layoutStatTooltip(ui, attr, opts = {}) {
-    const desc = getStatDescription(attr, opts);
+    let desc = getStatDescription(attr, opts);
     if (!desc) return null;
+    // compact: no skill-check rows either (the level-up screen shows the roll in a column of its own)
+    if (opts.compact) desc = { ...desc, rows: desc.rows.filter(r => r.kind !== 'check') };
     const w = opts.width || WIDTH;
     const textW = w - PADDING * 2;
-    const descLines = desc.description ? ui.getWrappedLines(desc.description, textW, UITheme.fonts.cardSmall) : [];
-    const detailLines = desc.detail ? ui.getWrappedLines(desc.detail, textW, UITheme.fonts.cardItalic) : [];
-    const noteLines = desc.note ? ui.getWrappedLines(desc.note, textW, UITheme.fonts.cardSmall) : [];
-    const flavorLines = desc.flavor ? ui.getWrappedLines(desc.flavor, textW, UITheme.fonts.cardItalic) : [];
+    // compact (opts.compact): only what it is, in its first sentence, and the numbers; no detail, notes or story line (the level-up screen, where the
+    // card must leave the numbers it changes in view)
+    const description = opts.compact && desc.description ? (desc.description.match(/^.*?[.!?](\s|$)/) || [desc.description])[0].trim() : desc.description;
+    const descLines = description ? ui.getWrappedLines(description, textW, UITheme.fonts.cardSmall) : [];
+    const detailLines = desc.detail && !opts.compact ? ui.getWrappedLines(desc.detail, textW, UITheme.fonts.cardItalic) : [];
+    const noteLines = desc.note && !opts.compact ? ui.getWrappedLines(desc.note, textW, UITheme.fonts.cardSmall) : [];
+    const flavorLines = desc.flavor && !opts.compact ? ui.getWrappedLines(desc.flavor, textW, UITheme.fonts.cardItalic) : [];
 
     let h = HEADER_H + SECTION_GAP;
     h += descLines.length * LINE_H;
@@ -88,7 +93,8 @@ export function placeStatTooltip(anchor, size, canvasW, canvasH, placement = 'ri
  * @param {CanvasUI} ui
  * @param {string} attr  an attribute ('vigor', 'strength', ...) or a stat ('level', 'maxHp', 'speed', 'attack:blunt', ...); see getStatDescription (anything else draws nothing)
  * @param {{x:number,y:number,w:number,h:number}} anchor
- * @param {object} [opts]  placement; gap (distance from the anchor); at ({x,y}: draw exactly there instead of next to the anchor); width; skillChecks; multipliers (see getStatDescription)
+ * @param {object} [opts]  placement; gap (distance from the anchor); at ({x,y}: draw exactly there instead of next to the anchor); width; skillChecks; multipliers (see getStatDescription);
+ *                         compact (only the first sentence and what a point is worth, no skill-check rows); plateAlpha (how solid the card's plate is: 0.98 unless given, lower lets what is under it show)
  * @returns {{x:number,y:number,w:number,h:number} | null} where it was drawn
  */
 export function drawStatTooltip(ui, attr, anchor, opts = {}) {
@@ -101,11 +107,12 @@ export function drawStatTooltip(ui, attr, anchor, opts = {}) {
 
     // Plate
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    const plate = opts.plateAlpha ?? 0.98;
+    ctx.shadowColor = `rgba(0, 0, 0, ${0.8 * plate})`;
     ctx.shadowBlur = 29;
     ctx.shadowOffsetX = 10;
     ctx.shadowOffsetY = 10;
-    ui.drawPanel(x, y, w, h, 'rgba(15, 15, 18, 0.98)');
+    ui.drawPanel(x, y, w, h, `rgba(15, 15, 18, ${plate})`);
     ctx.restore();
 
     // Banner

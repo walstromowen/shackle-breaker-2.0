@@ -84,14 +84,15 @@ export class LevelUpRenderer {
             if (stat) drawStatTooltip(this.ui, stat, this._statRects[stat], { placement: 'left', ...helpOptionsFor(state.member, gameState.difficulty || 'normal') });
             return;
         }
-        // at the foot of the Projected Stats panel: an attribute's card is up to ~680px tall, more than the room above the rows, and anywhere on
-        // the left it would cover the + / - buttons or Reset / Confirm, the very things being used while it shows. At the foot, the top of the
-        // projected stats (health, stamina, insight...) still shows above it as the points go in.
-        const col = this._rightCol;
-        const opts = { width: col.w - 48, ...helpOptionsFor(state.member, gameState.difficulty || 'normal') };
+        // a compact card (what it is and what a point is worth: no notes or story line), a little see-through, over the portrait just above the
+        // attribute rows: the one thing on this screen that does not change, so it hides neither the projected stats (which move as the points go
+        // in) nor the + / - buttons and Reset / Confirm
+        const block = this._attrBlock;
+        const opts = { width: block.w, compact: true, plateAlpha: 0.86, ...helpOptionsFor(state.member, gameState.difficulty || 'normal') };
         const lay = layoutStatTooltip(this.ui, attr, opts);
         if (!lay) return;
-        drawStatTooltip(this.ui, attr, this._attrBlock, { ...opts, at: { x: col.x + 24, y: Math.max(col.y + 24, col.y + col.h - lay.h - 24) } });
+        const top = this._portraitTop ?? (block.y - lay.h - 30);
+        drawStatTooltip(this.ui, attr, block, { ...opts, at: { x: block.x, y: Math.max(top, Math.min(block.y - lay.h - 34, top + 40)) } });   // (above the ROLL heading)
     }
 
     _renderCharacterColumn(member, availablePoints, pendingAllocations, hoveredId, selectedId, x, y, w, h) {
@@ -116,6 +117,7 @@ export class LevelUpRenderer {
 
         const pSize = this.layout.portraitSize;
         const portraitX = Math.floor(centerX - (pSize / 2));
+        this._portraitTop = currentY - 18;   // (the attribute help card may sit from here down to the rows: see _drawStatHelp)
         const img = this.loader.get(member.spritePortrait);
 
         this.ui.drawLancetArchedPanel(portraitX, currentY, pSize, pSize * 1.25, UITheme.colors.bgScale[2], UITheme.colors.borderHighlight);
