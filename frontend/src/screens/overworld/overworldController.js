@@ -900,6 +900,8 @@ export class OverworldController extends BaseController {
 
         // the first snowy campfire the player comes upon becomes Nikoli's camp (WorldManager.noticeNikoliCampfire)
         if (this.worldManager.noticeNikoliCampfire) this.worldManager.noticeNikoliCampfire(gameState.player.col, gameState.player.row);
+        // and in act 1, the first small graveyard the player comes upon is where Osric of the Saw waits (WorldManager.noticeAmputatorGraveyard)
+        if (this.worldManager.noticeAmputatorGraveyard) this.worldManager.noticeAmputatorGraveyard(gameState.player.col, gameState.player.row);
         const stepOnObj = this.worldManager.getObjectAt(gameState.player.col, gameState.player.row);
         // --- UPDATED: Handle Walk-Over Pickups ---
         if (stepOnObj && stepOnObj.interaction?.type === 'PICKUP' && !stepOnObj.isFading) {

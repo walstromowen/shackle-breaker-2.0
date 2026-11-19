@@ -39,6 +39,8 @@ export function worldPart(data) {
             nikoliCampfire: w.nikoliCampfire || null,
             jaegerCatacomb: w.jaegerCatacomb || null,
             strangerSnowHome: w.strangerSnowHome || null,
+            amputatorGraveyard: w.amputatorGraveyard || null,
+            amputatorQuarry: w.amputatorQuarry || null,
         },
     });
 }

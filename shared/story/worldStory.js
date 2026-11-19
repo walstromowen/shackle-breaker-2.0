@@ -17,7 +17,8 @@ export const WORLD_FLAGS = new Set([
     'jaeger_met', 'jaeger_told',         // Jaeger
     'mentoras_taken', 'pursuer_done',    // "pursuer": Jaeger takes Mentoras; he is freed
     'friends_met', 'brothers_done',      // "friends" / "brothers": the reunion; Jaeger beaten in the snowy house
-    'brothers_sword_taken', 'brothers_sword_shown'   // "ashes": the sword taken from the cold campfire; shown to Mentoras
+    'brothers_sword_taken', 'brothers_sword_shown',  // "ashes": the sword taken from the cold campfire; shown to Mentoras
+    'osric_met', 'garrick_slain'         // the Amputators: Osric of the Saw met; Brother Garrick put to rest (story/encounters/story/amputators.js)
 ]);
 
 const KEY = (id) => `story:${id}`;

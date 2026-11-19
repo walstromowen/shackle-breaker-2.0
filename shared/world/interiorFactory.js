@@ -17,8 +17,10 @@ const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerat
      strangerDesertHome    where he goes in act 2: the first workshop in a desert village the player walks into in act 2
      nikoliCampfire        Nikoli's camp: the first campfire of the snowy mountains the world puts down near the player ("col,row", WorldManager)
      jaegerCatacomb        where Jaeger waits, posing as Nikoli: the first catacombs the player walks into (an interior id); he stands in its hoard until met
-     strangerSnowHome      act 3: the first snowy-mountain crafting house entered once Codey is back, where Mentoras and Codey go (story/heroes.js) */
-export const STORY_HOMES = ['strangerHome', 'strangerDesertHome', 'nikoliCampfire', 'jaegerCatacomb', 'strangerSnowHome'];
+     strangerSnowHome      act 3: the first snowy-mountain crafting house entered once Codey is back, where Mentoras and Codey go (story/heroes.js)
+     amputatorGraveyard    Osric of the Saw's seat: the cell he sits on, in the first small graveyard the player comes near in act 1 ("col,row", WorldManager)
+     amputatorQuarry       where Brother Garrick is, picked when Osric's quest starts ("col,row", WorldManager.pickAmputatorQuarry) */
+export const STORY_HOMES = ['strangerHome', 'strangerDesertHome', 'nikoliCampfire', 'jaegerCatacomb', 'strangerSnowHome', 'amputatorGraveyard', 'amputatorQuarry'];
 
 // the story's flags belong to the world being played (story/worldStory.js): ActSystem routes them there
 const hasMilestone = (id) => ActSystem.hasMilestone(id);

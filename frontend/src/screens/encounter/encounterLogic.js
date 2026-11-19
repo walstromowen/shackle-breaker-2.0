@@ -22,6 +22,8 @@ import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
 import { QuestDefinitions } from '../../../../shared/story/questDefinitions.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
+import { Covenants, COVENANTS } from '../../../../shared/story/covenants.js';
+import { addMarker, getMarkers } from '../../../../shared/world/mapMarkers.js';
 
 /* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
    same roll (the leader's, sent with each choice: the one who started it) and the same seed, so every screen reaches the same outcome. Who a
@@ -327,6 +329,21 @@ export class EncounterLogic {
                 }
                 // a story character leaves, or a thing is taken, as the scene tells it: every object of that kind on this player's map goes, and nothing is
                 // written into the shared world (in a party, the others' stories keep theirs). `{ objectId }` (story/encounters/story/heroesNorth.js)
+                // Osric's quest: where Brother Garrick is (the world's, picked once: WorldManager.pickAmputatorQuarry), and a gold pin on this player's map
+                case "AMPUTATOR_QUARRY": {
+                    const at = worldManager && worldManager.pickAmputatorQuarry ? worldManager.pickAmputatorQuarry() : null;
+                    if (at && !getMarkers().some(m => m.col === at[0] && m.row === at[1] && !m.map)) {
+                        const m = addMarker(at[0], at[1], { color: 'gold' });
+                        if (m) m.label = 'Brother Garrick';
+                    }
+                    if (worldManager && worldManager.refreshStoryObjects) worldManager.refreshStoryObjects();
+                    break;
+                }
+                // swearing to a covenant (story/covenants.js): this player's own oath, breaking any other
+                case "JOIN_COVENANT": {
+                    if (payload.covenantId && Covenants.join(payload.covenantId)) generalMessages.push(`Joined the covenant: ${COVENANTS[payload.covenantId].name}`);
+                    break;
+                }
                 case "REMOVE_STORY_NPC": {
                     const objs = worldManager && worldManager.objects ? [...worldManager.objects.values()] : [];
                     for (const o of objs) if (o && o.type === payload.objectId && worldManager._unplaceObject) worldManager._unplaceObject(o.col, o.row);

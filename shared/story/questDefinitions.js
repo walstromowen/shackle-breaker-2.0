@@ -667,6 +667,20 @@ export const QuestDefinitions = {
             { id: "obj_beast_level", type: "party_level", targetLevel: 14, amount: 1 }
         ],
         rewards: { exp: 400, currency: 100, items: [{ id: "insight_of_ice", amount: 1 }] }
+    },
+
+    // ========================================================
+    // THE AMPUTATORS (story/covenants.js, story/encounters/story/amputators.js): Osric of the Saw's errand, before he offers the covenant's oath
+    // ========================================================
+    "amputators_trial": {
+        id: "amputators_trial",
+        name: "The Laughing Brother",
+        turnIn: "AMPUTATOR_OSRIC",
+        description: "Osric of the Saw, an Amputator with a hook for a hand, keeps watch over a small graveyard. One of his brotherhood, Brother Garrick, has begun to hear the chain sing. He wears no iron yet, but the rot needs none to get in. Osric cannot bring himself to do it. Find Garrick where Osric marked your map, put him to rest, and return to Osric.",
+        objectives: [
+            { id: "obj_garrick", type: "kill_enemy", targetId: "AMPUTATOR_GARRICK", amount: 1, description: "Put Brother Garrick to rest" }
+        ],
+        rewards: { exp: 140, currency: 90, items: [{ id: "bandage", amount: 3 }, { id: "healing_tonic", amount: 1 }] }
     }
 };
 
@@ -674,5 +688,5 @@ export const QuestDefinitions = {
    the party goes through the story together; each player still hands in their own and gets their own rewards (story/worldStory.js). */
 export const STORY_QUESTS = new Set([
     'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8', 'act2_red_moon',
-    'codey1', 'codey2', 'codey3', 'the_pursuer', 'panzerian_war_beast'
+    'codey1', 'codey2', 'codey3', 'the_pursuer', 'panzerian_war_beast', 'amputators_trial'
 ]);

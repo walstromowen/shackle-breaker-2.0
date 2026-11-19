@@ -28,6 +28,9 @@ export const VOICED = {
     dry_kraken_ambush: [],   // the narrator only: Codey speaks with his hands
     codey_freed: [],
     jaeger: [[/./, 'JAEGER']],   // Nikoli's brother, posing as him: Nikoli's voice, played cold
+    amputator_osric: [[/./, 'OSRIC']],              // the Amputators: Osric of the Saw (story/encounters/story/amputators.js)
+    amputator_garrick: [[/./, 'GARRICK']],          // and Brother Garrick, going mad
+    amputator_garrick_fallen: [[/./, 'GARRICK']],
     // the world's encounters: the narrator, and the few who speak
     a_disturbing_sight: [[/./, 'MADMAN']],          // the cursed madmen of the grass and the villages
     suspicious_merchant: [[/./, 'MERCHANT']],       // the mad peddler (and the giggling of his friends)
@@ -51,7 +54,10 @@ export const SPEAKERS = {
     jaeger: [[/./, 'JAEGER']],
     a_disturbing_sight: [[/./, 'MADMAN']],
     suspicious_merchant: [[/./, 'MERCHANT']],
-    aftermath: [[/./, 'SURVIVOR']]
+    aftermath: [[/./, 'SURVIVOR']],
+    amputator_osric: [[/./, 'OSRIC']],
+    amputator_garrick: [[/./, 'GARRICK']],
+    amputator_garrick_fallen: [[/./, 'GARRICK']]
 };
 
 export function speakerOf(encounterId, stageId) {

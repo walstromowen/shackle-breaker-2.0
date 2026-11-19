@@ -396,6 +396,49 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "CURSED"]
     },
 
+    /* THE AMPUTATORS (story/covenants.js, story/encounters/story/amputators.js): a covenant of the not-yet-shackled who would stop the curse by cutting
+       the shackles off the afflicted, and the limb with them when the iron will not give. Most of them wear the proof: a stump, a hook, a wooden leg.
+       Slightly mad, all of them; none shackled. Art: borrowed for now (Osric the watchman's hunter look, Garrick the madman's). */
+    // Osric of the Saw: the covenant's first face, met in act 1 among the stones of the first small graveyard the player comes upon. Never fought.
+    "AMPUTATOR_OSRIC": {
+        ...HUMANOID_TEMPLATE,
+        name: "Osric of the Saw",
+        level: 1,
+        spriteOverworld: "legionaryHeroSprite",
+        spritePortrait: "watchmanPortrait",
+        crySound: "watchmanCry",
+        deathSound: "watchmanCry",
+        abilities: [...REGULAR_HUMANOID_ABILITIES],
+        tags: [...HUMANOID_TEMPLATE.tags, "AMPUTATOR"]
+    },
+    // Brother Garrick: an Amputator going the way of the ones he cut. Fought once, for Osric (quest amputators_trial): a little stronger than his kind.
+    "AMPUTATOR_GARRICK": {
+        ...HUMANOID_TEMPLATE,
+        name: "Brother Garrick",
+        level: 1,
+        spriteOverworld: "madmanSprite",
+        spritePortrait: "madmanPortrait",
+        crySound: "madmanCry",
+        deathSound: "madmanCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 14, strength: 13, dexterity: 12, intelligence: 4, attunement: 7
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 20, maxStamina: 18, speed: 6, critical: 0.12, corruption: 40,
+            maxHpMultiplier: 2.2,   // one man against the party, and the quest's whole fight: he has to last
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: 2, slash: 1, pierce: 1, dark: 2, light: -2 },
+            baseResistance: { dark: 0.15, light: -0.15 },
+            baseAttack: { blunt: 1, slash: 4, pierce: 2 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "amputators_saw" },
+        currencyReward: { min: 30, max: 60 },
+        lootTableId: "garrick_drops",
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "eviscerate", "low_sweep", "intimidate"],
+        tags: [...HUMANOID_TEMPLATE.tags, "AMPUTATOR", "ELITE"]
+    },
+
     "HOLLOW_HARVESTER": {
         ...HUMANOID_TEMPLATE,
         name: "Hollow Harvester",

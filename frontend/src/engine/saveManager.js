@@ -304,6 +304,8 @@ export const SaveManager = {
                 nikoliCampfire: world.nikoliCampfire || null,           // Nikoli's camp, "col,row" of the campfire (WorldManager)
                 jaegerCatacomb: world.jaegerCatacomb || null,           // the catacombs Jaeger waits in (InteriorFactory)
                 strangerSnowHome: world.strangerSnowHome || null,       // act 3: the snowy house Mentoras and Codey go to (story/heroes.js)
+                amputatorGraveyard: world.amputatorGraveyard || null,   // Osric of the Saw's seat among the graves, "col,row" (WorldManager)
+                amputatorQuarry: world.amputatorQuarry || null,         // where Brother Garrick is (WorldManager.pickAmputatorQuarry)
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
                 castlesBuilt: clone(world.castlesBuilt || {}),   // the castles whose objects are written into the world (StructureSpawner._buildCastle)
@@ -431,6 +433,8 @@ export const SaveManager = {
             nikoliCampfire: data.world.nikoliCampfire || null,
             jaegerCatacomb: data.world.jaegerCatacomb || null,
             strangerSnowHome: data.world.strangerSnowHome || null,
+            amputatorGraveyard: data.world.amputatorGraveyard || null,
+            amputatorQuarry: data.world.amputatorQuarry || null,
             discoveredChunks: data.world.discoveredChunks || [],
             // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
             structureChunks: data.world.structureChunks,

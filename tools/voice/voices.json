@@ -349,6 +349,33 @@
         "Hmm... I am not convinced...": "[skeptical, slow] Hmm... I am not convinced...",
         "Fine. Put like that, I suppose I can find the time. Lead on.": "[sighs] Fine. [grudging] Put like that, I suppose I can find the time. [gruff] Lead on."
       }
+    },
+    "OSRIC": {
+      "id": "tycrNyvdSnjiGsrmA2QI",
+      "name": "Osric of the Saw (Shackle Breaker): designed for him, a weary middle-aged English hunter, courteous, dry and sardonic, low and slightly hoarse, like a Bloodborne character",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "directions": {
+        "Ah. Another soul on the old road. Mind the graves, friend. The dead here have suffered enough of us.": "[weary, courteous] Ah. Another soul on the old road. [dry] Mind the graves, friend. The dead here have suffered enough of us.",
+        "Done, then.": "[quietly] Done, then.",
+        "Ha! Welcome, brother.": "[a short, surprised laugh] Ha! [warmly] Welcome, brother.",
+        "Come find me. I'll make it quick.": "[gently, not unkindly] Come find me. I'll make it quick."
+      }
+    },
+    "GARRICK": {
+      "id": "GCDIRtNQtXaSk3U3wvYf",
+      "name": "Brother Garrick (Shackle Breaker): designed for him, a thin unhinged English man, sing-song, breathy and giggling, soft then shrill",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "directions": {
+        "Osric sent you. Hah! Osric, Osric. Thinks I'm going the way of the iron.": "[giggling] Osric sent you. Hah! [sing-song] Osric, Osric. Thinks I'm going the way of the iron.",
+        "But listen. Listen! Can you hear it? The chain sings when you cut it. Every link, a little song.": "[whispering, excited] But listen. [shrill] Listen! Can you hear it? [dreamy] The chain sings when you cut it. Every link, a little song.",
+        "Tell Osric... the song was a lie. It was only screaming.": "[weak, clear for a moment, dying] Tell Osric... [a breath] the song was a lie. It was only screaming."
+      }
     }
   }
 }

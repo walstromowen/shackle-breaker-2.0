@@ -635,6 +635,16 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", dropRate: 0.03 },
         ]
     },
+    // Brother Garrick (the Amputators' quest): what the mad brother had on him
+    "garrick_drops": {
+        type: "independent",
+        items: [
+            { id: "bandage", dropRate: 1.0, min: 2, max: 3 },
+            { id: "healing_herb", dropRate: 0.6, min: 1, max: 2 },
+            { id: "leather", dropRate: 0.5, min: 1, max: 2 },
+            { id: "iron_ingot", dropRate: 0.3 },
+        ]
+    },
     "hollow_harvester_drops": {
         type: "independent",
         items: [

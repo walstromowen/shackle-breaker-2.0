@@ -16,6 +16,7 @@ import { hoodedStranger } from './encounters/story/hoodedStranger.js';
 import { nikoli, nikoliAfterBattle, nikoliBrothersWon } from './encounters/story/nikoli.js';
 import { dryKrakenAmbush, codeyFreed } from './encounters/story/codey.js';
 import { jaeger } from './encounters/story/jaeger.js';
+import { amputatorOsric, amputatorGarrick, amputatorGarrickFallen } from './encounters/story/amputators.js';
 import { codey, strangerMark, brothersSword, pursuer, pursuerWon } from './encounters/story/heroesNorth.js';
 import { ruinedCarriage, ruinedCarriageCleared } from './encounters/ruinedCarriage.js';
 import { quicksand, cyclone, cycloneHeart } from './encounters/desertHazards.js';
@@ -47,6 +48,9 @@ export const encounterDefinitions = {
     [hoodedStranger.id]: hoodedStranger,   // the Shackled quest giver, in one village workshop
     [nikoli.id]: nikoli,   // Nikoli, the Panzerian general, hunting for Commander Mentoras (story/encounters/story/nikoli.js)
     [nikoliAfterBattle.id]: nikoliAfterBattle,
+    [amputatorOsric.id]: amputatorOsric,   // the Amputators' Osric of the Saw, in the first small graveyard of act 1 (story/encounters/story/amputators.js)
+    [amputatorGarrick.id]: amputatorGarrick,   // Brother Garrick, going mad: Osric's quest
+    [amputatorGarrickFallen.id]: amputatorGarrickFallen,
     [dryKrakenAmbush.id]: dryKrakenAmbush,   // act 2: the Dry Kraken rises out of the desert, holding Codey (story/encounters/story/codey.js, story/storyAmbush.js)
     [codeyFreed.id]: codeyFreed,
     [jaeger.id]: jaeger,

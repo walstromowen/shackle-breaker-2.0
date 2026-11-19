@@ -374,6 +374,35 @@ export const ItemDefinitions = {
       5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
     }
   },
+  // The Amputators' saw (story/covenants.js): a toothed bone-saw on a hooked haft, made to take a shackle off and the hand with it if it must.
+  // Given to whoever joins the covenant; Brother Garrick carries one. (Icon: the dagger's for now.)
+  "amputators_saw": {
+    id: "amputators_saw",
+    name: "Amputator's Saw",
+    slot: "oneHand",
+    type: "weapon",
+    description: 'A toothed bone-saw on a hooked haft, its teeth dark with old work. "Cut the chain and spare the soul. If the chain will not come, take what it holds." - the Amputators\' creed.',
+    value: 220,
+    icon: { col: 0, row: 0 },
+    attack: { slash: 4, pierce: 1 },
+    requirements: { strength: 9, dexterity: 10 },
+    requirementGrowth: { strength: 2, dexterity: 2 },
+    grantedAbilities: ["slash", "low_sweep"],
+    maxLevel: 5,
+    statGrowth: {
+      attack: { slash: 2, pierce: 1 }
+    },
+    abilityUnlocks: {
+      2: ["eviscerate"],
+      3: ["flurry", "execute"]
+    },
+    upgradeCosts: {
+      2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
+      3: { currency: 150, materials: { "bronze_ingot": 5, "hard_wood": 10, "soft_wood": 15 } },
+      4: { currency: 300, materials: { "iron_ingot": 5, "bronze_ingot": 10, "hard_wood": 15 } },
+      5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
+    }
+  },
   "glaive": {
     id: "glaive",
     name: "Glaive",

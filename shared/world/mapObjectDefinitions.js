@@ -238,6 +238,10 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // before the player has met him: he stands just north of his campfire facing up, at the snow leopards stalking down toward him; coming within 3 tiles
     // of him or of a cat starts the meeting (WorldManager._storyObjects puts the scene there, and takes it away once he has been met)
     NIKOLI_NPC_WATCHING: { ...npcBody('NIKOLI', 'UP'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
+    // the Amputators (story/encounters/story/amputators.js): Osric among the stones of the first small graveyard the player came upon in act 1, and Brother
+    // Garrick where Osric sends you (WorldManager._storyObjects puts them there); coming within 2 tiles of Garrick starts the fight
+    OSRIC_NPC: { ...npcBody('AMPUTATOR_OSRIC'), interaction: { type: 'ENCOUNTER', id: 'amputator_osric' } },
+    GARRICK_NPC: { ...npcBody('AMPUTATOR_GARRICK', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'amputator_garrick', triggerRadius: 2 } },
     // Jaeger, posing as his brother Nikoli: in the hoard of the first catacombs the player walks into, until he has been met (InteriorFactory, CatacombGenerator)
     JAEGER_NPC: { ...npcBody('JAEGER'), interaction: { type: 'ENCOUNTER', id: 'jaeger' } },
     // ---- act 3 (story/heroes.js, story/encounters/story/heroesNorth.js): each player's own story puts these where they are ----

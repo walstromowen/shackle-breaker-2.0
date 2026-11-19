@@ -36,6 +36,17 @@ const MASK_DIRECTIONS = [
    5 tiles north of it, a little before it scrolls into view, and he never pops in where the player can see. */
 export const NIKOLI_CAMP_SIGHT = { cols: 30 + 6, rows: 17 + 6 + 5 };
 
+/* The Amputators (story/encounters/story/amputators.js): Osric of the Saw on his seat among the graves (world.amputatorGraveyard), once claimed, for
+   good; Brother Garrick where Osric sent you (world.amputatorQuarry), until he has been put to rest. */
+function amputatorObjects(out) {
+    const w = gameState.world;
+    const cell = (s) => { const [c, r] = String(s || '').split(',').map(Number); return Number.isFinite(c) && Number.isFinite(r) ? `${c},${r}` : null; };
+    const seat = cell(w.amputatorGraveyard);
+    if (seat) out.set(seat, 'OSRIC_NPC');
+    const quarry = cell(w.amputatorQuarry);
+    if (quarry && !storyHas('garrick_slain')) out.set(quarry, 'GARRICK_NPC');
+}
+
 export class WorldManager {
     constructor() {
         if (!gameState.seed) gameState.seed = Math.floor(Math.random() * 1000000);
@@ -263,6 +274,7 @@ export class WorldManager {
         if (!newObj) return;
         this.objects.set(this._s(col, row), newObj);
         if (id === 'CAMPFIRE') this._campfirePlaced(col, row);
+        else if (id === 'TOMBSTONE' || id === 'OLD_GRAVESTONE') this._gravestonePlaced(col, row);
         let activeHitboxes = [];
         if (newObj.hitboxes && Array.isArray(newObj.hitboxes)) {
             activeHitboxes = newObj.hitboxes;
@@ -290,7 +302,9 @@ export class WorldManager {
     _storyObjects() {
         const out = new Map();
         const w = gameState.world;
-        if (!w.nikoliCampfire || w.isInterior) return out;
+        if (w.isInterior) return out;
+        amputatorObjects(out);
+        if (!w.nikoliCampfire) return out;
         // the story's flags belong to the world (story/worldStory.js): everyone in it sees the same scene
         const ms = { includes: (id) => storyHas(id) };
         if (ms.includes('act2') && ms.includes('nikoli_told')) return out;
@@ -306,6 +320,89 @@ export class WorldManager {
         // the cats on the village's north road (the hub's road cells, which hold no objects), the middle one a step further back
         if (!met) for (const [dc, dr] of [[-1, -4], [0, -5], [1, -4]]) out.set(`${c + dc},${r + dr}`, 'SNOW_LEOPARD_STALKING');
         return out;
+    }
+    /* A gravestone was put down. In act 1, before Osric has a seat, each one outside a castle is a candidate graveyard; noticeAmputatorGraveyard claims
+       the first the player comes near (as with Nikoli's campfire: the world makes the land well beyond the screen). */
+    _gravestonePlaced(col, row) {
+        const w = gameState.world;
+        if (w.isInterior || w.amputatorGraveyard || ActSystem.getAct() !== 1) return;
+        if (this.terrain && this.terrain.castles && this.terrain.castles.isCastleCell(col, row)) return;
+        (this._graveCandidates ||= new Set()).add(`${col},${row}`);
+    }
+    /** Called as each step ends, in act 1: the nearest graveyard within NIKOLI_CAMP_SIGHT of the player (just beyond the screen) becomes Osric of the
+     *  Saw's, if he has none yet: he sits on a free cell beside its stones. */
+    noticeAmputatorGraveyard(col, row) {
+        const w = gameState.world;
+        if (w.amputatorGraveyard || w.isInterior || !this._graveCandidates || !this._graveCandidates.size || ActSystem.getAct() !== 1) return false;
+        // a graveyard is 3 to 5 stones in one 7 x 7 plot (structures.js GRAVEYARD); the lone stones on a village's verge (9 or more steps apart) are not one
+        const all = [...this._graveCandidates].map(k => k.split(',').map(Number));
+        const inPlot = (c, r) => all.filter(([c2, r2]) => Math.abs(c2 - c) <= 6 && Math.abs(r2 - r) <= 6).length;
+        let best = null, bestD = Infinity;
+        for (const [c, r] of all) {
+            const dc = Math.abs(c - col), dr = Math.abs(r - row);
+            if (dc > NIKOLI_CAMP_SIGHT.cols || dr > NIKOLI_CAMP_SIGHT.rows) continue;
+            const d = dc * dc + dr * dr;
+            if (d < bestD && inPlot(c, r) >= 3) { best = [c, r]; bestD = d; }
+        }
+        if (!best) return false;
+        // the graveyard: the stones within its 7 x 7 box of the nearest; Osric sits on the free cell nearest their middle that can be walked up to
+        const stones = all.filter(([c, r]) => Math.abs(c - best[0]) <= 6 && Math.abs(r - best[1]) <= 6);
+        const mc = Math.round(stones.reduce((s, p) => s + p[0], 0) / stones.length), mr = Math.round(stones.reduce((s, p) => s + p[1], 0) / stones.length);
+        const seat = this._freeNear(mc, mr, 5);
+        if (!seat) { for (const [c, r] of stones) this._graveCandidates.delete(`${c},${r}`); return false; }
+        InteriorFactory.claimHome('amputatorGraveyard', `${seat[0]},${seat[1]}`);
+        this._graveCandidates.clear();
+        this.refreshStoryObjects();
+        return true;
+    }
+    /* a cell near (col, row), within `radius`, with nothing on it that can be stepped onto from beside it (nearest first), or null */
+    _freeNear(col, row, radius) {
+        for (let rad = 0; rad <= radius; rad++) {
+            for (let dr = -rad; dr <= rad; dr++) for (let dc = -rad; dc <= rad; dc++) {
+                if (Math.max(Math.abs(dc), Math.abs(dr)) !== rad) continue;
+                const c = col + dc, r = row + dr;
+                if (this._standable(c, r)) return [c, r];
+            }
+        }
+        return null;
+    }
+    _standable(c, r) {
+        if (this.getObjectAt(c, r) || this._storyObjectAt(c, r)) return false;
+        if (this.terrain && this.terrain.castles && this.terrain.castles.levelAt(c, r) >= 0) return false;
+        const D = [[0, 1, 'UP'], [0, -1, 'DOWN'], [1, 0, 'LEFT'], [-1, 0, 'RIGHT']];
+        return D.some(([dc, dr, dir]) => this.canMove(c + dc, r + dr, c, r, dir));
+    }
+    /** Where Brother Garrick is (world.amputatorQuarry, the world's, picked once when Osric's quest starts): a free cell out of sight of Osric's graveyard
+     *  (18 to 30 cells from it) that can be walked to from where the player stands, picked from the world's seed. [col, row], or null. */
+    pickAmputatorQuarry() {
+        const w = gameState.world;
+        const parse = (s) => { const [c, r] = String(s || '').split(',').map(Number); return Number.isFinite(c) && Number.isFinite(r) ? [c, r] : null; };
+        const have = parse(w.amputatorQuarry);
+        if (have) return have;
+        const seat = parse(w.amputatorGraveyard) || [gameState.player.col, gameState.player.row];
+        const start = [gameState.player.col, gameState.player.row];
+        const seen = new Map([[`${start[0]},${start[1]}`, 0]]), q = [start], cands = [];
+        const D = [[0, -1, 'UP'], [0, 1, 'DOWN'], [-1, 0, 'LEFT'], [1, 0, 'RIGHT']];
+        for (let i = 0; i < q.length && i < 20000; i++) {
+            const [c, r] = q[i], d = seen.get(`${c},${r}`);
+            const fromSeat = Math.hypot(c - seat[0], r - seat[1]);
+            if (fromSeat >= 18 && fromSeat <= 30 && !this.getObjectAt(c, r) && !this._storyObjectAt(c, r)) cands.push([c, r]);
+            if (d >= 70) continue;
+            for (const [dc, dr, dir] of D) {
+                const nc = c + dc, nr = r + dr, k = `${nc},${nr}`;
+                if (seen.has(k) || Math.hypot(nc - seat[0], nr - seat[1]) > 32) continue;
+                if (this.terrain && this.terrain.castles && this.terrain.castles.levelAt(nc, nr) >= 0) continue;
+                if (!this.canMove(c, r, nc, nr, dir)) continue;
+                seen.set(k, d + 1); q.push([nc, nr]);
+            }
+        }
+        // open ground around him (all four neighbours walkable), so the party can come at him from any side
+        const open = cands.filter(([c, r]) => D.every(([dc, dr]) => !this.getObjectAt(c + dc, r + dr) && seen.has(`${c + dc},${r + dr}`)));
+        const pool = open.length ? open : cands;
+        if (!pool.length) return null;
+        const pick = pool[Math.floor(this.pseudoRandom(seat[0] * 7 + 911, seat[1] * 13 + 377) * pool.length) % pool.length];
+        InteriorFactory.claimHome('amputatorQuarry', `${pick[0]},${pick[1]}`);
+        return parse(w.amputatorQuarry) || pick;
     }
     _storyObjectAt(col, row) {
         return this._storyObjects().get(`${col},${row}`) || null;
