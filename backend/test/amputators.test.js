@@ -15,6 +15,7 @@ import { COVENANTS, Covenants } from '../../shared/story/covenants.js';
 import { STORY_HOMES } from '../../shared/world/interiorFactory.js';
 import { isWorldFlag } from '../../shared/story/worldStory.js';
 import { VOICED } from '../../shared/story/voiceLines.js';
+import fs from 'node:fs';
 
 const quiet = (fn) => { const l = console.log, w = console.warn; console.log = console.warn = () => {}; try { return fn(); } finally { console.log = l; console.warn = w; } };
 const OSRIC = encounterDefinitions.amputator_osric, GARRICK = encounterDefinitions.amputator_garrick;
@@ -44,6 +45,21 @@ test('the Amputators: a covenant, its two characters, their map objects, encount
     assert.ok(isWorldFlag('osric_met') && isWorldFlag('garrick_slain'), 'his story is the world\'s');
     assert.ok(!isWorldFlag(cv.milestone), 'the oath is the player\'s own');
     assert.ok(STORY_HOMES.includes('amputatorGraveyard') && STORY_HOMES.includes('amputatorQuarry'));
+});
+
+test('Osric and Garrick have their own sheets, registered and on disk at the sizes the game draws (battle 2048x1024, overworld 512x768)', () => {
+    const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
+    const asset = (key) => { const m = new RegExp(`\\b${key}:\\s*'\\./(assets/[^']+)'`).exec(main); return m && new URL('../../frontend/src/' + m[1], import.meta.url); };
+    const size = (u) => { const b = fs.readFileSync(u); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };   // a PNG's IHDR width, height
+    for (const [d, enc] of [[E.AMPUTATOR_OSRIC, OSRIC], [E.AMPUTATOR_GARRICK, GARRICK]]) {
+        assert.equal(enc.imageSheet, d.spritePortrait, `${d.name}: the encounter shows his own portrait sheet`);
+        for (const [key, want] of [[d.spritePortrait, [2048, 1024]], [d.spriteOverworld, [512, 768]]]) {
+            const u = asset(key);
+            assert.ok(u && fs.existsSync(u), `${d.name}: ${key} registered and on disk`);
+            assert.deepEqual(size(u), want, `${d.name}: ${key} is ${want.join('x')}`);
+        }
+    }
+    assert.ok(Object.values(GARRICK.stages).every(st => !st.image || st.image.sheet === E.AMPUTATOR_GARRICK.spritePortrait), 'Garrick\'s stages show his sheet');
 });
 
 test('Osric opens with what this player\'s story has: the meeting, the errand, the oath, the brother', () => {

@@ -29,7 +29,7 @@ import { toStage, next } from '../stageKit.js';
 
 const TITLE = "Osric of the Saw";
 const IMG = { col: 0, row: 0 };
-const GARRICK_IMG = { sheet: "madmanPortrait", col: 0, row: 0 };
+const GARRICK_IMG = { sheet: "garrickPortrait", col: 0, row: 0 };
 export const AMPUTATOR_QUEST = "amputators_trial";
 const COVENANT = COVENANTS.amputators;
 
@@ -131,7 +131,7 @@ const STAGES = {
 export const amputatorOsric = {
     id: "amputator_osric",
     title: TITLE,
-    imageSheet: "watchmanPortrait",
+    imageSheet: "osricPortrait",
     personal: false,   // the world's story: in a party, the players near you are pulled in and vote on what is said (the oath is each player's own)
     tone: "cold",
     initialStage: opening,
@@ -167,7 +167,7 @@ const GARRICK_STAGES = {
 export const amputatorGarrick = {
     id: "amputator_garrick",
     title: "Brother Garrick",
-    imageSheet: "madmanPortrait",
+    imageSheet: "garrickPortrait",
     personal: false,
     tone: "cold",
     initialStage: () => (has('garrick_slain') ? 'fallen' : 'g_meet'),

@@ -291,6 +291,8 @@ ui_icons: './assets/icons/ui_icons.png',
     warlordHeroSprite: './assets/sprites/warlord_hero/warlord_hero_sprite.png',
     nightbladeHeroSprite: './assets/sprites/nightblade_hero/nightblade_hero_sprite.png',
     madmanSprite: './assets/sprites/madman/madman_sprite.png',
+    osricSprite: './assets/sprites/amputator_osric/osric_sprite.png',       // the Amputators (story/encounters/story/amputators.js): blank until their art is in
+    garrickSprite: './assets/sprites/amputator_garrick/garrick_sprite.png',
     shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png',
     infernusSentinelSprite: './assets/sprites/infernus_sentinel/infernus_sentinel_sprite.png',   // the catacombs' boss as its map object draws it (128 px frames, a still statue)
     hoodedStrangerSprite: './assets/sprites/hooded_stranger/hooded_stranger_sprite.png',   // the quest giver in a village workshop (one front frame; tools/art/overworldSheetFromFrame.py)
@@ -306,6 +308,8 @@ ui_icons: './assets/icons/ui_icons.png',
     snowLeopardPortrait: './assets/sprites/snow_leopard/snow_leopard_portrait.png',
     caveSpiderPortrait: './assets/sprites/cave_spider/cave_spider_portrait.png',
     madmanPortrait: './assets/sprites/madman/madman_portrait.png',
+    osricPortrait: './assets/sprites/amputator_osric/osric_portrait.png',
+    garrickPortrait: './assets/sprites/amputator_garrick/garrick_portrait.png',
     arcKnightPortrait: './assets/sprites/arc_knight/arc_knight_portrait.png',
     magicAddictPortrait: './assets/sprites/magic_addict/magic_addict_portrait.png',
     rotterPortrait: './assets/sprites/rotter/rotter_portrait.png',
