@@ -120,3 +120,78 @@ test('wanderers (the madmen, the Arc Knights on patrol) walk about their home an
         assert.ok(seen.size >= 3, `he gets about (${seen.size} cells)`);
     });
 });
+
+test('a wanderer is where the clock has it on its round: the same on every player\'s screen (two worlds made from the same seed agree)', () => {
+    quiet(() => {
+        const make = () => {
+            gameState.seed = 1000; gameState.milestones = [];
+            Object.assign(gameState.world, { changes: {}, isInterior: false, structureChunks: {}, strangerHome: null, amputatorGraveyard: null, amputatorQuarry: null, nikoliCampfire: null });
+            const wm = new WorldManager();
+            const sp = wm.findSpawnPoint();
+            gameState.player.col = sp.col; gameState.player.row = sp.row;
+            for (let y = sp.row - 32; y <= sp.row + 32; y += 16) for (let x = sp.col - 32; x <= sp.col + 32; x += 16) wm.ensureChunkLoaded(x, y);
+            const home = wm._freeNear(sp.col + 5, sp.row + 3, 6);
+            wm._placeObject(home[0], home[1], 'ARC_KNIGHT_PATROL');
+            return { wm, home };
+        };
+        const a = make(), b = make();
+        assert.deepEqual(a.home, b.home);
+        const at = (x) => { const o = [...x.wm.objects.values()].find(o => o._home && o._home[0] === x.home[0] && o._home[1] === x.home[1]); return [o.col, o.row, o._facing || null]; };
+        const T = 1_700_000_000_000;
+        let moved = 0;
+        for (let i = 0; i < 60; i++) {
+            a.wm.tickWanderers(T + i * 900); b.wm.tickWanderers(T + i * 900);
+            assert.deepEqual(at(a), at(b), `the same at ${i}`);
+            if (i && (at(a)[0] !== a.home[0] || at(a)[1] !== a.home[1])) moved++;
+        }
+        assert.ok(moved > 10, 'and it walks');
+        // a third world, made later and meeting the round part way, finds him where the others do
+        const c = make();
+        c.wm.tickWanderers(T + 59 * 900);
+        assert.deepEqual(at(c).slice(0, 2), at(a).slice(0, 2));
+    });
+});
+
+test('come at a madman from behind and it is A Disturbing Sight (the sneak\'s chances); from the front or the sides he sees you, and it is the fight', async () => {
+    const { OverworldController } = await import('../../frontend/src/screens/overworld/overworldController.js');
+    assert.equal(M.MADMAN_NPC.interaction.id, 'a_disturbing_sight');
+    assert.equal(M.MADMAN_NPC.interaction.seenId, 'madman_spots_you');
+    const sees = (facing, dx, dy) => { gameState.player.col = 10 + dx; gameState.player.row = 10 + dy; return OverworldController.prototype.seesPlayer.call({}, { col: 10, row: 10, _facing: facing }); };
+    // he faces up: behind him is below
+    assert.equal(sees('UP', 0, 2), false, 'straight behind');
+    assert.equal(sees('UP', 1, 2), false, 'behind, a little to the side');
+    assert.equal(sees('UP', 2, 2), false, 'behind on the diagonal');
+    assert.equal(sees('UP', 2, 1), true, 'beside him, more than behind');
+    assert.equal(sees('UP', 2, 0), true, 'at his side');
+    assert.equal(sees('UP', 0, -2), true, 'in front');
+    assert.equal(sees('LEFT', 2, 0), false, 'facing left: behind is to the right');
+    const spotted = encounterDefinitions.madman_spots_you;
+    const st = spotted.stages[spotted.initialStage];
+    assert.ok(st.bgm, 'the battle music plays');
+    assert.deepEqual(st.decisions.map(d => d.text), ['Draw your weapon.']);
+    assert.ok(results(st.decisions[0]).some(r => r.type === 'START_BATTLE'));
+    assert.ok(encounterDefinitions.a_disturbing_sight.stages.discovery.decisions.some(d => d.type === 'skill_check'), 'from behind: the chances a sneak gives');
+});
+
+test('a round stops now and then, and at a stop it stands and turns to look about', () => {
+    quiet(() => {
+        gameState.seed = 4242; gameState.milestones = [];
+        Object.assign(gameState.world, { changes: {}, isInterior: false, structureChunks: {}, strangerHome: null, amputatorGraveyard: null, amputatorQuarry: null, nikoliCampfire: null });
+        const wm = new WorldManager();
+        const sp = wm.findSpawnPoint();
+        for (let y = sp.row - 32; y <= sp.row + 32; y += 16) for (let x = sp.col - 32; x <= sp.col + 32; x += 16) wm.ensureChunkLoaded(x, y);
+        for (const id of ['ARC_KNIGHT_PATROL', 'MADMAN_NPC']) {
+            const home = wm._freeNear(sp.col + (id === 'MADMAN_NPC' ? -5 : 5), sp.row, 6);
+            wm._placeObject(home[0], home[1], id);
+            const round = wm._wanderRound(wm.objects.get(wm._s(home[0], home[1])));
+            let turnsInPlace = 0, stops = 0;
+            for (let i = 1; i < round.cells.length; i++) {
+                const same = round.cells[i][0] === round.cells[i - 1][0] && round.cells[i][1] === round.cells[i - 1][1];
+                if (same) stops++;
+                if (same && round.facing[i] !== round.facing[i - 1]) turnsInPlace++;
+            }
+            assert.ok(stops >= 4, `${id}: it stops (${stops})`);
+            assert.ok(turnsInPlace >= 2, `${id}: and turns where it stands (${turnsInPlace})`);
+        }
+    });
+});

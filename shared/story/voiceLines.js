@@ -36,6 +36,7 @@ export const VOICED = {
     amputator_garrick_fallen: [[/./, 'GARRICK']],
     // the world's encounters: the narrator, and the few who speak
     a_disturbing_sight: [[/./, 'MADMAN']],          // the cursed madmen of the grass and the villages
+    madman_spots_you: [[/./, 'MADMAN']],            // one who sees you coming
     suspicious_merchant: [[/./, 'MERCHANT']],       // the mad peddler (and the giggling of his friends)
     aftermath: [[/./, 'SURVIVOR']],                 // the legionary left standing
     wounded_mutt: [], bonfire: [], wild_hunt: [], treasure_chest: [], strange_obelisk: [], iron_chest: [], tracks_in_the_snow: [],
@@ -57,6 +58,7 @@ export const SPEAKERS = {
     pursuer_won: [[/./, 'STRANGER']],
     jaeger: [[/./, 'JAEGER']],
     a_disturbing_sight: [[/./, 'MADMAN']],
+    madman_spots_you: [[/./, 'MADMAN']],
     suspicious_merchant: [[/./, 'MERCHANT']],
     aftermath: [[/./, 'SURVIVOR']],
     arc_knight: [[/./, 'ARC_KNIGHT']],

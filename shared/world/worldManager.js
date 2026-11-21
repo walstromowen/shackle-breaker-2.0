@@ -62,12 +62,18 @@ function arcKnightObjects(out) {
     if (Number.isFinite(dc) && Number.isFinite(dr)) out.set(`${dc},${dr + 2}`, 'ARC_KNIGHT_NPC');
 }
 
-/* Wanderers: map objects whose definition has `wander` (the madmen, the act 2 Arc Knights on patrol) walk about their home cell, a step at a time
-   with pauses, never leaving its chunk (the chunk is made and unmade with them) nor stepping onto a player. Each one's own: not the world's
-   (a player's screen moves its own). wander: { radius, stepMs: [min, max], pauseChance, pauseMs: [min, max], straight: chance to keep going the
-   same way (a patrol) }. */
+/* Wanderers: map objects whose definition has `wander` (the madmen, the act 2 Arc Knights on patrol) walk about their home cell, never leaving its
+   chunk (the chunk is made and unmade with them). Every player sees them in the same place: each walks a round of its own, worked out from the
+   world's seed and its home (a few waypoints near home, the paths between them, pauses on the way), and where it is on that round is the clock's
+   (Date.now, a step every stepMs). wander: { radius, stepMs: [min, max] (the mean is its step), pauseChance (a pause at a step of the way),
+   pauseMs: [min, max], straight: 0..1, how far its waypoints lie (a patrol walks long stretches), waypoints }. */
 const WANDER_DIRS = { DOWN: [0, 1], RIGHT: [1, 0], UP: [0, -1], LEFT: [-1, 0] };
-const between = ([a, b]) => a + Math.random() * (b - a);
+/* a seeded 0..1 generator (mulberry32) from a few integers: the same numbers on every player's screen */
+function seededRng(...ints) {
+    let h = 2166136261 >>> 0;
+    for (const n of ints) { h ^= (n | 0); h = Math.imul(h, 16777619) >>> 0; }
+    return () => { h = (h + 0x6D2B79F5) >>> 0; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
 
 export class WorldManager {
     constructor() {
@@ -296,7 +302,7 @@ export class WorldManager {
         const newObj = this.createObjectInstance(col, row, id);
         if (!newObj) return;
         this.objects.set(this._s(col, row), newObj);
-        if (newObj.wander) (this._wanderers ||= new Set()).add(newObj);
+        if (newObj.wander) { newObj._home = [col, row]; (this._wanderers ||= new Set()).add(newObj); }   // (a step to another cell keeps the first home: _moveWanderer)
         if (id === 'CAMPFIRE') this._campfirePlaced(col, row);
         else if (id === 'TOMBSTONE' || id === 'OLD_GRAVESTONE') this._gravestonePlaced(col, row);
         let activeHitboxes = [];
@@ -380,41 +386,110 @@ export class WorldManager {
         this.refreshStoryObjects();
         return true;
     }
-    /** Called every frame on the map: the wanderers near the player take their next step, or pause (see `wander` above). Returns how many moved. */
-    tickWanderers(now = (typeof performance !== 'undefined' ? performance.now() : Date.now())) {
+    /** Called every frame on the map: the wanderers near the player go to where the clock has them on their round (see `wander` above).
+     *  `now`: the clock (ms), the same on every player's screen. Returns how many moved. */
+    tickWanderers(now = Date.now()) {
         if (gameState.world.isInterior || !this._wanderers || !this._wanderers.size) return 0;
-        const p = gameState.player || {}, C = this.CHUNK_SIZE;
+        const p = gameState.player || {};
         let moved = 0;
         for (const obj of [...this._wanderers]) {
             if (this.objects.get(this._s(obj.col, obj.row)) !== obj) { this._wanderers.delete(obj); continue; }   // gone (its chunk unmade, or taken away)
-            const w = obj.wander;
-            if (!w || obj.isFading || Math.abs(obj.col - (p.col || 0)) > 24 || Math.abs(obj.row - (p.row || 0)) > 24) continue;
-            if (!obj._home) obj._home = [obj.col, obj.row];
-            if (obj._next === undefined) obj._next = now + between(w.stepMs || [1200, 2400]);
-            if (now < obj._next) continue;
-            if (Math.random() < (w.pauseChance ?? 0.3)) { obj._next = now + between(w.pauseMs || [1500, 4000]); continue; }
-            const [hc, hr] = obj._home;
-            const dirs = Object.keys(WANDER_DIRS).sort(() => Math.random() - 0.5);
-            if (obj._facing && Math.random() < (w.straight || 0)) dirs.unshift(obj._facing);   // a patrol keeps on the way it was going
-            let stepped = null;
-            for (const dir of dirs) {
-                const [ox, oy] = WANDER_DIRS[dir], nc = obj.col + ox, nr = obj.row + oy;
-                if (Math.max(Math.abs(nc - hc), Math.abs(nr - hr)) > (w.radius || 3)) continue;
-                if (Math.floor(nc / C) !== Math.floor(hc / C) || Math.floor(nr / C) !== Math.floor(hr / C)) continue;   // its home's chunk
-                if (nc === p.col && nr === p.row) continue;
-                const there = this.objects.get(this._s(nc, nr));
-                if ((there && !(there.isGround && !there.isSolid)) || this._storyObjectAt(nc, nr) || !this.canMove(obj.col, obj.row, nc, nr, dir)) continue;   // grass and flowers can be walked over
-                stepped = this._moveWanderer(obj, nc, nr, dir, now, w) || obj;
-                moved++;
-                break;
-            }
-            (stepped || obj)._next = now + between(w.stepMs || [1200, 2400]);   // on the object as it now stands (a step makes a new one)
-            if (!stepped) obj._facing = dirs[0];   // hemmed in: turns, and tries again later
+            if (!obj.wander || obj.isFading || Math.abs(obj.col - (p.col || 0)) > 24 || Math.abs(obj.row - (p.row || 0)) > 24) continue;
+            const round = this._wanderRound(obj);
+            if (!round) continue;
+            const i = ((Math.floor(now / round.stepMs) + round.phase) % round.cells.length + round.cells.length) % round.cells.length;
+            const [tc, tr] = round.cells[i];
+            if (tc === obj.col && tr === obj.row) { obj._facing = round.facing[i]; continue; }   // a pause
+            const there = this.objects.get(this._s(tc, tr));
+            if (there && there !== obj && !(there.isGround && !there.isSolid)) continue;   // another wanderer in the way: it waits
+            if (tc === p.col && tr === p.row) continue;   // not onto the player
+            if (this._moveWanderer(obj, tc, tr, round.facing[i], round.stepMs)) moved++;
         }
         return moved;
     }
-    /* a wanderer to (nc, nr): the object moves (its collision with it, nothing written into the world), facing `dir`, gliding from where it was */
-    _moveWanderer(obj, nc, nr, dir, now, w) {
+    /** A wanderer's round: { cells: [[col, row], ...], facing: [...], stepMs, phase }, the same for everyone (the world's seed, its home, the land);
+     *  worked out once per home. Other wanderers do not count as in the way (where they stand right now is not the land's). */
+    _wanderRound(obj) {
+        const w = obj.wander, home = obj._home || [obj.col, obj.row];
+        const key = `${obj.id}@${home[0]},${home[1]}`;
+        if (!this._wanderRounds) this._wanderRounds = new Map();
+        if (this._wanderRounds.has(key)) return this._wanderRounds.get(key);
+        const rng = seededRng(gameState.seed || 0, home[0], home[1]);
+        const C = this.CHUNK_SIZE, R = w.radius || 3;
+        const k = (c, r) => `${c},${r}`;
+        // the wanderers' own collision is set aside while the land is read
+        const stash = [];
+        for (const o of this._wanderers || []) { const ck = this._s(o.col, o.row); if (this._collisionMap.get(ck) === o) { stash.push([ck, o]); this._collisionMap.delete(ck); } }
+        const free = (c, r) => { const o = this.objects.get(this._s(c, r)); return (!o || o.wander || (o.isGround && !o.isSolid)) && !this._storyObjectAt(c, r); };
+        const reach = new Map([[k(...home), null]]), order = [home];
+        try {
+            for (let q = 0; q < order.length; q++) {
+                const [c, r] = order[q];
+                for (const [dir, [ox, oy]] of Object.entries(WANDER_DIRS)) {
+                    const nc = c + ox, nr = r + oy, nk = k(nc, nr);
+                    if (reach.has(nk) || Math.max(Math.abs(nc - home[0]), Math.abs(nr - home[1])) > R) continue;
+                    if (Math.floor(nc / C) !== Math.floor(home[0] / C) || Math.floor(nr / C) !== Math.floor(home[1] / C)) continue;
+                    if (!free(nc, nr) || !this.canMove(c, r, nc, nr, dir)) continue;
+                    reach.set(nk, k(c, r)); order.push([nc, nr]);
+                }
+            }
+        } finally {
+            for (const [ck, o] of stash) this._collisionMap.set(ck, o);
+        }
+        const stepMs = ((w.stepMs || [1200, 2400])[0] + (w.stepMs || [1200, 2400])[1]) / 2;
+        if (order.length < 2) { const round = { cells: [home], facing: [obj.character ? obj.character.facing : 'DOWN'], stepMs, phase: 0 }; this._wanderRounds.set(key, round); return round; }
+        // the shortest way from a to b among the cells it can reach
+        const pathBetween = (a, b) => {
+            const prev = new Map([[k(...a), null]]), qq = [a];
+            for (let q = 0; q < qq.length; q++) {
+                const [c, r] = qq[q];
+                if (c === b[0] && r === b[1]) break;
+                for (const [ox, oy] of Object.values(WANDER_DIRS)) {
+                    const nk = k(c + ox, r + oy);
+                    if (!reach.has(nk) || prev.has(nk)) continue;
+                    prev.set(nk, k(c, r)); qq.push([c + ox, r + oy]);
+                }
+            }
+            const out = [];
+            for (let at = k(...b); at && at !== k(...a); at = prev.get(at)) out.unshift(at.split(',').map(Number));
+            return out;
+        };
+        // its waypoints: far ones for a patrol (straight), near or far for the rest
+        const others = order.slice(1);
+        const dist = (c) => Math.abs(c[0] - home[0]) + Math.abs(c[1] - home[1]);
+        if (w.straight) others.sort((a, b) => dist(b) - dist(a));
+        const pool = w.straight ? others.slice(0, Math.max(2, Math.ceil(others.length * (1 - w.straight)))) : others;
+        const wps = [];
+        for (let n = 0; n < (w.waypoints || 4); n++) wps.push(pool[Math.floor(rng() * pool.length)]);
+        const pauseSteps = () => Math.max(1, Math.round(((w.pauseMs || [1500, 4000])[0] + rng() * ((w.pauseMs || [1500, 4000])[1] - (w.pauseMs || [1500, 4000])[0])) / stepMs));
+        const cells = [home], facing = [obj.character ? obj.character.facing : 'DOWN'];
+        const dirOf = (a, b) => Object.entries(WANDER_DIRS).find(([, [ox, oy]]) => b[0] - a[0] === ox && b[1] - a[1] === oy)?.[0] || facing[facing.length - 1];
+        // a stop: it stands a moment and looks about, turning once or twice before it goes on
+        const DIRS = Object.keys(WANDER_DIRS);
+        const stop = (c) => {
+            let f = facing[facing.length - 1];
+            const n = pauseSteps() + 1;
+            for (let t = 0; t < n; t++) {
+                if (t > 0 && rng() < 0.5) { const turn = DIRS.filter(d => d !== f); f = turn[Math.floor(rng() * turn.length)]; }
+                cells.push(c); facing.push(f);
+            }
+        };
+        let at = home;
+        for (const wp of [...wps, home]) {
+            for (const c of pathBetween(at, wp)) {
+                facing.push(dirOf(cells[cells.length - 1], c)); cells.push(c);
+                if (rng() < (w.pauseChance || 0) * 0.5) stop(c);   // stops on the way
+            }
+            at = wp;
+            stop(at);   // and at each waypoint
+        }
+        const round = { cells, facing, stepMs, phase: Math.floor(rng() * cells.length) };
+        this._wanderRounds.set(key, round);
+        return round;
+    }
+    /* a wanderer to (nc, nr): the object moves (its collision with it, nothing written into the world), facing `dir`, gliding from where it was
+       when the step is to a cell beside it (a round met part way, after its chunk was made, is a jump) */
+    _moveWanderer(obj, nc, nr, dir, stepMs) {
         const from = [obj.col, obj.row];
         const fromKey = this._s(obj.col, obj.row), toKey = this._s(nc, nr);
         const under = this.objects.get(toKey);   // grass or flowers it steps onto: kept, and put back when it moves on
@@ -423,12 +498,13 @@ export class WorldManager {
         if (under) this.objects.delete(toKey);
         this._placeObject(nc, nr, obj.id);
         const moved = this.objects.get(toKey);
-        if (!moved) { if (under) this.objects.set(toKey, under); return; }
+        if (!moved) { if (under) this.objects.set(toKey, under); return null; }
         moved._under = under || null;
-        for (const k of ['_home', '_next', 'wander']) if (obj[k] !== undefined) moved[k] = obj[k];
+        moved._home = obj._home || from;
         moved._facing = dir;
-        const stepMs = (w.stepMs || [1200, 2400])[0];
-        moved._glide = { fromCol: from[0], fromRow: from[1], start: now, dur: Math.min(700, stepMs * 0.7) };
+        if (Math.abs(nc - from[0]) + Math.abs(nr - from[1]) === 1) {
+            moved._glide = { fromCol: from[0], fromRow: from[1], start: (typeof performance !== 'undefined' ? performance.now() : Date.now()), dur: Math.min(700, stepMs * 0.7) };
+        }
         // its home cell, if the world remembers an object there (a village's madman, world.changes), is not made again while it is away
         const homeKey = this._s(moved._home[0], moved._home[1]);
         if (!this._wanderedFrom) this._wanderedFrom = new Set();

@@ -1,6 +1,6 @@
 // 1. Directly import the individual encounters
 import { applyEncounterTraits } from './encounterTraits.js';
-import { aDisturbingSight } from './encounters/aDisturbingSight.js';
+import { aDisturbingSight, madmanSpotsYou } from './encounters/aDisturbingSight.js';
 import { woundedMutt } from './encounters/woundedMutt.js';
 import { bonfire } from './encounters/bonfire.js';
 import { wildHunt } from './encounters/wildHunt.js';
@@ -36,6 +36,7 @@ import { shackledBetrayal, shackledBetrayalEnd } from './encounters/story/shackl
 export const encounterDefinitions = {
     [woundedMutt.id]: woundedMutt,
     [aDisturbingSight.id]: aDisturbingSight,
+    [madmanSpotsYou.id]: madmanSpotsYou,   // a madman who sees you coming (front or sides): the fight
     [bonfire.id]: bonfire,
     [wildHunt.id]: wildHunt,
     [treasureChest.id]: treasureChest,

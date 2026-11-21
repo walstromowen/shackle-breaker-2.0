@@ -1018,10 +1018,24 @@ export class OverworldController extends BaseController {
             if (before.has(key)) continue;
             this.isLocked = true;
             this.setAnimIdle();
-            events.emit('INTERACT', { ...obj.interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
+            // one that can see you coming (interaction.seenId: a madman): come at it from behind and it is its own encounter (A Disturbing Sight,
+            // with the chances a sneak gives); from the front or the sides it sees you, and it is the other (seenId: the fight)
+            const seen = obj.interaction.seenId && this.seesPlayer(obj);
+            const interaction = seen ? { ...obj.interaction, id: obj.interaction.seenId } : obj.interaction;
+            events.emit('INTERACT', { ...interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
             return true;
         }
         return false;
+    }
+
+    /** Does a map character see the player: are they in front of it or beside it, not behind it? Behind is the quarter at its back (within
+     *  45 degrees of straight behind), by the way it faces (a wanderer: the way it walks or looks, obj._facing). */
+    seesPlayer(obj) {
+        const facing = obj._facing || (obj.character && obj.character.facing) || 'DOWN';
+        const [fx, fy] = { DOWN: [0, 1], UP: [0, -1], LEFT: [-1, 0], RIGHT: [1, 0] }[facing] || [0, 1];
+        const dx = gameState.player.col - obj.col, dy = gameState.player.row - obj.row;
+        const along = dx * fx + dy * fy, across = Math.abs(dx * fy - dy * fx);
+        return !(along < 0 && across <= -along);
     }
 
     checkTileEvents() {

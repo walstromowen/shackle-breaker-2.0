@@ -230,9 +230,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
                                     you come into range (OverworldController.findEncounterZones, the same as the scarecrow's `triggerLine` but all around). */
     SHADY_MERCHANT_NPC: { ...npcBody('SHADY_MERCHANT'), interaction: { type: 'ENCOUNTER', id: 'suspicious_merchant' } },
     DOG_NPC: { ...npcBody('DOG'), interaction: { type: 'ENCOUNTER', id: 'wounded_mutt' } },
-    // the madmen wander about where they stand, and stop now and then, as if listening (WorldManager.tickWanderers)
-    MADMAN_NPC: { ...npcBody('MAD_MAN', 'UP'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', triggerRadius: 2 },
-        wander: { radius: 3, stepMs: [900, 1700], pauseChance: 0.3, pauseMs: [1500, 4500] } },
+    // the madmen wander about where they stand, and stop now and then, as if listening, looking about (WorldManager.tickWanderers).
+    // Come at one from behind (the quarter at his back) and it is A Disturbing Sight, with the chances a sneak gives; from the front or the
+    // sides he sees you, and it is the fight (seenId: madman_spots_you, overworldController.seesPlayer)
+    MADMAN_NPC: { ...npcBody('MAD_MAN', 'UP'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', seenId: 'madman_spots_you', triggerRadius: 2 },
+        wander: { radius: 3, stepMs: [1100, 1500], pauseChance: 0.35, pauseMs: [1500, 4500], waypoints: 5 } },
     // the quest giver: only ever one, in one village workshop (InteriorFactory picks it: world.strangerHome); talking to him hands out the Shackled questline
     HOODED_STRANGER_NPC: { ...npcBody('HOODED_STRANGER'), interaction: { type: 'ENCOUNTER', id: 'hooded_stranger' } },
     // Nikoli, the Panzerian general: by the first snowy campfire, later in the Hooded Stranger's old workshop (WorldManager / InteriorFactory put him there)
@@ -249,7 +251,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // act 2: Arc Knights on patrol, rare, out in the plains (biomeDefinitions.js, minAct 2): they walk with a purpose, and coming within 3 tiles of
     // one is the fight (story/encounters/story/arcKnight.js arcKnightPatrol)
     ARC_KNIGHT_PATROL: { ...npcBody('ARC_KNIGHT', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'arc_knight_patrol', triggerRadius: 3 },
-        wander: { radius: 6, stepMs: [700, 1100], pauseChance: 0.12, pauseMs: [900, 2200], straight: 0.75 } },
+        wander: { radius: 6, stepMs: [800, 1000], pauseChance: 0.1, pauseMs: [900, 2200], straight: 0.75, waypoints: 4 } },
     GARRICK_NPC: { ...npcBody('AMPUTATOR_GARRICK', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'amputator_garrick', triggerRadius: 2 } },
     // Jaeger, posing as his brother Nikoli: in the hoard of the first catacombs the player walks into, until he has been met (InteriorFactory, CatacombGenerator)
     JAEGER_NPC: { ...npcBody('JAEGER'), interaction: { type: 'ENCOUNTER', id: 'jaeger' } },
