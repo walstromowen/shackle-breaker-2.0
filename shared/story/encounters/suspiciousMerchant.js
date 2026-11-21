@@ -6,31 +6,23 @@ export const suspiciousMerchant = {
     // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/story/prologue.js)
     ambience: "forestNight",
     stages: {
+        // one screen: his pitch, and every choice (trading first: no more than a click to his wares)
         discovery: {
             displayText: "A Twitching Figure",
             sfx: "shadyMerchantCry",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "You spot a robed figure violently scratching his own neck in the shadows. He snaps his head around and hisses, \"Psst! You! Yes, you with the eyes!\"",
+            text: "A robed figure scratching at his own neck snaps his head around. \"Psst! You, with the eyes! The shiny things whisper to me! They want you to have them! Hee hee!\"",
             decisions: [
                 {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_3" } }] }]
-                }
-            ]
-        },
-
-        discovery_3: {
-            displayText: "A Twitching Figure",
-            image: { col: 0, row: 0 },
-            text: "\"The shiny things whisper to me! They say you need them... yes, yes, they want you to have them!\"",
-            decisions: [
-                {
-                    text: "Ask to see his wares.",
+                    text: "Trade with him.",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    customActionText: "You nod cautiously and ask to see what the madman has for sale.",
-                    outcomes: [
-                        { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "browse_wares" } }] }
+                    type: "open_shop",
+                    shopId: "black_market_shop",
+                    lootTableId: "plains",
+                    rolls: 7,   // eight things in all on his cloak (the herb and seven picks from the table)
+                    wares: [
+                        { id: "healing_herb", price: 150 }
                     ]
                 },
                 {
@@ -78,6 +70,32 @@ export const suspiciousMerchant = {
                         }
                     ]
                 },
+                // the Amputators (story/covenants.js): a sworn surgeon has only to show the saw. Easier than the plain threat, and it empties the
+                // whole stash, but it is still a roll (the mad see things that are not there, and sometimes they see nothing at all)
+                {
+                    text: "[AMP] Let him see the saw-mark of the Amputators.",
+                    corruption: 3,   // a cruel act: corruption goes up
+                    type: "skill_check",
+                    attribute: "strength",
+                    threshold: 11,
+                    conditions: [
+                        { type: "context_flag_not_set", flagId: "failed_merchant_amp" },
+                        { type: "in_covenant", covenant: "amputators" },
+                        { type: "has_tag", tag: "HUMANOID" }
+                    ],
+                    successOutcomes: [
+                        { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "fears_the_saw" } }] }
+                    ],
+                    failureOutcomes: [
+                        {
+                            weight: 100,
+                            results: [
+                                { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_merchant_amp" } },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "merchant_attacks" } }
+                            ]
+                        }
+                    ]
+                },
                 {
                     text: "Switch party member.",
                     type: "switch_character",
@@ -86,40 +104,6 @@ export const suspiciousMerchant = {
                 {
                     text: "Walk away.",
                     customActionText: "Deciding to leave the raving lunatic alone, you walk away.",
-                    outcomes: [
-                        { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
-                    ]
-                }
-            ]
-        },
-
-        browse_wares: {
-            displayText: "The Mad Market",
-            tone: "arcane",
-            sfx: "gemChime",
-            image: { col: 2, row: 1 },
-            text: "He rips his cloak open, giggling wildly! \"Look! The pretties! They sing in the dark! Buy them before they bite me again! Hee hee!\"",
-            decisions: [
-                {
-                    text: "Trade with the merchant.",
-                    type: "open_shop",
-                    shopId: "black_market_shop",
-                    lootTableId: "plains",
-                    rolls: 7,   // eight things in all on his cloak (the herb and seven picks from the table)
-                    wares: [
-                        { id: "healing_herb", price: 150 }
-                    ]
-                },
-                {
-                    text: "Step back.",
-                    customActionText: "You take a step back to reconsider.",
-                    outcomes: [
-                        { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_3" } }] }
-                    ]
-                },
-                {
-                    text: "Leave.",
-                    customActionText: "You decide not to buy anything and back away slowly.",
                     outcomes: [
                         { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                     ]
@@ -227,6 +211,31 @@ export const suspiciousMerchant = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2 } },
+                                { type: "DESTROY_OBJECT" },
+                                { type: "END_ENCOUNTER", payload: null }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+
+        // the Amputators' threat, made good: he knows the saw-men, and gives up everything
+        fears_the_saw: {
+            displayText: "The Saw-Men",
+            effect: "jolt",
+            sfx: "shadyMerchantCry",
+            image: { col: 2, row: 0 },
+            text: "His eyes find the saw, and he goes white. \"The cutters! The saw-men! No cutting, no cutting! Take it, take it all!\" He flings his whole sack at your feet and flees, clutching his wrists.",
+            decisions: [
+                {
+                    text: "Take the sack.",
+                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+                    outcomes: [
+                        {
+                            weight: 100,
+                            results: [
+                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 3 } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

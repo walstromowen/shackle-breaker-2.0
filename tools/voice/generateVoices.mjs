@@ -23,12 +23,23 @@
 //   "directions"  { "the line as it reads on screen": "what the voice is given instead" }: the same words with acting cues in square brackets
 //                 ("[voice breaking] No, you are not him."), for eleven_v3. Only the recording hears them; the screen shows the line as written.
 //                 Changing a line's direction records that line again.
+//                 A direction can also be a list of parts, each read by its own voice: a string is read by the line's voice, { "voice": "OTHER",
+//                 "text": "..." } by voices.OTHER (its own model, settings and fx). The parts are recorded one by one, their silent ends trimmed,
+//                 and crossfaded into the line's one clip (BLEND seconds), so the voices run into each other: a speaker with another self inside
+//                 him (the Madman, and Dolos breaking through him at an eerie moment). Together the parts must say exactly
+//                 the words on screen, in order (the clip's word timings are taken from them). Each part is levelled on its own before the join,
+//                 so no voice of a line comes out louder than another.
+//   "hush"        true: when this voice speaks as a part of a line, the world is muffled around it (Dolos): a moment of dead silence comes
+//                 before it instead of a crossfade, and the clip's manifest entry gets "h": [[start, end], ...] (seconds: from his first word to his
+//                 last), when the game muffles every other sound (the music, the effects, the ambience) and clears them after
+//                 (engine/audioManager.js playVoice)
 // voices.json can also have "pronounce": { "word": "how the voices should say it" } for every voice (Panzeria: "Panzeeria": one word, said like Algeria).
 //   "fx"          a sound treatment run on each clip with ffmpeg after recording (FX below, e.g. "ghost") The API key is read from ELEVENLABS_API_KEY (a cloud session's network proxy puts
 // it in for you: any value works there).
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -63,6 +74,18 @@ const FX = {
     // cursed: the voices in a madman's head speaking along with him: faint copies of his voice, one higher and one lower and a little behind,
     // with a short close echo (the words stay clear on top)
     cursed: 'asplit=3[v][hi][lo];[hi]asetrate=44100*1.12,aresample=44100,atempo=0.8929,adelay=35|35,highpass=f=300,volume=0.16[h];[lo]asetrate=44100*0.84,aresample=44100,atempo=1.1905,adelay=60|60,lowpass=f=2200,volume=0.22[l];[v][h][l]amix=inputs=3:normalize=0,aecho=0.8:0.6:45|110:0.22|0.12,highpass=f=70,lowpass=f=8500',
+    // possessed: something deeper speaking along under him: a faint copy of his voice about four semitones lower, a breath behind, its top cut off,
+    // and only a close, small-room reflection (no hall: he is out in the grass), the words clear on top
+    // close: only the possessed treatment's small-room reflection (a voice meant to stand in the same place as a possessed one)
+    close: 'aecho=0.8:0.5:25|55:0.18|0.1,highpass=f=60,lowpass=f=8500',
+    // dolos: Dolos speaking through someone (the unknown antagonist, story/dolos.js), rare and deafening: the voice with an octave-down copy and a
+    // fifth-down copy beneath it, only a faint short ring (two close reflections, no echo tail), compressed (no louder than whoever he speaks
+    // through: the world muffled around him is what makes him heard, voices.json "hush")
+    dolos: 'asplit=3[v][o][f];[o]asetrate=44100*0.5,aresample=44100,atempo=2.0,lowpass=f=900,volume=0.9[oct];[f]asetrate=44100*0.667,aresample=44100,atempo=1.5,lowpass=f=1800,volume=0.45[fif];[v][oct][fif]amix=inputs=3:normalize=0,aecho=0.8:0.7:9|14:0.22|0.12,highpass=f=35,lowpass=f=6500,acompressor=threshold=0.1:ratio=4:attack=5:release=120:makeup=2',
+    // ghoul: a man turning into a beast (the anguished madman): the voice about two semitones lower and a little faster (frantic), the possessed
+    // treatment's deeper copy under it, and a growl riding beneath every word (a copy an octave down, its top cut off, driven into a soft clip)
+    ghoul: 'asetrate=44100*0.9,aresample=44100,atempo=1.2,asplit=3[v][d][g];[d]asetrate=44100*0.79,aresample=44100,atempo=1.2658,adelay=28|28,lowpass=f=1800,volume=0.3[low];[g]asetrate=44100*0.5,aresample=44100,atempo=2.0,lowpass=f=650,volume=3,asoftclip=type=tanh,volume=0.32[growl];[v][low][growl]amix=inputs=3:normalize=0,aecho=0.8:0.5:25|55:0.18|0.1,highpass=f=60,lowpass=f=8500',
+    possessed: 'asplit=2[v][d];[d]asetrate=44100*0.79,aresample=44100,atempo=1.2658,adelay=28|28,lowpass=f=1800,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.5:25|55:0.18|0.1,highpass=f=60,lowpass=f=8500',
     nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.85:80|190|340|520:0.32|0.23|0.16|0.09,highpass=f=60,lowpass=f=7000,volume=1.0'
 };
 /* Every clip's loudness: integrated loudness (LUFS) and true peak (dBTP). Speech in a game sits well at about -19 LUFS. */
@@ -156,8 +179,14 @@ export function mp3Duration(buf) {
 const PRONOUNCE = Object.entries(CONFIG.pronounce || {}).sort((a, b) => b[0].length - a[0].length);
 const respell = (text) => PRONOUNCE.reduce((t, [word, said]) => t.replace(new RegExp(`\\b${word}\\b`, 'g'), said), text);
 
-/** What the voice is given for a line: its direction (the words with acting cues), else the words; with the respellings. */
-const spokenText = (l) => respell(((CONFIG.voices[l.speaker].directions || {})[l.text]) || l.text);
+/** The parts a line is read in: [{ voice, text }], one part (the line's voice) unless its direction is a list of parts (a part's voice reads it). */
+const partsOf = (l) => {
+    const dir = (CONFIG.voices[l.speaker].directions || {})[l.text];
+    const list = Array.isArray(dir) ? dir : [dir || l.text];
+    return list.map(p => (typeof p === 'string' ? { voice: l.speaker, text: p } : { voice: p.voice || l.speaker, text: p.text }));
+};
+/** What the voices are given for a line: its direction (the words with acting cues), else the words; with the respellings. */
+const spokenText = (l) => partsOf(l).map(p => respell(p.text)).join(' ');
 
 /** A short tag for the voice and the way it reads the line: a clip made with another voice, model, settings, treatment or direction has another
     file name (and is recorded again). */
@@ -168,9 +197,80 @@ const voiceTag = (l) => {
     if (v.fx || dir) parts.push(v.fx || null, dir || null);
     if (v.fx) parts.push(FX[v.fx] || null);   // the treatment itself: retuning it (less echo) makes new clips
     const plain = (v.directions || {})[l.text] || l.text;
-    if (respell(plain) !== plain) parts.push(['say', respell(plain)]);   // a respelled word: a line it changes is recorded again
+    const said = typeof plain === 'string' ? plain : JSON.stringify(plain);
+    if (respell(said) !== said) parts.push(['say', respell(said)]);   // a respelled word: a line it changes is recorded again
+    for (const p of partsOf(l)) if (p.voice !== l.speaker) {          // a part read by another voice: that voice as it is
+        const o = CONFIG.voices[p.voice] || {};
+        parts.push([p.voice, o.id, o.model || CONFIG.model, o.settings || CONFIG.defaultSettings, o.fx || null, FX[o.fx] || null, o.hush ? ['hush', HUSH_GAP, HUSH_AFTER] : null]);
+    }
     return crypto.createHash('sha1').update(JSON.stringify(parts)).digest('hex').slice(0, 8);
 };
+
+/** How long one part of a line fades into the next (seconds): the voices overlap that long, so one runs into the other. */
+const BLEND = 0.12;
+/** The silence at both ends of a take cut off (a part joined to the next). */
+function trimmed(audio) {
+    return ffmpegAf(audio, 'silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.03,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06,areverse');
+}
+/** The dead silence before a hushing voice (voices.json "hush") speaks, and after it if the line goes on (seconds). */
+const HUSH_GAP = 0.45, HUSH_AFTER = 0.3;
+/** When the sound really starts near `t` seconds in a clip: the first 10 ms that rises within 30 dB of the clip's loudest, from a little before
+ *  `t` (the computed start of a part lands off by the encoder's padding and a voice's soft first breath). */
+function onsetNear(audio, t) {
+    const r = spawnSync('ffmpeg', ['-loglevel', 'error', '-f', 'mp3', '-i', 'pipe:0', '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1'], { input: audio, maxBuffer: 64 << 20 });
+    if (r.status !== 0 || !r.stdout) return t;
+    const pcm = new Int16Array(r.stdout.buffer, r.stdout.byteOffset, Math.floor(r.stdout.length / 2));
+    const N = 160, db = [];
+    for (let i = 0; i + N <= pcm.length; i += N) { let s = 0; for (let j = i; j < i + N; j++) s += (pcm[j] / 32768) ** 2; db.push(10 * Math.log10(s / N + 1e-12)); }
+    const floor = Math.max(...db) - 30;
+    for (let k = Math.max(0, Math.floor((t - 0.25) * 100)); k < Math.min(db.length, Math.ceil((t + 0.5) * 100)); k++) if (db[k] > floor) return Math.round(k) / 100;
+    return t;
+}
+/** The parts' takes, one after another, as one clip: each crossfades into the next, except into and out of a hushing voice (silence between).
+ *  takes: [{ audio, hush }]. Returns { audio, hush: [[start, end], ...] }: when the hushing parts sound, from their first word to their last. */
+function joined(takes) {
+    const hush = [];
+    let prevEnd = 0;
+    const steps = takes.map((tk, i) => {
+        const d = mp3Duration(tk.audio);
+        const into = i > 0 && tk.hush, outOf = i > 0 && takes[i - 1].hush;
+        const how = i === 0 ? null : into ? { gap: HUSH_GAP } : outOf ? { gap: HUSH_AFTER } : { fade: BLEND };
+        const start = i === 0 ? 0 : how.gap ? prevEnd + how.gap : prevEnd - BLEND;
+        if (tk.hush) hush.push([Math.round(start * 100) / 100, Math.round((start + d) * 100) / 100]);
+        prevEnd = start + d;
+        return how;
+    });
+    if (takes.length === 1) return { audio: takes[0].audio, hush };
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'voice-parts-'));
+    try {
+        const ins = [];
+        takes.forEach((tk, i) => { const f = path.join(dir, `${i}.mp3`); fs.writeFileSync(f, tk.audio); ins.push('-i', f); });
+        let graph = takes.map((_, i) => `[${i}:a]aresample=44100,aformat=channel_layouts=mono[a${i}]`).join(';');
+        let last = 'a0';
+        for (let i = 1; i < takes.length; i++) {
+            const out = i === takes.length - 1 ? 'out' : `x${i}`, how = steps[i];
+            graph += how.gap ? `;[${last}]apad=pad_dur=${how.gap}[p${i}];[p${i}][a${i}]concat=n=2:v=0:a=1[${out}]`
+                             : `;[${last}][a${i}]acrossfade=d=${BLEND}:c1=qsin:c2=qsin[${out}]`;
+            last = out;
+        }
+        const r = spawnSync('ffmpeg', ['-loglevel', 'error', ...ins, '-filter_complex', graph, '-map', '[out]', '-ar', '44100', '-b:a', '128k', '-f', 'mp3', 'pipe:1'], { maxBuffer: 64 << 20 });
+        if (r.status !== 0 || !r.stdout || !r.stdout.length) throw new Error(`ffmpeg (join): ${String(r.stderr || r.error).slice(0, 300)}`);
+        return { audio: r.stdout, hush: hush.map(([a, b]) => [onsetNear(r.stdout, a), b]) };
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+}
+/** A line recorded: each part by its voice, with that voice's treatment; a line read in more than one take has each take trimmed, levelled and
+ *  joined. Returns { audio, hush } (joined). */
+async function record(l) {
+    const parts = partsOf(l);
+    const takes = [];
+    for (const p of parts) {
+        const v = CONFIG.voices[p.voice];
+        if (!v) throw new Error(`No voice ${p.voice} in tools/voice/voices.json (a part of ${l.speaker}'s "${l.text.slice(0, 40)}")`);
+        const take = applyFx(v.fx, await tts(v.id, respell(p.text), v.settings || CONFIG.defaultSettings, v.model || CONFIG.model));
+        takes.push({ audio: parts.length > 1 ? levelClip(trimmed(take)) : take, hush: !!v.hush });
+    }
+    return joined(takes);
+}
 
 async function main() {
     if (opt('--sample')) {
@@ -240,11 +340,11 @@ async function main() {
     for (const l of missing) {
         const v = CONFIG.voices[l.speaker];
         const rawFile = opt('--raw') && path.join(opt('--raw'), `${l.key}.mp3`);
-        const take = rawFile && fs.existsSync(rawFile) ? fs.readFileSync(rawFile)
-            : await tts(v.id, spokenText(l), v.settings || CONFIG.defaultSettings, v.model || CONFIG.model);
-        const audio = levelClip(applyFx(v.fx, take));
+        const rec = rawFile && fs.existsSync(rawFile) ? { audio: applyFx(v.fx, fs.readFileSync(rawFile)), hush: [] } : await record(l);
+        const audio = levelClip(rec.audio);
         fs.writeFileSync(path.join(OUT_DIR, fileOf(l)), audio);
         manifest[l.key] = { f: fileOf(l), d: mp3Duration(audio) };   // the file, and its length in seconds (the words on screen keep time with it)
+        if (rec.hush.length) manifest[l.key].h = rec.hush;            // when the world falls silent around a hushing voice (voices.json "hush")
         const w = await wordTimes(audio, l.text);
         if (w) manifest[l.key].w = w;                                 // and when each word is said
         done++;

@@ -15,7 +15,7 @@
 /* Which encounters are voiced (the generation script records only these, so a draft is never paid for), and who speaks the quoted words of
    each stage: a list of [stage id pattern, speaker]. Unquoted words are always the NARRATOR. */
 export const VOICED = {
-    prologue: [],
+    prologue: [[/^mad_|^road_ask$/, 'MADMAN']],   // the madman chained ahead of you; the rest is the narrator
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
     act_two: [[/^long_dark$/, 'DARIUS']],
@@ -28,8 +28,8 @@ export const VOICED = {
     dry_kraken_ambush: [],   // the narrator only: Codey speaks with his hands
     codey_freed: [],
     jaeger: [[/./, 'JAEGER']],   // Nikoli's brother, posing as him: Nikoli's voice, played cold
-    amputator_osric: [[/./, 'OSRIC']],              // the Amputators: Osric of the Saw (story/encounters/story/amputators.js)
-    amputator_garrick: [[/./, 'GARRICK']],          // and Brother Garrick, going mad
+    amputator_osric: [[/./, 'OSRIC']],              // the Amputators: Senior Surgeon Osric (story/encounters/story/amputators.js)
+    amputator_garrick: [[/./, 'GARRICK']],          // and Surgeon Garrick, going mad
     amputator_garrick_fallen: [[/./, 'GARRICK']],
     // the world's encounters: the narrator, and the few who speak
     a_disturbing_sight: [[/./, 'MADMAN']],          // the cursed madmen of the grass and the villages
@@ -43,6 +43,7 @@ export const VOICED = {
 
 /* Who speaks the quoted words of a stage (also used by tools/dialogueScript.mjs for the script's NAME: tags) */
 export const SPEAKERS = {
+    prologue: [[/^mad_|^road_ask$/, 'MADMAN']],
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
     act_two: [[/^long_dark$/, 'DARIUS']],     // his own words, in the vision of his life

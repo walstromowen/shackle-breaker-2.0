@@ -48,8 +48,8 @@ export const encounterDefinitions = {
     [hoodedStranger.id]: hoodedStranger,   // the Shackled quest giver, in one village workshop
     [nikoli.id]: nikoli,   // Nikoli, the Panzerian general, hunting for Commander Mentoras (story/encounters/story/nikoli.js)
     [nikoliAfterBattle.id]: nikoliAfterBattle,
-    [amputatorOsric.id]: amputatorOsric,   // the Amputators' Osric of the Saw, in the first small graveyard of act 1 (story/encounters/story/amputators.js)
-    [amputatorGarrick.id]: amputatorGarrick,   // Brother Garrick, going mad: Osric's quest
+    [amputatorOsric.id]: amputatorOsric,   // the Amputators' Senior Surgeon Osric, in the first small graveyard of act 1 (story/encounters/story/amputators.js)
+    [amputatorGarrick.id]: amputatorGarrick,   // Surgeon Garrick, going mad: Osric's quest
     [amputatorGarrickFallen.id]: amputatorGarrickFallen,
     [dryKrakenAmbush.id]: dryKrakenAmbush,   // act 2: the Dry Kraken rises out of the desert, holding Codey (story/encounters/story/codey.js, story/storyAmbush.js)
     [codeyFreed.id]: codeyFreed,

@@ -42,6 +42,34 @@ export const ItemDefinitions = {
       5: { currency: 300, materials: { "bronze_ingot": 5, "iron_ingot": 5, "hard_wood": 10 } }
     }
   },
+  "mace": {
+    id: "mace",
+    name: "Mace",
+    slot: "oneHand",
+    type: "weapon",
+    description: "A plain iron mace with a flanged head. No edge to keep, and it finds the bone through any armor.",
+    value: 150,
+    icon: { col: 16, row: 0 },           // (a blank cell of the weapons sheet until it is painted)
+    attack: { blunt: 5, pierce: 1 },     // the club's weight, and the flanges bite
+    requirements: { strength: 10, vigor: 6 },
+    requirementGrowth: { strength: 2, vigor: 1 },
+    grantedAbilities: ["strike"],
+    maxLevel: 5,
+    statGrowth: {
+      attack: { blunt: 1 }
+    },
+    abilityUnlocks: {
+      2: ["guard_break"],
+      3: ["reckless_charge"],
+      4: ["wild_swing"]
+    },
+    upgradeCosts: {
+      2: { currency: 50, materials: { "iron_ingot": 2, "hard_wood": 2 } },
+      3: { currency: 130, materials: { "iron_ingot": 4, "bronze_ingot": 2 } },
+      4: { currency: 260, materials: { "iron_ingot": 6, "bronze_ingot": 4 } },
+      5: { currency: 450, materials: { "steel_ingot": 4, "iron_ingot": 6 } }
+    }
+  },
   "dagger": {
     id: "dagger",
     name: "Dagger",
@@ -375,7 +403,7 @@ export const ItemDefinitions = {
     }
   },
   // The Amputators' saw (story/covenants.js): a toothed bone-saw on a hooked haft, made to take a shackle off and the hand with it if it must.
-  // Given to whoever joins the covenant; Brother Garrick carries one. (Icon: the dagger's for now.)
+  // Given to whoever joins the covenant; Surgeon Garrick carries one. (Icon: the dagger's for now.)
   "amputators_saw": {
     id: "amputators_saw",
     name: "Amputator's Saw",
@@ -856,6 +884,118 @@ export const ItemDefinitions = {
     upgradeCosts: {
       2: { currency: 15, materials: { "soft_wood": 1 } },
       3: { currency: 45, materials: { "leather": 1 } }
+    }
+  },
+
+  // --- THE AMPUTATORS' ARMOR SET (tier 3: unique, sold only by Senior Surgeon Osric, from act 2; story/covenants.js COVENANTS.amputators.wares) ---
+  // Icons: the armor sheet's column 25 (assets/icons/armor.png: a column per set, a row per slot, head to feet).
+  // Built like leather (stitched hide, light on the feet) but for a surgeon's work: strong against cuts and stabs (slash 20, pierce 17 for the set,
+  // against leather's 13 and 9), weaker against blunt blows (11), and each piece mends the wearer (+1 HP recovery, +5 for the set) where leather
+  // gives Stamina recovery and speed. Dark resistance on top of the rest (the curse's own). Several times leather's price.
+  "amputators_hood": {
+    id: "amputators_hood",
+    name: "Amputator's Hood",
+    slot: "head",
+    type: "armor",
+    description: "A stitched leather hood with a bone-stiffened brim. It smells of vinegar and old blood.",
+    value: 280,
+    icon: { col: 25, row: 0 },
+    tier: 3,
+    defense: { blunt: 2, slash: 3, pierce: 3 },
+    resistance: { ...perPhysType(0.03), ...perMagicType(0.02), dark: 0.04 },
+    resources: { hpRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1, pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 100, materials: { "leather": 3, "bone": 3 } },
+      3: { currency: 250, materials: { "leather": 5, "bone": 5, "iron_ingot": 1 } },
+      4: { currency: 450, materials: { "leather": 6, "steel_ingot": 1 } },
+      5: { currency: 700, materials: { "leather": 8, "steel_ingot": 2, "bone": 8 } }
+    }
+  },
+  "amputators_apron": {
+    id: "amputators_apron",
+    name: "Amputator's Apron",
+    slot: "torso",
+    type: "armor",
+    description: "A surgeon's heavy leather apron, plated over the heart with boiled bone. The stains never quite come out.",
+    value: 700,
+    icon: { col: 25, row: 1 },
+    tier: 3,
+    defense: { blunt: 4, slash: 7, pierce: 6 },
+    resistance: { ...perPhysType(0.05), ...perMagicType(0.03), dark: 0.06 },
+    resources: { hpRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { blunt: 1, slash: 2, pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 250, materials: { "leather": 5, "bone": 4 } },
+      3: { currency: 600, materials: { "leather": 8, "bone": 6, "iron_ingot": 3 } },
+      4: { currency: 1000, materials: { "leather": 10, "steel_ingot": 3 } },
+      5: { currency: 1600, materials: { "leather": 12, "steel_ingot": 5, "bone": 10 } }
+    }
+  },
+  "amputators_gloves": {
+    id: "amputators_gloves",
+    name: "Amputator's Gloves",
+    slot: "arms",
+    type: "armor",
+    description: "Long gauntlet gloves of thin, supple hide, made for steady hands and close work.",
+    value: 220,
+    icon: { col: 25, row: 2 },
+    tier: 3,
+    defense: { blunt: 1, slash: 3, pierce: 2 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.01), dark: 0.02 },
+    resources: { hpRecovery: 1 },
+    combat: { accuracy: 3 },             // steady hands
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1 } },
+    upgradeCosts: {
+      2: { currency: 80, materials: { "leather": 2, "bone": 2 } },
+      3: { currency: 200, materials: { "leather": 4, "bone": 4, "iron_ingot": 1 } },
+      4: { currency: 350, materials: { "leather": 5, "steel_ingot": 1 } },
+      5: { currency: 550, materials: { "leather": 6, "steel_ingot": 2, "bone": 6 } }
+    }
+  },
+  "amputators_trousers": {
+    id: "amputators_trousers",
+    name: "Amputator's Trousers",
+    slot: "legs",
+    type: "armor",
+    description: "Waxed leather trousers, laced tight and padded at the knee for long hours kneeling over the afflicted.",
+    value: 450,
+    icon: { col: 25, row: 3 },
+    tier: 3,
+    defense: { blunt: 3, slash: 4, pierce: 4 },
+    resistance: { ...perPhysType(0.03), ...perMagicType(0.02), dark: 0.03 },
+    resources: { hpRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1, pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 160, materials: { "leather": 4, "bone": 3 } },
+      3: { currency: 400, materials: { "leather": 6, "bone": 5, "iron_ingot": 2 } },
+      4: { currency: 700, materials: { "leather": 8, "steel_ingot": 2 } },
+      5: { currency: 1100, materials: { "leather": 10, "steel_ingot": 3, "bone": 8 } }
+    }
+  },
+  "amputators_boots": {
+    id: "amputators_boots",
+    name: "Amputator's Boots",
+    slot: "feet",
+    type: "armor",
+    description: "Hobnailed boots of thick hide, soled for floors slick with blood.",
+    value: 320,
+    icon: { col: 25, row: 4 },
+    tier: 3,
+    defense: { blunt: 1, slash: 3, pierce: 2 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.01), dark: 0.02 },
+    resources: { hpRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 110, materials: { "leather": 3, "bone": 2 } },
+      3: { currency: 280, materials: { "leather": 4, "bone": 4, "iron_ingot": 1 } },
+      4: { currency: 500, materials: { "leather": 6, "steel_ingot": 1 } },
+      5: { currency: 800, materials: { "leather": 7, "steel_ingot": 2, "bone": 6 } }
     }
   },
 

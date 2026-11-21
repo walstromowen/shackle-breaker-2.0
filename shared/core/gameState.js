@@ -99,8 +99,8 @@ export function resetWorldForNewGame() {
     w.nikoliCampfire = null;       // and Nikoli has not made camp
     w.jaegerCatacomb = null;       // nor has Jaeger found his catacombs
     w.strangerSnowHome = null;     // nor have Mentoras and Codey gone north (act 3)
-    w.amputatorGraveyard = null;   // nor has Osric of the Saw sat down among the graves (the Amputators)
-    w.amputatorQuarry = null;      // nor has Brother Garrick been found
+    w.amputatorGraveyard = null;   // nor has Senior Surgeon Osric sat down among the graves (the Amputators)
+    w.amputatorQuarry = null;      // nor has Surgeon Garrick been found
     w.structureChunks = {};
     w.castlesBuilt = {};
     w.castleGatesOpened = {};

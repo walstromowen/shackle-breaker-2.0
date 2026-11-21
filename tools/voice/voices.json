@@ -21,8 +21,7 @@
       },
       "directions": {
         "It pulls, and you follow. You don't remember how you got here, or how long you have been walking.": "[hushed, weary] It pulls, and you follow. You don't remember how you got here, or how long you have been walking.",
-        "The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops.": "[low, unsettled] The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops.",
-        "The prisoners' words make no sense, yet they laugh as if reminiscing over a shared memory.": "[low, uneasy] The prisoners' words make no sense, yet they laugh as if reminiscing over a shared memory.",
+        "The prisoners ahead laugh and mutter to themselves. Their laughter has no joy in it, and it never stops.": "[low, unsettled] The prisoners ahead laugh and mutter to themselves. Their laughter has no joy in it, and it never stops.",
         "A guard in dark armor walks beside you, his face hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.": "[low, wary] A guard in dark armor walks beside you, his face hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
         "The guard's expression is neutral, revealing nothing of his thoughts.": "[flat, uneasy] The guard's expression is neutral, revealing nothing of his thoughts.",
         "The road stretches endlessly ahead. Where this road ends, and why you walk it, you do not know.": "[slow, hollow] The road stretches endlessly ahead. Where this road ends, and why you walk it, you do not know.",
@@ -118,10 +117,8 @@
         "You break the chains. The hooded man rises slowly, rubbing his wrists.": "[quiet, relieved] You break the chains. The hooded man rises slowly, rubbing his wrists.",
         "Iron shackles bind your wrists, chained to the prisoner ahead of you.": "[hushed, slow, ominous] Iron shackles bind your wrists, chained to the prisoner ahead of you.",
         "Forward, as you have walked for so long.": "[quiet, resigned] Forward, as you have walked for so long.",
-        "Eyes on the ground, you keep walking, hoping to drown out their endless laughter.": "[quiet, tense] Eyes on the ground, you keep walking, hoping to drown out their endless laughter.",
         "Head down, you count your steps, hoping the guard did not notice your gaze.": "[quiet, nervous] Head down, you count your steps, hoping the guard did not notice your gaze.",
         "On you walk, your labored steps sinking into the mud.": "[weary, heavy] On you walk, your labored steps sinking into the mud.",
-        "Sheepishly, you ask anyone who is listening where you are going. After a short pause, the prisoners around you burst out in a chorus of laughter.": "[hesitant, then unsettling] Sheepishly, you ask anyone who is listening where you are going. After a short pause, the prisoners around you burst out in a chorus of laughter.",
         "Bewildered, you stand still as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.": "[slow, bewildered, fading] Bewildered, you stand still as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.",
         "A steadying breath, and reality grounds you. Before you stretches a silent, hollow wasteland.": "[a slow breath, quiet] A steadying breath, and reality grounds you. Before you stretches a silent, hollow wasteland."
       }
@@ -302,22 +299,50 @@
       }
     },
     "MADMAN": {
-      "id": "XflHJL08JT5zppX9dKiP",
-      "name": "Cursed Madman (Shackle Breaker): designed for him, an eccentric old townsman of a gothic Victorian horror city, like a Bloodborne character: aged, raspy, theatrical and old-world, wry and genteel at rest, then lurching into cackling, tearful pleading or shrill excitement; the cursed treatment puts the voices in his head under his own",
+      "id": "ZjDHfsZevqh1uofWe33d",
+      "name": "Anguished Madman (Shackle Breaker): designed for him, a cursed townsman half-dead in constant agony, like a zombie that still remembers being a man: low, guttural, ragged and rasping, groaning and choking between words, wet snarling breaths, anguished moaning and pleading broken by deranged laughter that turns into howls of pain; the ghoul treatment takes him lower still, faster, and a growl beneath every word, as if he were turning into a beast: frantic, maniacal and animal; whenever he laughs it is fast and hysterical. Rarely, Dolos speaks through him (DOLOS, a part of the line)",
       "model": "eleven_v3",
       "settings": {
         "stability": 0.0
       },
-      "fx": "cursed",
+      "fx": "ghoul",
       "directions": {
-        "It's really you...": "[a sharp, shaky gasp] [hushed, awed, eyes welling] It's... [a broken, giddy little giggle] [voice cracking] really you... [laughing and weeping at once, manic]",
-        "Magic tell me things! Hee Hee! Tell me what magic say!": "[murmuring, genteel, as if sharing a dreadful secret] Magic tell me things... [manic giggling bubbling over] Hee hee! [a long unhinged cackle] [lurching close, wide-eyed, hungry] Tell me what magic say! [giggling madly]",
-        "Freak? .. Friend! Magic know many freak friend! You be freak friend too!": "[startled, quick and jittery, sniffing] Freak? [short pause] [bursting into manic laughter] ..Friend! [cackling, theatrical, sing-song] Magic know many freak friend! [shrieking with joy, wild laughter] You be freak friend too!",
-        "Magic like you! So me like you! Hahahaha! Me give these now!": "[gasping, overjoyed, giggling] Magic like you! [giddy, bouncing] So me like you! [wild, manic, rising cackle that goes on too long] Hahahaha! [suddenly hushed and courtly, a little bow, one last giggle] Me give these now.",
-        "Hahaha! Magic no like you! So me no like neither!": "[cruel, shrill, manic cackle] Hahaha! Magic no like you! [sullen muttering, turning away] So me no like neither... [a low, unhinged snicker]",
-        "No no! No hurt! Me help magic! Me help!": "[panicked, very fast, breathless, words tumbling over each other] No no! No hurt! [rapid, frantic, hyperventilating, a hysterical laugh breaking through the panic] Me help magic! [gasping, pleading, faster still, half laughing, half sobbing] Me help!",
-        "No hear magic! Me hurt you now!": "[the laughter stops; cold, quiet and lucid] No hear magic. [a low, trembling snarl] Me hurt you now. [a slow, creeping manic giggle]"
+        "It's really you...": [
+          "[a short burst of fast, hysterical giggling, then a bestial growl] It's...",
+          {
+            "voice": "DOLOS",
+            "text": "[very slow, low, dark and absolutely calm, flat and monotone, each word heavy] really you..."
+          }
+        ],
+        "Magic tell me things! Hee Hee! Tell me what magic say!": "[extremely fast, frenzied and frantic, panting, words tumbling and snarling together] Magic tell me things! [fast, shrieking, hysterical rapid-fire giggling that tears into an animal howl] Hee Hee! [growling and slavering like a beast, frantic, lunging] Tell me what magic say!",
+        "Freak? .. Friend! Magic know many freak friend! You be freak friend too!": "[a savage, animal snarl] Freak? [an explosion of fast, hysterical, rapid-fire laughter] ..Friend! [extremely fast, frantic, panting and growling between the words] Magic know many freak friend! [a deep, bestial growl, slavering] You be freak friend too!",
+        "Magic like you! So me like you! Hahahaha! Me give these now!": "[frantic, extremely fast, panting, shrieking with mad joy] Magic like you! So me like you! [fast, hysterical, rapid-fire cackling that breaks into snarls and growls] Hahahaha! [panting like a beast, growling, frantic] Me give these now!",
+        "Hahaha! Magic no like you! So me no like neither!": "[a fast, vicious, hysterical cackle] Hahaha! [a savage, bestial growl, fast and frantic] Magic no like you! [snarling and snapping like an animal] So me no like neither!",
+        "No no! No hurt! Me help magic! Me help!": "[frantic, extremely fast, panting and whimpering like a cornered animal, shrieking] No no! No hurt! [howling, sobbing and cackling fast and hysterically at once, faster still, growling] Me help magic! Me help!",
+        "No hear magic! Me hurt you now!": [
+          "[a frenzied, maniacal, bestial roar, almost screaming] No hear magic!",
+          {
+            "voice": "DOLOS",
+            "text": "[very slow, low, dark and absolutely calm, flat and monotone, each word heavy] Me hurt you now."
+          }
+        ],
+        "New one! Hee hee! New one hears it too, yes? The whispers?": "[panting, frantic, delighted, extremely fast] New one! [a fast, hysterical, rapid-fire giggle] Hee hee! [leaning close, snarling and eager, words tumbling] New one hears it too, yes? [a hungry, growling whisper] The whispers?",
+        "Shhh! Magic tell me where we go!": "[a sharp, spitting hiss, then frantic and fast, panting] Shhh! Magic tell me where we go!",
+        "Nowhere! We go nowhere! Hahaha!": "[shrieking, frantic, extremely fast] Nowhere! We go nowhere! [a fast, hysterical, rapid-fire cackle breaking into an animal howl] Hahaha!",
+        "Alone? Hahaha! Never alone! Magic always listening!": "[a savage, animal snarl] Alone? [a fast, hysterical, barking laugh] Hahaha! [frantic, growling, extremely fast] Never alone! Magic always listening!",
+        "Eyes down, eyes down! Hee hee! No help. Magic see you anyway.": "[sing-song, frantic, panting, extremely fast] Eyes down, eyes down! [a fast, hysterical, rapid-fire giggle] Hee hee! [a low, bestial growl] No help. Magic see you anyway.",
+        "Where?! Hahaha! Where iron go! Where iron always go!": "[shrieking, frantic] Where?! [fast, hysterical, howling laughter] Hahaha! [extremely fast, panting, growling, words tumbling over each other] Where iron go! Where iron always go!"
       }
+    },
+    "DOLOS": {
+      "id": "MBA3jwiDgtESSaVtALOi",
+      "name": "Dolos (Shackle Breaker): the unknown antagonist (story/dolos.js), heard only when he speaks through someone, and rarely: designed as a low, hoarse, close voice, read very slow, dark, calm and monotone; the dolos treatment gives it an eerie resonance (an octave and a fifth beneath it, a faint short ring, no echo). Never louder than the one he speaks through: when he speaks the world falls silent (hush): a moment of dead silence, then only him. Used as a part of another speaker's line (the Madman's)",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "fx": "dolos",
+      "hush": true
     },
     "MERCHANT": {
       "id": "5GKLs5NRY2u1NuttoOep",
@@ -327,13 +352,12 @@
         "stability": 0.5
       },
       "directions": {
-        "Psst! You! Yes, you with the eyes!": "[hissing whisper] Psst! You! [sly] Yes, you with the eyes!",
-        "The shiny things whisper to me! They say you need them... yes, yes, they want you to have them!": "[conspiratorial] The shiny things whisper to me! They say you need them... [nodding quickly, giggling] yes, yes, they want you to have them!",
-        "Look! The pretties! They sing in the dark! Buy them before they bite me again! Hee hee!": "[giggling wildly] Look! The pretties! [sing-song] They sing in the dark! [nervous, quick] Buy them before they bite me again! [giggles] Hee hee!",
         "Lies! The stones are just sleeping! Hush! Take the loud coins and leave us be!": "[shrill, offended] Lies! The stones are just sleeping! [hissing] Hush! [frantic] Take the loud coins and leave us be!",
         "The big ones! The scary ones! They eat the magic!": "[terrified shriek] The big ones! The scary ones! [panicked] They eat the magic!",
         "The voices say you have too much blood... Come out, friends! Let's let it out!": "[soft, dead calm, giggling quietly] The voices say you have too much blood... [calling out, gleeful] Come out, friends! Let's let it out!",
-        "Hee hee!": "[manic giggling] Hee hee!"
+        "Hee hee!": "[manic giggling] Hee hee!",
+        "Psst! You, with the eyes! The shiny things whisper to me! They want you to have them! Hee hee!": "[hissing whisper] Psst! [sly] You, with the eyes! [conspiratorial, quick] The shiny things whisper to me! They want you to have them! [manic giggling] Hee hee!",
+        "The cutters! The saw-men! No cutting, no cutting! Take it, take it all!": "[a terrified shriek] The cutters! The saw-men! [panicked, babbling, clutching his wrists] No cutting, no cutting! [frantic, sobbing] Take it, take it all!"
       }
     },
     "SURVIVOR": {
@@ -351,30 +375,63 @@
       }
     },
     "OSRIC": {
-      "id": "tycrNyvdSnjiGsrmA2QI",
-      "name": "Osric of the Saw (Shackle Breaker): designed for him, a weary middle-aged English hunter, courteous, dry and sardonic, low and slightly hoarse, like a Bloodborne character",
+      "id": "Ygax3iFZ8IXgqvvoIyL5",
+      "name": "Senior Surgeon Osric, \"Osric of the Saw\" (Shackle Breaker): designed for him, an old, weathered hunter of a gothic Victorian city at the end of a long night, like a Bloodborne character: deep, gravelly and worn, an old-world courtly cadence, slow and measured, wry, weary and politely menacing, with a hollow, joyless chuckle now and then",
       "model": "eleven_v3",
       "settings": {
         "stability": 0.5
       },
       "directions": {
-        "Ah. Another soul on the old road. Mind the graves, friend. The dead here have suffered enough of us.": "[weary, courteous] Ah. Another soul on the old road. [dry] Mind the graves, friend. The dead here have suffered enough of us.",
-        "Done, then.": "[quietly] Done, then.",
-        "Ha! Welcome, brother.": "[a short, surprised laugh] Ha! [warmly] Welcome, brother.",
-        "Come find me. I'll make it quick.": "[gently, not unkindly] Come find me. I'll make it quick."
+        "Ah. Another soul on the old road. Mind the graves, friend. The dead here have suffered enough of us.": "[weary, courtly, unhurried] Ah. Another soul on the old road. [dry, a touch of warning] Mind the graves, friend. The dead here have suffered enough of us. [a hollow, joyless chuckle]",
+        "And there it is: the iron, still shut tight. No rot in your eyes yet. Lucky, or only early.": "[slow, appraising, low] And there it is: the iron, still shut tight. [measured] No rot in your eyes yet. [wry] Lucky, or only early. [a hollow, joyless chuckle]",
+        "Looking for a key, are we? Heh heh... You'll not find one. But there's one sure way to free a wrist of any shackle, friend.": "[amused, knowing] Looking for a key, are we? [a slow, hollow chuckle] Heh heh... [dry] You'll not find one. [lower, deliberate, politely menacing, savouring it] But there's one sure way to free a wrist of any shackle, friend.",
+        "Don't fret. I'm not one to cut first and ask after. Not anymore.": "[reassuring, courtly] Don't fret. I'm not one to cut first and ask after. [a beat, quieter, haunted] Not anymore.",
+        "We are the Amputators.": "[with grave, weary pride] We are the Amputators.",
+        "Where the chain takes hold, we take it off. The shackle, and if the shackle won't come... well. Better a hand than a mind, I'd wager.": "[measured, matter-of-fact] Where the chain takes hold, we take it off. The shackle, and if the shackle won't come... [a slow shrug in the voice] well. Better a hand than a mind, I'd wager. [a hollow, joyless chuckle]",
+        "A college of surgeons, of sorts. Those who saw the laughing ones in the grass and decided not to join them.": "[reflective, slow, a dry irony on 'surgeons'] A college of surgeons, of sorts. [darker] Those who saw the laughing ones in the grass and decided not to join them.",
+        "Most of us gave something to the saw. A hand. A foot. A little sense, now and again.": "[wry, listing it plainly] Most of us gave something to the saw. A hand. A foot. A little sense, now and again. [a hollow, joyless chuckle]",
+        "We're not the cure, mind. There is no cure. We're only the knife.": "[grave, quiet, certain] We're not the cure, mind. There is no cure. We're only the knife.",
+        "There's a matter. One of ours, Surgeon Garrick.": "[setting it down, heavier] There's a matter. [a pause] One of ours, Surgeon Garrick.",
+        "Steady hands, once. Best of us. Lately he talks to his scars, and saws at nothing in the night. And he laughs.": "[fond, then troubled] Steady hands, once. Best of us. [lower, uneasy] Lately he talks to his scars, and saws at nothing in the night. [a long pause, hollow] And he laughs.",
+        "He wears no iron, mind you. Not yet. But the rot needn't wear iron to get in.": "[measured, grim] He wears no iron, mind you. Not yet. [low] But the rot needn't wear iron to get in.",
+        "I can't do it. Old friends, you understand. Put him to rest, before he puts that saw to someone who never asked for it.": "[quiet, the weariness breaking through] I can't do it. Old friends, you understand. [firmer, grave] Put him to rest, before he puts that saw to someone who never asked for it.",
+        "Last I saw him he was off past the stones, muttering at the crows.": "[dry, measured] Last I saw him he was off past the stones, muttering at the crows.",
+        "You'll know him by the laughing. Be quick about it. And be kind, if you can.": "[grim] You'll know him by the laughing. Be quick about it. [softer, almost gentle] And be kind, if you can.",
+        "No hurry. The dead keep, and so do I. Garrick, I fear, does not.": "[unbothered, wry] No hurry. The dead keep, and so do I. [a hollow, joyless chuckle] [darker] Garrick, I fear, does not.",
+        "Back again. Garrick's still out there, laughing. Will you see to him?": "[weary courtesy] Back again. [grim] Garrick's still out there, laughing. Will you see to him?",
+        "Garrick still breathing? ...Then the night's not over. Past the stones, friend. Follow the laughing.": "[flat, tired] Garrick still breathing? [a long breath] ...Then the night's not over. [measured] Past the stones, friend. Follow the laughing.",
+        "Done, then.": "[very quietly, heavy] Done, then.",
+        "Poor Garrick. He'd have thanked you, once. Perhaps he did, at the end, in his way.": "[low, mournful, slow] Poor Garrick. He'd have thanked you, once. [softer] Perhaps he did, at the end, in his way.",
+        "It always is.": "[a hollow, knowing murmur] It always is. [a hollow, joyless chuckle]",
+        "You've a steady hand, and you came back sane. That's two more than most. We could use you, iron and all: an orderly to start, a surgeon in time. Will you take the oath?": "[rising, courtly, approving] You've a steady hand, and you came back sane. [wry] That's two more than most. [grave, formal] We could use you, iron and all: an orderly to start, a surgeon in time. Will you take the oath?",
+        "Wise, perhaps. An oath's a heavier thing than a saw. I'll be here, among the stones.": "[a dry, hollow chuckle] Wise, perhaps. [measured] An oath's a heavier thing than a saw. [weary] I'll be here, among the stones.",
+        "Ha! Welcome, Orderly.": "[a short, hollow bark of a laugh] Ha! [gravely warm, a touch of ceremony] Welcome, Orderly.",
+        "It's yours now. Mind the teeth. They've no loyalty to anyone.": "[courtly, handing it over] It's yours now. [dry] Mind the teeth. They've no loyalty to anyone. [a hollow, joyless chuckle]",
+        "Remember: we're not the cure, only the knife. And when your own iron starts to sing...": "[grave, slow] Remember: we're not the cure, only the knife. [lower, ominous] And when your own iron starts to sing...",
+        "Come find me. I'll make it quick.": "[gently, not unkindly, low] Come find me. I'll make it quick. [a hollow, joyless chuckle]",
+        "Orderly. Still whole? Good. Keep it that way, as long as you can.": "[weary courtesy] Orderly. [dry, appraising] Still whole? [a hollow chuckle] Good. [grave] Keep it that way, as long as you can.",
+        "We keep the old ranks. Orderlies fetch the buckets. Dressers hold the limb still. Surgeons cut.": "[dry, measured, like reciting an old lesson] We keep the old ranks. Orderlies fetch the buckets. Dressers hold the limb still. [a beat, flat] Surgeons cut.",
+        "Senior Surgeon, these days.": "[wry, weary] Senior Surgeon, these days. [a hollow, joyless chuckle]",
+        "You again.": "[cool, flat, not looking up] You again.",
+        "I don't trade with strangers, friend. Take the oath, and we'll talk.": "[curt, standoffish, dry] I don't trade with strangers, friend. [a beat, measured] Take the oath, and we'll talk.",
+        "Give it back, would you?": "[quiet, a dangerous calm] Give it back, would you?",
+        "An oath's no shackle, friend. Walk away if you must. But you'll walk away no surgeon of ours.": "[measured, grave] An oath's no shackle, friend. Walk away if you must. [cold, final] But you'll walk away no surgeon of ours.",
+        "So be it. Keep the saw; I'll not take back a gift. Mind the graves on your way out.": "[flat, resigned] So be it. [dry] Keep the saw; I'll not take back a gift. [cool, dismissive] Mind the graves on your way out.",
+        "Back to the saw, then. Welcome back, Orderly. From the bottom, mind. Rank's earned twice here.": "[a grunt, grudging] Back to the saw, then. [a hollow, joyless chuckle] [gravely] Welcome back, Orderly. [dry, stern] From the bottom, mind. Rank's earned twice here."
       }
     },
     "GARRICK": {
       "id": "GCDIRtNQtXaSk3U3wvYf",
-      "name": "Brother Garrick (Shackle Breaker): designed for him, a thin unhinged English man, sing-song, breathy and giggling, soft then shrill",
+      "name": "Surgeon Garrick (Shackle Breaker): designed for him, a thin unhinged English man, sing-song, breathy and giggling, soft then shrill",
       "model": "eleven_v3",
       "settings": {
         "stability": 0.5
       },
       "directions": {
-        "Osric sent you. Hah! Osric, Osric. Thinks I'm going the way of the iron.": "[giggling] Osric sent you. Hah! [sing-song] Osric, Osric. Thinks I'm going the way of the iron.",
+        "Osric sent you. Hah! Doctor Osric, Doctor Osric. Thinks I'm going the way of the iron.": "[giggling] Osric sent you. Hah! [sing-song, mocking] Doctor Osric, Doctor Osric. Thinks I'm going the way of the iron.",
         "But listen. Listen! Can you hear it? The chain sings when you cut it. Every link, a little song.": "[whispering, excited] But listen. [shrill] Listen! Can you hear it? [dreamy] The chain sings when you cut it. Every link, a little song.",
-        "Tell Osric... the song was a lie. It was only screaming.": "[weak, clear for a moment, dying] Tell Osric... [a breath] the song was a lie. It was only screaming."
+        "Tell Doctor Osric... the song was a lie. It was only screaming.": "[weak, clear for a moment, dying] Tell Doctor Osric... [a breath] the song was a lie. It was only screaming.",
+        "You've iron on you. Let me take it off, friend, I'm a surgeon. Only the hand. Hold still...": "[soft, eager, too close] You've iron on you. Let me take it off, friend, [a proud, giggling whisper] I'm a surgeon. [coaxing, sing-song] Only the hand. Hold still..."
       }
     }
   }

@@ -84,7 +84,7 @@ export class EncounterController extends BaseController {
       const clip = audioManager.voiceClip(lineKey(s.speaker, s.text));
       if (!clip) { complete = false; continue; }
       parts.push({ text: s.text, dur: clip.d || 0, w: clip.w });   // w: when each word is said, if the clip was timed
-      items.push({ file: clip.f });
+      items.push({ file: clip.f, hush: clip.h });   // h: when every other sound is muffled around Dolos (tools/voice "hush")
     }
     if (items.some(i => i.file)) {
       // keep time with the recording only when every spoken line of it has a clip with a known length
@@ -223,6 +223,7 @@ export class EncounterController extends BaseController {
         if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
           this.rollData = this._takeRoll(this.pendingDecision);
           this.actionPhase = 'wait_for_roll';
+          audioManager.stopVoice();   // the dice are coming: the words stop
         } else {
           this.applySceneChanges();
         }
@@ -865,6 +866,7 @@ export class EncounterController extends BaseController {
       }
       events.emit('OPEN_SHOP', {
         shopId: selectedDecision.shopId,
+        shopName: selectedDecision.shopName,
         wares: finalWares,
         returnScene: 'encounter',
         encounterInstanceId: this.model.instanceId,
@@ -877,6 +879,7 @@ export class EncounterController extends BaseController {
   }
 
   triggerRoll() {
+    audioManager.stopVoice();   // nobody speaks over the dice (the stage's words, or the choice's, were still being read)
     // a fresh roll always plays out: a skip left over from holding through the stage's words (or, in a shared encounter, from waiting on the
     // others' votes) must not land the dice at once. Holding during the roll still skips it.
     this.skipMessageAnimation = false;
@@ -931,6 +934,7 @@ export class EncounterController extends BaseController {
         this.textTimer = Math.max(this.textTimer, textEndTimer(this.lastText));
         this.rollData = this._takeRoll(this.pendingDecision);
         this.actionPhase = 'wait_for_roll';
+        audioManager.stopVoice();   // the dice are coming: the words stop
       } else {
         this.applySceneChanges();
       }

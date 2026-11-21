@@ -36,8 +36,8 @@ const MASK_DIRECTIONS = [
    5 tiles north of it, a little before it scrolls into view, and he never pops in where the player can see. */
 export const NIKOLI_CAMP_SIGHT = { cols: 30 + 6, rows: 17 + 6 + 5 };
 
-/* The Amputators (story/encounters/story/amputators.js): Osric of the Saw on his seat among the graves (world.amputatorGraveyard), once claimed, for
-   good; Brother Garrick where Osric sent you (world.amputatorQuarry), until he has been put to rest. */
+/* The Amputators (story/encounters/story/amputators.js): Senior Surgeon Osric on his seat among the graves (world.amputatorGraveyard), once claimed, for
+   good; Surgeon Garrick where Osric sent you (world.amputatorQuarry), until he has been put to rest. */
 function amputatorObjects(out) {
     const w = gameState.world;
     const cell = (s) => { const [c, r] = String(s || '').split(',').map(Number); return Number.isFinite(c) && Number.isFinite(r) ? `${c},${r}` : null; };
@@ -372,7 +372,7 @@ export class WorldManager {
         const D = [[0, 1, 'UP'], [0, -1, 'DOWN'], [1, 0, 'LEFT'], [-1, 0, 'RIGHT']];
         return D.some(([dc, dr, dir]) => this.canMove(c + dc, r + dr, c, r, dir));
     }
-    /** Where Brother Garrick is (world.amputatorQuarry, the world's, picked once when Osric's quest starts): a free cell out of sight of Osric's graveyard
+    /** Where Surgeon Garrick is (world.amputatorQuarry, the world's, picked once when Osric's quest starts): a free cell out of sight of Osric's graveyard
      *  (18 to 30 cells from it) that can be walked to from where the player stands, picked from the world's seed. [col, row], or null. */
     pickAmputatorQuarry() {
         const w = gameState.world;

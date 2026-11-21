@@ -635,7 +635,7 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", dropRate: 0.03 },
         ]
     },
-    // Brother Garrick (the Amputators' quest): what the mad brother had on him
+    // Surgeon Garrick (the Amputators' quest): what the mad surgeon had on him
     "garrick_drops": {
         type: "independent",
         items: [

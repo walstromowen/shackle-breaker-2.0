@@ -17,6 +17,7 @@
 
 import { gameState } from '../../../shared/core/gameState.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
+import { Covenants } from '../../../shared/story/covenants.js';
 import { retireQuests } from '../../../shared/story/questSystem.js';
 import { EntityModel } from '../../../shared/characters/entityModel.js';
 import { ItemFactory } from '../../../shared/items/itemFactory.js';
@@ -304,8 +305,8 @@ export const SaveManager = {
                 nikoliCampfire: world.nikoliCampfire || null,           // Nikoli's camp, "col,row" of the campfire (WorldManager)
                 jaegerCatacomb: world.jaegerCatacomb || null,           // the catacombs Jaeger waits in (InteriorFactory)
                 strangerSnowHome: world.strangerSnowHome || null,       // act 3: the snowy house Mentoras and Codey go to (story/heroes.js)
-                amputatorGraveyard: world.amputatorGraveyard || null,   // Osric of the Saw's seat among the graves, "col,row" (WorldManager)
-                amputatorQuarry: world.amputatorQuarry || null,         // where Brother Garrick is (WorldManager.pickAmputatorQuarry)
+                amputatorGraveyard: world.amputatorGraveyard || null,   // Senior Surgeon Osric's seat among the graves, "col,row" (WorldManager)
+                amputatorQuarry: world.amputatorQuarry || null,         // where Surgeon Garrick is (WorldManager.pickAmputatorQuarry)
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
                 castlesBuilt: clone(world.castlesBuilt || {}),   // the castles whose objects are written into the world (StructureSpawner._buildCastle)
@@ -402,6 +403,7 @@ export const SaveManager = {
         };
         retireQuests(gameState);       // a save on a quest that was cut picks up from the one that replaced it
         ActSystem.catchUp(gameState);   // a save that beat Darius but never saw A Dark Truth: it plays on the map (SceneManager), and grants act 2 there
+        Covenants.migrate(gameState);   // an oath kept as the player's milestone (older saves) goes to the party's lead
 
         replaceContents(gameState.player, {
             col: data.player.col,

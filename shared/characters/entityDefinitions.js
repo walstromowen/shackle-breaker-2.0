@@ -399,10 +399,10 @@ export const ENTITY_DEFINITIONS = {
     /* THE AMPUTATORS (story/covenants.js, story/encounters/story/amputators.js): a covenant of the not-yet-shackled who would stop the curse by cutting
        the shackles off the afflicted, and the limb with them when the iron will not give. Most of them wear the proof: a stump, a hook, a wooden leg.
        Slightly mad, all of them; none shackled. Art: borrowed for now (Osric the watchman's hunter look, Garrick the madman's). */
-    // Osric of the Saw: the covenant's first face, met in act 1 among the stones of the first small graveyard the player comes upon. Never fought.
+    // Senior Surgeon Osric ("Osric of the Saw"): the covenant's first face, met in act 1 among the stones of the first small graveyard the player comes upon. Never fought.
     "AMPUTATOR_OSRIC": {
         ...HUMANOID_TEMPLATE,
-        name: "Osric of the Saw",
+        name: "Senior Surgeon Osric",
         level: 1,
         spriteOverworld: "osricSprite",
         spritePortrait: "osricPortrait",
@@ -411,10 +411,10 @@ export const ENTITY_DEFINITIONS = {
         abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: [...HUMANOID_TEMPLATE.tags, "AMPUTATOR"]
     },
-    // Brother Garrick: an Amputator going the way of the ones he cut. Fought once, for Osric (quest amputators_trial): a little stronger than his kind.
+    // Surgeon Garrick: an Amputator going the way of the ones he cut. Fought once, for Osric (quest amputators_trial): a little stronger than his kind.
     "AMPUTATOR_GARRICK": {
         ...HUMANOID_TEMPLATE,
-        name: "Brother Garrick",
+        name: "Surgeon Garrick",
         level: 1,
         spriteOverworld: "garrickSprite",
         spritePortrait: "garrickPortrait",
