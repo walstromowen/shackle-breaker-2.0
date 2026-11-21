@@ -375,7 +375,10 @@ export class EncounterLogic {
                 case "DESTROY_OBJECT":
                     const ctx = model.context;
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {
+                        const o = worldManager.getObjectAt ? worldManager.getObjectAt(ctx.col, ctx.row) : null;
                         worldManager.modifyWorld(ctx.col, ctx.row, null, ctx.mapId);
+                        // a wanderer (a madman, an Arc Knight on patrol) away from its home cell: the home is cleared too, or it would be made there again
+                        if (o && o._home && (o._home[0] !== ctx.col || o._home[1] !== ctx.row)) worldManager.modifyWorld(o._home[0], o._home[1], null, ctx.mapId);
                     }
                     break;
                 case "GIVE_ITEM":

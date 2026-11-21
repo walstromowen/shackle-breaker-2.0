@@ -403,7 +403,7 @@ export const ItemDefinitions = {
     }
   },
   // The Amputators' saw (story/covenants.js): a toothed bone-saw on a hooked haft, made to take a shackle off and the hand with it if it must.
-  // Given to whoever joins the covenant; Surgeon Garrick carries one. (Icon: the dagger's for now.)
+  // Given to whoever joins the covenant; Surgeon Garrick carries one.
   "amputators_saw": {
     id: "amputators_saw",
     name: "Amputator's Saw",
@@ -411,7 +411,7 @@ export const ItemDefinitions = {
     type: "weapon",
     description: 'A toothed bone-saw on a hooked haft, its teeth dark with old work. "Cut the chain and spare the soul. If the chain will not come, take what it holds." - the Amputators\' creed.',
     value: 220,
-    icon: { col: 0, row: 0 },
+    icon: { col: 17, row: 0 },   // its own icon on the weapons sheet
     attack: { slash: 4, pierce: 1 },
     requirements: { strength: 9, dexterity: 10 },
     requirementGrowth: { strength: 2, dexterity: 2 },

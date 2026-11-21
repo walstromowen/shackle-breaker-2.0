@@ -28,6 +28,9 @@ export const VOICED = {
     dry_kraken_ambush: [],   // the narrator only: Codey speaks with his hands
     codey_freed: [],
     jaeger: [[/./, 'JAEGER']],   // Nikoli's brother, posing as him: Nikoli's voice, played cold
+    arc_knight: [[/./, 'ARC_KNIGHT']],              // an Arc Knight, act 1's mini boss (story/encounters/story/arcKnight.js)
+    arc_knight_fallen: [[/./, 'ARC_KNIGHT']],
+    arc_knight_patrol: [],                          // the narrator only: they say nothing
     amputator_osric: [[/./, 'OSRIC']],              // the Amputators: Senior Surgeon Osric (story/encounters/story/amputators.js)
     amputator_garrick: [[/./, 'GARRICK']],          // and Surgeon Garrick, going mad
     amputator_garrick_fallen: [[/./, 'GARRICK']],
@@ -56,6 +59,8 @@ export const SPEAKERS = {
     a_disturbing_sight: [[/./, 'MADMAN']],
     suspicious_merchant: [[/./, 'MERCHANT']],
     aftermath: [[/./, 'SURVIVOR']],
+    arc_knight: [[/./, 'ARC_KNIGHT']],
+    arc_knight_fallen: [[/./, 'ARC_KNIGHT']],
     amputator_osric: [[/./, 'OSRIC']],
     amputator_garrick: [[/./, 'GARRICK']],
     amputator_garrick_fallen: [[/./, 'GARRICK']]

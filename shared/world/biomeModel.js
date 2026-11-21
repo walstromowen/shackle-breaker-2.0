@@ -76,6 +76,7 @@ export class BiomeModel {
                 used = hi;
             }
             if (rngValue < lo || rngValue >= hi) continue;
+            if (rule.minAct && ActSystem.getAct() < rule.minAct) continue;   // only from that act on (an act 2 Arc Knight on patrol)
             let spawnId = rule.id;
             if (rule.pool) {
                 spawnId = rule.pool[Math.floor(rngValue * 1000) % rule.pool.length];

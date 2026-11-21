@@ -439,6 +439,45 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "AMPUTATOR", "ELITE"]
     },
 
+    // An Arc Knight: one of the magic-infused knights the king instated in the years before Altus fell, to hold back the mad; the fire he was given
+    // burns in his blade still, and it is hungry. Act 1's mini boss: he paces outside the Hooded Stranger's workshop once the magic addicts are
+    // put down (story/encounters/story/arcKnight.js). Armoured, fire in all he does; ice and water get through.
+    "ARC_KNIGHT": {
+        ...HUMANOID_TEMPLATE,
+        name: "Arc Knight",
+        level: 1,
+        spriteOverworld: "arcKnightSprite",
+        spritePortrait: "arcKnightPortrait",
+        crySound: "calcifiedCrusaderCry",
+        deathSound: "calcifiedCrusaderCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 16, strength: 16, dexterity: 11, intelligence: 12, attunement: 14
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 50, maxStamina: 30, maxInsight: 30, speed: 6, critical: 0.1, corruption: 60,
+            maxHpMultiplier: 4,   // tuned with tools/krakenSim.mjs (BOSS=ARC_KNIGHT, level 11): won about 70% alone, 80-95% in a party, the party left with a third of its health or so
+            baseDefense: {
+                ...HUMANOID_TEMPLATE.baseStats.baseDefense,
+                blunt: 3, slash: 5, pierce: 4, fire: 6, arcane: 3, ice: -1, water: -1
+            },
+            baseResistance: {
+                blunt: 0.1, slash: 0.25, pierce: 0.2,
+                fire: 0.6, arcane: 0.2, ice: -0.2, water: -0.2
+            },
+            baseAttack: { slash: 5, fire: 6 }
+        },
+        // no gear: the burning blade is part of him
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        currencyReward: { min: 120, max: 260 },
+        lootTableId: "arc_knight_drops",
+        // a swordsman whose blade is fire ("rest" is only the AI's fallback when he can afford nothing); Inferno is the firestorm on the whole party
+        // every boss has (it burns him too)
+        abilities: ["rest", "slash", "cleave", "fireball", "flamethrower", "inferno", "bolster"],
+        tags: [...HUMANOID_TEMPLATE.tags, "CURSED", "ALTERIAN", "MAGICAL", "ARMORED", "BOSS", "ELITE"]
+    },
+
     "HOLLOW_HARVESTER": {
         ...HUMANOID_TEMPLATE,
         name: "Hollow Harvester",

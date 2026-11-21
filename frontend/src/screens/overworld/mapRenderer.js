@@ -280,11 +280,25 @@ export class MapRenderer {
         let feetPad = fr.feetPad;
         if (typeof feetPad !== 'number') feetPad = this.characterFeetPad(sprite, FH) ?? 0;
         const A = this.charAnim;
-        const dirIndex = Number.isInteger(obj.character.row) ? obj.character.row : Math.max(0, A.directionOrder.indexOf(obj.character.facing || 'DOWN')); // the row the definition names, else by facing
+        // a wanderer faces the way it last walked (obj._facing); otherwise the row the definition names, else by its facing
+        const dirIndex = obj._facing ? Math.max(0, A.directionOrder.indexOf(obj._facing))
+            : Number.isInteger(obj.character.row) ? obj.character.row : Math.max(0, A.directionOrder.indexOf(obj.character.facing || 'DOWN'));
         const phase = Math.abs((obj.col || 0) * 7 + (obj.row || 0) * 13) % A.frames; // two of them side by side do not breathe in step
-        const frame = (Math.floor(totalTime * A.idleFps) + phase) % A.frames;
+        // a wandering NPC stepping to its cell (obj._glide, WorldManager.tickWanderers): drawn sliding from the cell it left, on its walk rows
+        let glideT = 1;
+        if (obj._glide) {
+            glideT = Math.min(1, (performance.now() - obj._glide.start) / obj._glide.dur);
+            if (glideT >= 1) obj._glide = null;
+            else {
+                const tile = TILE_SIZE * scale;
+                dx += Math.round((obj._glide.fromCol - obj.col) * tile * (1 - glideT));
+                dy += Math.round((obj._glide.fromRow - obj.row) * tile * (1 - glideT));
+            }
+        }
+        const walking = glideT < 1;
+        const frame = walking ? Math.floor(totalTime * (A.walkFps || A.idleFps * 2)) % A.frames : (Math.floor(totalTime * A.idleFps) + phase) % A.frames;
         const sx = frame * FW;
-        const sy = (A.firstRow.idle + dirIndex) * FH;
+        const sy = ((walking ? A.firstRow.walk : A.firstRow.idle) + dirIndex) * FH;
         const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
         const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
         const tileBottom = dy + Math.ceil(TILE_SIZE * scale);

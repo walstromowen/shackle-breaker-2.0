@@ -433,6 +433,23 @@
         "Tell Doctor Osric... the song was a lie. It was only screaming.": "[weak, clear for a moment, dying] Tell Doctor Osric... [a breath] the song was a lie. It was only screaming.",
         "You've iron on you. Let me take it off, friend, I'm a surgeon. Only the hand. Hold still...": "[soft, eager, too close] You've iron on you. Let me take it off, friend, [a proud, giggling whisper] I'm a surgeon. [coaxing, sing-song] Only the hand. Hold still..."
       }
+    },
+    "ARC_KNIGHT": {
+      "id": "otHDnempUlES9g5yQxNE",
+      "name": "Arc Knight (Shackle Breaker): designed for an Arc Knight, one of the magic-infused knights the king made before Altus fell, inside a great iron helm: deep, resonant, slow and formal old-world English, commanding and weary, a dry crackling rasp as if fire burns in his throat; the helm treatment puts the iron around his voice",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "fx": "helm",
+      "directions": {
+        "You. You smell of sparks gone out. Three of them. I felt each one die.": "[slow, grave, the words heavy] You. [a low, crackling breath] You smell of sparks gone out. [measured] Three of them. [quieter, almost grieving] I felt each one die.",
+        "The King made us of fire, to hold back the mad. Arc Knights, he called us. The last wall of Altus.": "[formal, proud, weary] The King made us of fire, to hold back the mad. [slower] Arc Knights, he called us. [grave] The last wall of Altus.",
+        "The wall cracked first.": "[flat, bitter, a crackling rasp] The wall cracked first.",
+        "Now the fire wants more. It wants yours. Stand still, shackled one. It is quicker that way.": "[low, hungry, menacing] Now the fire wants more. It wants yours. [cold, commanding] Stand still, shackled one. [almost gentle] It is quicker that way.",
+        "Cold. I had forgotten cold.": "[weak, wondering, the fire gone from his voice] Cold. [a long breath] I had forgotten cold.",
+        "The King lied to all of us.": "[a dying whisper, bitter] The King lied to all of us."
+      }
     }
   }
 }

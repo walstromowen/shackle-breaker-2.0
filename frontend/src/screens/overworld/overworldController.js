@@ -417,7 +417,18 @@ export class OverworldController extends BaseController {
         this.revealSurroundings();   // the world map grows as the party walks
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
-        if (!this.encounterZones) this.encounterZones = this.findEncounterZones(gameState.player.col, gameState.player.row); // standing in a zone when the world opens: it does not fire
+        if (this.worldManager.tickWanderers) this.worldManager.tickWanderers();   // an Arc Knight walking his beat (story/encounters/story/arcKnight.js)
+        if (!this.encounterZones) {
+            // standing in a zone when the world opens: it does not fire, unless it is an ambush (interaction.onArrival: the Arc Knight waiting outside
+            // the Hooded Stranger's door), which does, a moment after the world is there
+            const zones = this.findEncounterZones(gameState.player.col, gameState.player.row);
+            for (const [key, obj] of zones) if (obj.interaction && obj.interaction.onArrival) { zones.delete(key); this._arrivalAmbush = 0.6; }
+            this.encounterZones = zones;
+        }
+        if (this._arrivalAmbush !== undefined && !this.isLocked) {
+            this._arrivalAmbush -= dt;
+            if (this._arrivalAmbush <= 0) { this._arrivalAmbush = undefined; this.checkEncounterZones(); }
+        }
         this._updateEntering(dt);
 
         this.worldManager.getActiveObjects().forEach(obj => {

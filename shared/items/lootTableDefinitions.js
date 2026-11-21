@@ -645,6 +645,17 @@ export const LootTableDefinitions = {
             { id: "iron_ingot", dropRate: 0.3 },
         ]
     },
+    // an Arc Knight (act 1's mini boss, story/encounters/story/arcKnight.js): what was left of his kit
+    "arc_knight_drops": {
+        type: "independent",
+        items: [
+            { id: "healing_tonic", dropRate: 1.0 },
+            { id: "iron_ingot", dropRate: 1.0, min: 2, max: 4 },
+            { id: "steel_ingot", dropRate: 0.5, min: 1, max: 2 },
+            { id: "iron_helmet", dropRate: 0.35 },
+            { id: "iron_gauntlets", dropRate: 0.35 },
+        ]
+    },
     "hollow_harvester_drops": {
         type: "independent",
         items: [

@@ -47,6 +47,28 @@ function amputatorObjects(out) {
     if (quarry && !storyHas('garrick_slain')) out.set(quarry, 'GARRICK_NPC');
 }
 
+/* An Arc Knight (story/encounters/story/arcKnight.js): once shackled3 is handed in (world flag arc_knight_roused; an older save: the quest done),
+   he stands on the footpath before the Hooded Stranger's workshop door, facing it, until he is put down (arc_knight_slain): the player meets him on
+   walking out (his trigger fires on arrival, overworldController). The yard's three free rows lie below the door (structures.js): the cell in front
+   of it is where the player comes out, the next is the footpath. */
+function arcKnightRoused() {
+    if (storyHas('arc_knight_slain')) return false;
+    const done = gameState.quests && Array.isArray(gameState.quests.completed) && gameState.quests.completed.includes('shackled3');
+    return !!(gameState.world.strangerHome && (storyHas('arc_knight_roused') || done));
+}
+function arcKnightObjects(out) {
+    if (!arcKnightRoused()) return;
+    const [dc, dr] = String(gameState.world.strangerHome).split(/[_,]/).map(Number);
+    if (Number.isFinite(dc) && Number.isFinite(dr)) out.set(`${dc},${dr + 2}`, 'ARC_KNIGHT_NPC');
+}
+
+/* Wanderers: map objects whose definition has `wander` (the madmen, the act 2 Arc Knights on patrol) walk about their home cell, a step at a time
+   with pauses, never leaving its chunk (the chunk is made and unmade with them) nor stepping onto a player. Each one's own: not the world's
+   (a player's screen moves its own). wander: { radius, stepMs: [min, max], pauseChance, pauseMs: [min, max], straight: chance to keep going the
+   same way (a patrol) }. */
+const WANDER_DIRS = { DOWN: [0, 1], RIGHT: [1, 0], UP: [0, -1], LEFT: [-1, 0] };
+const between = ([a, b]) => a + Math.random() * (b - a);
+
 export class WorldManager {
     constructor() {
         if (!gameState.seed) gameState.seed = Math.floor(Math.random() * 1000000);
@@ -186,6 +208,7 @@ export class WorldManager {
         if (!chunk) return;
         this.terrain.clearCacheForKeys(chunk.keys);
         for (const key of chunk.keys) {
+            if (this._wanderedFrom) this._wanderedFrom.delete(key);
             if (this.objects.has(key)) this.objects.delete(key);
             if (this._collisionMap.has(key)) this._collisionMap.delete(key);
         }
@@ -261,7 +284,7 @@ export class WorldManager {
     }
     getObject(col, row) {
         const key = this._s(col, row);
-        if (!this.objects.has(key)) {
+        if (!this.objects.has(key) && !(this._wanderedFrom && this._wanderedFrom.has(key))) {
             const forcedObjId = gameState.world.changes?.[key];
             if (forcedObjId) {
                 this._placeObject(col, row, forcedObjId);
@@ -273,6 +296,7 @@ export class WorldManager {
         const newObj = this.createObjectInstance(col, row, id);
         if (!newObj) return;
         this.objects.set(this._s(col, row), newObj);
+        if (newObj.wander) (this._wanderers ||= new Set()).add(newObj);
         if (id === 'CAMPFIRE') this._campfirePlaced(col, row);
         else if (id === 'TOMBSTONE' || id === 'OLD_GRAVESTONE') this._gravestonePlaced(col, row);
         let activeHitboxes = [];
@@ -304,6 +328,7 @@ export class WorldManager {
         const w = gameState.world;
         if (w.isInterior) return out;
         amputatorObjects(out);
+        arcKnightObjects(out);
         if (!w.nikoliCampfire) return out;
         // the story's flags belong to the world (story/worldStory.js): everyone in it sees the same scene
         const ms = { includes: (id) => storyHas(id) };
@@ -354,6 +379,62 @@ export class WorldManager {
         this._graveCandidates.clear();
         this.refreshStoryObjects();
         return true;
+    }
+    /** Called every frame on the map: the wanderers near the player take their next step, or pause (see `wander` above). Returns how many moved. */
+    tickWanderers(now = (typeof performance !== 'undefined' ? performance.now() : Date.now())) {
+        if (gameState.world.isInterior || !this._wanderers || !this._wanderers.size) return 0;
+        const p = gameState.player || {}, C = this.CHUNK_SIZE;
+        let moved = 0;
+        for (const obj of [...this._wanderers]) {
+            if (this.objects.get(this._s(obj.col, obj.row)) !== obj) { this._wanderers.delete(obj); continue; }   // gone (its chunk unmade, or taken away)
+            const w = obj.wander;
+            if (!w || obj.isFading || Math.abs(obj.col - (p.col || 0)) > 24 || Math.abs(obj.row - (p.row || 0)) > 24) continue;
+            if (!obj._home) obj._home = [obj.col, obj.row];
+            if (obj._next === undefined) obj._next = now + between(w.stepMs || [1200, 2400]);
+            if (now < obj._next) continue;
+            if (Math.random() < (w.pauseChance ?? 0.3)) { obj._next = now + between(w.pauseMs || [1500, 4000]); continue; }
+            const [hc, hr] = obj._home;
+            const dirs = Object.keys(WANDER_DIRS).sort(() => Math.random() - 0.5);
+            if (obj._facing && Math.random() < (w.straight || 0)) dirs.unshift(obj._facing);   // a patrol keeps on the way it was going
+            let stepped = null;
+            for (const dir of dirs) {
+                const [ox, oy] = WANDER_DIRS[dir], nc = obj.col + ox, nr = obj.row + oy;
+                if (Math.max(Math.abs(nc - hc), Math.abs(nr - hr)) > (w.radius || 3)) continue;
+                if (Math.floor(nc / C) !== Math.floor(hc / C) || Math.floor(nr / C) !== Math.floor(hr / C)) continue;   // its home's chunk
+                if (nc === p.col && nr === p.row) continue;
+                const there = this.objects.get(this._s(nc, nr));
+                if ((there && !(there.isGround && !there.isSolid)) || this._storyObjectAt(nc, nr) || !this.canMove(obj.col, obj.row, nc, nr, dir)) continue;   // grass and flowers can be walked over
+                stepped = this._moveWanderer(obj, nc, nr, dir, now, w) || obj;
+                moved++;
+                break;
+            }
+            (stepped || obj)._next = now + between(w.stepMs || [1200, 2400]);   // on the object as it now stands (a step makes a new one)
+            if (!stepped) obj._facing = dirs[0];   // hemmed in: turns, and tries again later
+        }
+        return moved;
+    }
+    /* a wanderer to (nc, nr): the object moves (its collision with it, nothing written into the world), facing `dir`, gliding from where it was */
+    _moveWanderer(obj, nc, nr, dir, now, w) {
+        const from = [obj.col, obj.row];
+        const fromKey = this._s(obj.col, obj.row), toKey = this._s(nc, nr);
+        const under = this.objects.get(toKey);   // grass or flowers it steps onto: kept, and put back when it moves on
+        this._unplaceObject(obj.col, obj.row);
+        if (obj._under) this.objects.set(fromKey, obj._under);   // what it stood on, back
+        if (under) this.objects.delete(toKey);
+        this._placeObject(nc, nr, obj.id);
+        const moved = this.objects.get(toKey);
+        if (!moved) { if (under) this.objects.set(toKey, under); return; }
+        moved._under = under || null;
+        for (const k of ['_home', '_next', 'wander']) if (obj[k] !== undefined) moved[k] = obj[k];
+        moved._facing = dir;
+        const stepMs = (w.stepMs || [1200, 2400])[0];
+        moved._glide = { fromCol: from[0], fromRow: from[1], start: now, dur: Math.min(700, stepMs * 0.7) };
+        // its home cell, if the world remembers an object there (a village's madman, world.changes), is not made again while it is away
+        const homeKey = this._s(moved._home[0], moved._home[1]);
+        if (!this._wanderedFrom) this._wanderedFrom = new Set();
+        if (nc === moved._home[0] && nr === moved._home[1]) this._wanderedFrom.delete(homeKey);
+        else this._wanderedFrom.add(homeKey);
+        return moved;
     }
     /* a cell near (col, row), within `radius`, with nothing on it that can be stepped onto from beside it (nearest first), or null */
     _freeNear(col, row, radius) {

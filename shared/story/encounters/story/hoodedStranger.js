@@ -154,7 +154,15 @@ export const hoodedStranger = {
             "\"Three of the spellcasters.\"",
             "\"Do not let them show you a trick.\"",
             "\"Go. I will be here, talking to the anvil. It is a good listener. Better than most.\""),
-        turnin_shackled3: turnIn("shackled3", "\"It is done. ...I should have been the one to do it.\"", "lore_shackled3"),
+        // handing in shackled3 rouses an Arc Knight: he paces outside this workshop from then on (story/encounters/story/arcKnight.js)
+        turnin_shackled3: stage("\"It is done. ...I should have been the one to do it.\"", [{
+            text: "Continue.",
+            outcomes: [{ weight: 100, results: [
+                { type: "COMPLETE_QUEST", payload: { questId: "shackled3" } },
+                { type: "GRANT_MILESTONE", payload: { id: "arc_knight_roused" } },
+                { type: "ADVANCE_STAGE", payload: { stageId: "lore_shackled3" } }
+            ] }]
+        }]),
         lore_shackled3: stage("\"Every one of them could work a spell. Those who never could laugh later. Or not at all.\"", next("lore_shackled3_2")),
         lore_shackled3_2: stage("\"I do not know why. Perhaps I never will. I have given up on the weather entirely.\"", next("give_shackled7_pre")),
 
