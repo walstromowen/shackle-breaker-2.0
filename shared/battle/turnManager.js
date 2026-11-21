@@ -147,7 +147,9 @@ export class TurnManager {
     }
 
     _applyAbilityEffects(turn) {
-        let { actor, action, targets, isFirstTarget, ignoreCost, allowDeadTarget } = turn;
+        let { actor, action, targets, isFirstTarget, ignoreCost, allowDeadTarget, quiet } = turn;
+        // quiet: what it does is not told (its status icons show it)
+        const say = quiet ? () => {} : (m) => this.queueMessage(m);
         
         const canTargetDead = allowDeadTarget || action?.allowDeadTarget;
         const canTargetBench = this._allowsBench(action);
@@ -174,11 +176,11 @@ export class TurnManager {
             if (immunityCheck.isImmune) {
                 if (immunityCheck.reason === 'range') {
                     events.emit('SPAWN_FCT', { target: actualTarget, text: 'Out of Reach!', type: 'miss' });
-                    this.queueMessage(`${actor.name}'s attack cannot reach ${actualTarget.name}!`);
+                    say(`${actor.name}'s attack cannot reach ${actualTarget.name}!`);
                 } else if (immunityCheck.reason === 'tag') {
                     const formattedTag = immunityCheck.value.charAt(0).toUpperCase() + immunityCheck.value.slice(1);
                     events.emit('SPAWN_FCT', { target: actualTarget, text: 'Immune!', type: 'status' });
-                    this.queueMessage(`${actualTarget.name} is immune to ${formattedTag}!`);
+                    say(`${actualTarget.name} is immune to ${formattedTag}!`);
                 }
                 continue;
             }
@@ -224,7 +226,7 @@ export class TurnManager {
                 queueDeath(this.state, actor);
             }
 
-            if (result.message) this.queueMessage(result.message);
+            if (result.message) say(result.message);
             
             if (!wasActorDead && actor.isDead()) {
                 break;
@@ -241,7 +243,7 @@ export class TurnManager {
                 if (!effect) continue;
                 actor.applyStatusEffect(effect);
                 registerStatusApplication(this.state, effect, actor, actor);
-                this.queueMessage(`${actor.name} is ${effect.name}!`);
+                say(`${actor.name} is ${effect.name}!`);
             }
         }
 
@@ -263,7 +265,7 @@ export class TurnManager {
     }
 
     _handleActionExecution(turn) {
-        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor, allowDeadTarget } = turn;
+        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor, allowDeadTarget, quiet } = turn;
         
         if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
 
@@ -319,7 +321,9 @@ export class TurnManager {
             ? primaryTarget
             : resolvedTargets[0];
         let targetName = leadTarget ? leadTarget.name : "the field";
-        this.state.message = messageTemplate
+        // quiet (a trait's ability at the start of a fight, battleQueue): no line for it, nor for what it does; its animation plays
+        if (quiet) this.state.message = "";
+        else this.state.message = messageTemplate
             .replace(/{user}/g, actor.name)
             .replace(/{ability}/g, action.name)
             .replace(/{target}/g, targetName);
@@ -328,33 +332,33 @@ export class TurnManager {
         const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.targeting?.scope) || action.targeting?.isAoE || action.isSplash;
         
         if (isAoE) {
-            this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
+            this._queueAoEAction(actor, action, resolvedTargets, ignoreCost, quiet);
         } else {
-            this._queueMultiAction(actor, action, resolvedTargets, ignoreCost);
+            this._queueMultiAction(actor, action, resolvedTargets, ignoreCost, quiet);
         }
         
         this.processNextTurnInQueue();
     }
 
-    _queueAoEAction(actor, action, targets, ignoreCost) {
+    _queueAoEAction(actor, action, targets, ignoreCost, quiet = false) {
         for (let i = targets.length - 1; i >= 0; i--) {
             this.state.turnQueue.unshift(
-                this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost)
+                this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost, quiet)
             );
         }
         this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, actor, action, targets });
     }
 
-    _queueMultiAction(actor, action, targets, ignoreCost) {
+    _queueMultiAction(actor, action, targets, ignoreCost, quiet = false) {
         for (let i = targets.length - 1; i >= 0; i--) {
             this.state.turnQueue.unshift(
-                this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost)
+                this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost, quiet)
             );
             this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, actor, action, target: targets[i] });
         }
     }
 
-    _createApplyEffectTurn(actor, action, targets, isFirst, isLast, ignoreCost) {
+    _createApplyEffectTurn(actor, action, targets, isFirst, isLast, ignoreCost, quiet = false) {
         return { 
             type: TURN_TYPES.APPLY_ABILITY_EFFECTS, 
             actor, 
@@ -362,7 +366,8 @@ export class TurnManager {
             targets, 
             isFirstTarget: isFirst, 
             isLastTarget: isLast, 
-            ignoreCost 
+            ignoreCost,
+            quiet
         };
     }
 

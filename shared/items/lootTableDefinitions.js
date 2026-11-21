@@ -331,6 +331,12 @@ export const LootTableDefinitions = {
             { id: "insight_of_arcane", weight: 2, min: 1, max: 1 },
             { id: "insight_of_light", weight: 2, min: 1, max: 1 },
             { id: "insight_of_darkness", weight: 2, min: 1, max: 1 },
+            // --- THE ARTIFICERS' ARMOR (rare: about 1 roll in 300 for each piece, 1 in 60 for any) ---
+            { id: "artificers_hood", weight: 2, min: 1, max: 1 },
+            { id: "artificers_robe", weight: 2, min: 1, max: 1 },
+            { id: "artificers_wraps", weight: 2, min: 1, max: 1 },
+            { id: "artificers_leggings", weight: 2, min: 1, max: 1 },
+            { id: "artificers_boots", weight: 2, min: 1, max: 1 },
             { id: "namuh_charm", weight: 10, min: 1, max: 1 },   // rare (about 1 in 60): the Namuh fell here too
         ]
     },
@@ -367,6 +373,12 @@ export const LootTableDefinitions = {
 
             { id: "insight_of_light", weight: 8, min: 1, max: 1 },
             { id: "insight_of_earth", weight: 6, min: 1, max: 1 },
+            // --- THE ARTIFICERS' ARMOR (rare: about 1 roll in 170 for each piece, 1 in 35 for any) ---
+            { id: "artificers_hood", weight: 2, min: 1, max: 1 },
+            { id: "artificers_robe", weight: 2, min: 1, max: 1 },
+            { id: "artificers_wraps", weight: 2, min: 1, max: 1 },
+            { id: "artificers_leggings", weight: 2, min: 1, max: 1 },
+            { id: "artificers_boots", weight: 2, min: 1, max: 1 },
             { id: "royal_guards_signet", weight: 8, min: 1, max: 1 },   // rare (about 1 in 40): an officer of the Royal Guard
         ]
     },
@@ -411,7 +423,12 @@ export const LootTableDefinitions = {
             { id: "insight_of_fire", weight: 2, min: 1, max: 1 },
             { id: "insight_of_lightning", weight: 2, min: 1, max: 1 },
             { id: "insight_of_light", weight: 2, min: 1, max: 1 },
-            { id: "nobles_ring", weight: 2, min: 1, max: 1 }   // rare: a merchant's best
+            { id: "nobles_ring", weight: 2, min: 1, max: 1 },   // rare: a merchant's best
+            { id: "artificers_hood", weight: 1, min: 1, max: 1 },   // rare: the Artificers' armor
+            { id: "artificers_robe", weight: 1, min: 1, max: 1 },   // rare: the Artificers' armor
+            { id: "artificers_wraps", weight: 1, min: 1, max: 1 },   // rare: the Artificers' armor
+            { id: "artificers_leggings", weight: 1, min: 1, max: 1 },   // rare: the Artificers' armor
+            { id: "artificers_boots", weight: 1, min: 1, max: 1 },   // rare: the Artificers' armor
         ]
     },
     "iron_chest_loot": {
@@ -459,6 +476,12 @@ export const LootTableDefinitions = {
             { id: "smoke_bomb", weight: 8, min: 1, max: 3 },
             { id: "poison_throwing_knife", weight: 8, min: 3, max: 6 },
             { id: "escape_rope", weight: 5, min: 1, max: 1 },
+            // --- THE ARTIFICERS' ARMOR (rare: about 1 roll in 140 for each piece, 1 in 28 for any) ---
+            { id: "artificers_hood", weight: 2, min: 1, max: 1 },
+            { id: "artificers_robe", weight: 2, min: 1, max: 1 },
+            { id: "artificers_wraps", weight: 2, min: 1, max: 1 },
+            { id: "artificers_leggings", weight: 2, min: 1, max: 1 },
+            { id: "artificers_boots", weight: 2, min: 1, max: 1 },
             { id: "royal_guards_signet", weight: 3, min: 1, max: 1 },   // rare: the Royal Guard kept these chests
             { id: "shmindolyns_draught", weight: 3, min: 1, max: 1 },   // rare: worth locking away
         ]
@@ -654,6 +677,12 @@ export const LootTableDefinitions = {
             { id: "steel_ingot", dropRate: 0.5, min: 1, max: 2 },
             { id: "iron_helmet", dropRate: 0.35 },
             { id: "iron_gauntlets", dropRate: 0.35 },
+            // the Arc Knights' own armor: a low chance of each piece (about one fight in five leaves one)
+            { id: "arc_knight_helm", dropRate: 0.05 },
+            { id: "arc_knight_cuirass", dropRate: 0.05 },
+            { id: "arc_knight_gauntlets", dropRate: 0.05 },
+            { id: "arc_knight_greaves", dropRate: 0.05 },
+            { id: "arc_knight_sabatons", dropRate: 0.05 },
         ]
     },
     "hollow_harvester_drops": {
@@ -922,6 +951,12 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", dropRate: 0.4 },
             { id: "large_iron_key", dropRate: 0.5 },
             { id: "nobles_ring", dropRate: 0.25 },   // a governor's ring
+            // the Artificers' armor: Darius is the only one who carries any of it (rare)
+            { id: "artificers_hood", dropRate: 0.04 },
+            { id: "artificers_robe", dropRate: 0.04 },
+            { id: "artificers_wraps", dropRate: 0.04 },
+            { id: "artificers_leggings", dropRate: 0.04 },
+            { id: "artificers_boots", dropRate: 0.04 },
         ]
     },
     // An Infernus Sentinel (the catacombs' boss): the large iron key to the hoard's iron chest beyond the last gate is always found in its rubble, with stone,

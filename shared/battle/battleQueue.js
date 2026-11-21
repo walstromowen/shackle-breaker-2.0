@@ -68,7 +68,19 @@ export function queuePreBattleTraits(state) {
                     const abilityId = startTrigger.ability;
                     const [ability] = AbilityFactory.createAbilities([abilityId]);
 
-                    if (ability) {
+                    if (ability && startTrigger.quiet) {
+                        // a quiet trigger (traitDefinitions: quiet): no words at all, the trait's or the ability's or its effects': only the ability's
+                        // animation plays, and the status icons tell the rest. A fight's opening is not held up by four lines of it.
+                        state.turnQueue.push({
+                            type: TURN_TYPES.EXECUTE_ACTION,
+                            ignoreCost: true,
+                            quiet: true,
+                            actor: combatant,
+                            action: ability,
+                            target: combatant
+                        });
+                        traitsQueued = true;
+                    } else if (ability) {
                         if (startTrigger.animationId) {
                             state.turnQueue.push({
                                 type: TURN_TYPES.PLAY_ANIMATION,

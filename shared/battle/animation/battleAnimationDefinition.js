@@ -56,6 +56,7 @@ export const BattleAnimationDefinitions = {
     "arcane_blast": anim(2.8, {
         seconds: true,
         hit: 1.0,
+        background: background(0, 2.8, 'arcaneVortexBg'),   // the arcane vortex behind the whole cast (it was Arcane Dart's)
         audio: [
             sfx(0, 'arcaneDartSfx', { volume: 1.1, pitch: 0.6 }),
             sfx(0.65, 'shockSfx', { volume: 0.7, pitch: 0.55 }),
@@ -76,9 +77,105 @@ export const BattleAnimationDefinitions = {
             flash: flash('hit', 'hit+1.0', tint('cyan', { bright: 300, sat: 300, glow: 'cyan', glowSize: 18 }))
         }
     }),
+    // ---- the Insights' newer spells (abilityDefinitions: gust, downwind, tempest, tidal_wave, mending_tide, glacial_spike, frost_ward,
+    // chain_lightning, lightning_strike). Each has its own sheet (tools/art/insightSpellSheets.py) and sounds (tools/voice/makeInsightSfx.sh). ----
+    "gust": anim(1.4, {
+        audio: [sfx(0.05, 'gustSfx', { volume: 1.0 })],
+        actor: { flash: flash(0, 0.3, 'brightness(170%) saturate(20%)') },
+        vfx: [
+            travel(0.15, 'gustAnimation', { life: 0.45, frames: 4, scale: 1.8, blend: 'normal' }),
+            burst(0.55, { count: 12, color: '#e8f4f4', shape: 'streak', length: 60, scale: 0.7, rotation: 1.571, angle: 0, cone: 25, minSpeed: 260, maxSpeed: 520, minLife: 0.2, maxLife: 0.35, glow: false })
+        ],
+        target: { shake: shake(0.5, 0.85, 26), flash: flash(0.5, 0.75, 'brightness(200%) saturate(30%)') }
+    }),
+    "downwind": anim(1.6, {
+        seconds: true,
+        audio: [sfx(0.05, 'downwindSfx', { volume: 0.9 })],
+        actor: { flash: flash(0, 0.5, 'brightness(160%) saturate(40%)') },
+        vfx: [
+            spawn(0.15, 'downwindAnimation', { life: 1.3, frames: 4, scale: 2.6, move: 'static', blend: 'normal' }),
+            ...repeat(0.2, 5, 0.15, t => burst(t, { count: 4, color: '#dff3ee', shape: 'streak', length: 80, scale: 0.6, rotation: 1.571, angle: 0, cone: 10, minSpeed: 380, maxSpeed: 620, minLife: 0.3, maxLife: 0.5, area: [140, 90], glow: false, envelope: true }))
+        ],
+        target: { flash: flash(0.3, 1.3, 'brightness(140%) saturate(60%) drop-shadow(0 0 8px #b6e3c6)') }
+    }),
+    "tempest": anim(2.2, {
+        seconds: true,
+        audio: [sfx(0.05, 'tempestSfx', { volume: 1.0 })],
+        background: background(0, 2.2, 'current', 'brightness(65%) saturate(40%) contrast(110%)'),
+        actor: wobble(0, 0.7, 6, { flash: flash(0, 0.8, 'brightness(170%) saturate(20%)') }),
+        vfx: [
+            spawn(0.25, 'tempestAnimation', { life: 1.7, frames: 4, scale: 3.2, move: 'loom_over', blend: 'normal' }),
+            ...repeat(0.35, 8, 0.14, t => burst(t, { count: 5, color: '#c9d0d8', shape: 'fleck', scale: 0.8, minSpeed: 220, maxSpeed: 480, minLife: 0.3, maxLife: 0.5, area: [220, 160], spinJitter: 12, glow: false, envelope: true }))
+        ],
+        target: { shake: shake(0.5, 1.8, 34), flash: flash(0.5, 1.6, 'brightness(170%) saturate(30%)') }
+    }),
+    "tidal_wave": anim(2.4, {
+        seconds: true,
+        audio: [sfx(0.05, 'tidalWaveSfx', { volume: 1.0 })],
+        background: background(0, 2.4, 'current', 'brightness(80%) saturate(80%) sepia(20%) hue-rotate(170deg)'),
+        actor: { flash: flash(0, 0.5, 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)') },
+        vfx: [
+            spawn(0.2, 'tidalWaveAnimation', { life: 1.2, frames: 4, scale: 2.6, move: 'rise_and_hold', blend: 'normal' }),
+            burst(1.0, { count: 30, color: '#9fd8ff', scale: 1, minSpeed: 160, maxSpeed: 440, gravity: 600, angle: 270, cone: 120 })
+        ],
+        target: { shake: shake(0.9, 1.9, 40), flash: flash(0.9, 1.7, 'brightness(200%) sepia(100%) hue-rotate(200deg) saturate(300%) drop-shadow(0 0 10px blue)') }
+    }),
+    "mending_tide": anim(1.6, {
+        seconds: true,
+        audio: [sfx(0.05, 'mendingTideSfx', { volume: 1.0 })],
+        actor: { flash: flash(0, 0.4, 'brightness(150%) sepia(100%) hue-rotate(160deg) saturate(200%)') },
+        vfx: [
+            spawn(0.15, 'mendingTideAnimation', { life: 1.2, frames: 4, scale: 2.2, move: 'static', blend: 'normal' }),
+            burst(0.4, { count: 16, color: '#9ff0e0', scale: 0.8, minSpeed: 40, maxSpeed: 140, gravity: -160 })
+        ],
+        target: { flash: flash(0.3, 1.3, 'brightness(150%) sepia(60%) hue-rotate(140deg) saturate(250%) drop-shadow(0 0 10px #7fe8d0)') }
+    }),
+    "glacial_spike": anim(2.2, {
+        seconds: true,
+        hit: 1.0,
+        audio: [sfx(0, 'glacialSpikeCastSfx', { volume: 1.0 }), sfx('hit-0.05', 'glacialSpikeImpactSfx', { volume: 1.1 })],
+        actor: wobble(0, 0.8, 5, { flash: flash(0, 1.0, 'brightness(200%) sepia(100%) hue-rotate(190deg) saturate(300%)') }),
+        vfx: [
+            orbit(0.05, { at: 'source', life: 0.7, turns: 1, radius: 70, squash: 0.5, scale: 0.45, color: '#bfeaff', offsetY: -30 }),
+            spawn(0.2, 'glacialSpikeAnimation', { at: 'source', life: 0.6, frames: 4, scale: 2.4, move: 'static', blend: 'normal' }),
+            travel(0.8, 'glacialSpikeAnimation', { life: 0.2, frames: 4, scale: 2.4, blend: 'normal' }),
+            burst('hit', { count: 26, color: '#bfeaff', shape: 'fleck', scale: 1.1, minSpeed: 200, maxSpeed: 520, gravity: 500, spinJitter: 10 })
+        ],
+        target: { shake: shake('hit', 'hit+0.8', 44), flash: flash('hit', 'hit+0.9', 'brightness(250%) sepia(100%) hue-rotate(190deg) saturate(500%)') }
+    }),
+    "frost_ward": anim(1.6, {
+        seconds: true,
+        audio: [sfx(0.05, 'frostWardSfx', { volume: 1.0 })],
+        actor: { flash: flash(0, 0.4, 'brightness(180%) sepia(100%) hue-rotate(190deg) saturate(200%)') },
+        vfx: [
+            spawn(0.15, 'frostWardAnimation', { life: 1.3, frames: 4, scale: 2.2, move: 'static', blend: 'normal' }),
+            burst(0.3, { count: 14, color: '#d8f4ff', scale: 0.7, minSpeed: 30, maxSpeed: 120, gravity: -80 })
+        ],
+        target: { flash: flash(0.25, 1.4, 'brightness(170%) sepia(100%) hue-rotate(190deg) saturate(250%) drop-shadow(0 0 10px #bfeaff)') }
+    }),
+    "chain_lightning": anim(1.6, {
+        audio: [sfx(0.05, 'chainLightningSfx', { volume: 1.0 })],
+        actor: { flash: flash(0, 0.3, 'brightness(220%) drop-shadow(0 0 6px cyan)') },
+        vfx: [
+            ...stream(0.1, 10, 0.01, 'chainLightningAnimation', { life: 0.18, frames: 4, scale: 1.6, jitter: 6 }),
+            spawn(0.32, 'chainLightningAnimation', { life: 0.35, frames: 4, scale: 2.2, move: 'expand_and_fade' })
+        ],
+        target: { shake: shake(0.3, 0.7, 40), flash: flash(0.3, 0.65, 'brightness(300%) drop-shadow(0 0 10px cyan) drop-shadow(0 0 15px #3d8fe0)') }
+    }),
+    "lightning_strike": anim(2.2, {
+        seconds: true,
+        hit: 0.9,
+        audio: [sfx(0.05, 'lightningStrikeChargeSfx', { volume: 0.9 }), sfx('hit-0.05', 'lightningStrikeImpactSfx', { volume: 1.2 })],
+        background: background(0, 2.2, 'current', 'brightness(45%) saturate(60%) hue-rotate(220deg)'),
+        actor: { flash: flash(0, 0.9, 'brightness(220%) drop-shadow(0 0 12px #8a6cff)') },
+        vfx: [
+            spawn('hit-0.1', 'lightningStrikeAnimation', { life: 0.6, frames: 4, scale: 3.2, move: 'static', offsetY: -70 }),
+            burst('hit', { count: 24, color: '#d6ccff', shape: 'streak', length: 70, scale: 0.8, minSpeed: 300, maxSpeed: 640, minLife: 0.2, maxLife: 0.4 })
+        ],
+        target: { shake: shake('hit', 'hit+1.0', 55), flash: flash('hit', 'hit+1.0', 'brightness(320%) drop-shadow(0 0 15px #8a6cff)') }
+    }),
     "arcane_dart": anim(1.5, {
         audio: [sfx(0.533, 'arcaneDartSfx')],
-        background: background(0, 1, 'arcaneVortexBg'),
         actor: { flash: flash(0, 0.2, 'brightness(200%) hue-rotate(180deg) saturate(300%)') },
         vfx: [
             travel(0.2, 'arcaneDartAnimation', { life: 0.4, frames: 4, scale: 2 })

@@ -195,3 +195,31 @@ test('a round stops now and then, and at a stop it stands and turns to look abou
         }
     });
 });
+
+test('the Arc Knights\' armor: a tier 3 set in the armor sheet\'s column 6, just short of iron against blows, strong against fire, ice and the arcane, no cost to speed, a rare drop of theirs', () => {
+    const set = ['arc_knight_helm', 'arc_knight_cuirass', 'arc_knight_gauntlets', 'arc_knight_greaves', 'arc_knight_sabatons'];
+    const slots = ['head', 'torso', 'arms', 'legs', 'feet'];
+    const iron = ['iron_helmet', 'iron_armor', 'iron_gauntlets', 'iron_greaves', 'iron_boots'];
+    const sum = (ids, f) => ids.reduce((n, id) => n + f(ItemDefinitions[id]), 0);
+    set.forEach((id, row) => {
+        const d = ItemDefinitions[id];
+        assert.ok(d && d.type === 'armor' && d.tier === 3 && d.slot === slots[row], id);
+        assert.ok(!d.iconSheet && d.icon.col === 6 && d.icon.row === row, `${id}: column 6, row ${row}`);
+    });
+    for (const t of ['blunt', 'slash', 'pierce']) {
+        const a = sum(set, d => d.defense[t] || 0), b = sum(iron, d => d.defense[t] || 0);
+        assert.ok(a < b && a >= b - 2, `${t} defense just short of iron (${a} against ${b})`);
+        const ra = sum(set, d => d.resistance[t] || 0), rb = sum(iron, d => d.resistance[t] || 0);
+        assert.ok(ra < rb + 1e-9 && ra >= rb - 0.03, `${t} resistance just short of iron (${ra.toFixed(2)} against ${rb.toFixed(2)})`);
+    }
+    for (const t of ['fire', 'ice', 'arcane']) {
+        assert.ok(sum(set, d => d.defense[t] || 0) >= 8, `${t} defense`);
+        assert.ok(sum(set, d => d.resistance[t] || 0) >= 0.15, `${t} resistance`);
+        assert.ok(sum(set, d => d.resistance[t] || 0) > sum(set, d => d.resistance.water || 0) * 2, `${t} well above the other magic`);
+    }
+    assert.ok(sum(set, d => d.resistance.lightning || 0) < 0, 'the metal draws lightning');
+    assert.equal(sum(set, d => (d.combat && d.combat.speed) || 0), 0, 'no cost to speed');
+    const drops = LootTableDefinitions[E.ARC_KNIGHT.lootTableId].items;
+    for (const id of set) { const it = drops.find(i => i.id === id); assert.ok(it && it.dropRate > 0 && it.dropRate <= 0.1, `${id}: a low chance`); }
+    for (const t of Object.values(LootTableDefinitions)) if (t !== LootTableDefinitions[E.ARC_KNIGHT.lootTableId]) for (const id of set) assert.ok(!JSON.stringify(t).includes(`"${id}"`), `${id} only from Arc Knights`);
+});

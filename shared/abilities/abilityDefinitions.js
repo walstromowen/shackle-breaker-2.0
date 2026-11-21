@@ -604,6 +604,155 @@ export const AbilityDefinitions = {
     // =========================================================================
     // 5. MAGICAL - ARCANE
     // =========================================================================
+    // ---- the Insights' newer spells (itemDefinitions: insight_of_wind / water / ice / lightning, unlocked as each is raised) ----
+    // Icons: cells of abilities.png that are blank and no other ability names, left for their art (ice row 4, lightning row 5, water row 8; wind's
+    // own row 14).
+    // WIND: the Insight of Wind's own spells (it gave only a plain Strike before)
+    "gust": {
+        id: "gust",
+        name: "Gust",
+        description: "Hurl a hard blast of wind at one enemy. Has a chance to knock it off its feet.",
+        range: "ranged",
+        tags: ["magical", "projectile", "wind"],
+        battleMessage: "{user} hurls a {ability} at {target}!",
+        icon: { col: 0, row: 14 },
+        animationId: "gust",
+        targeting: { scope: "enemy", select: "single" },
+        cost: { insight: 12 },
+        accuracy: 0.95,
+        speedModifier: 1.05,
+        effects: [{ type: "damage", damageType: "wind", power: 1.25 }],
+        statusEffects: [{ id: "knocked_down", chance: 0.15, duration: 1 }]
+    },
+    "downwind": {
+        id: "downwind",
+        name: "Downwind",
+        description: "Call up a wind at the party's backs: everyone on the field becomes harder to hit for 2 turns.",
+        range: "self",
+        tags: ["magical", "support", "buff", "wind"],
+        battleMessage: "{user} calls up a {ability} behind the party!",
+        icon: { col: 1, row: 14 },
+        animationId: "downwind",
+        targeting: { scope: "all_allies", select: "auto" },
+        cost: { insight: 18 },
+        accuracy: 1.0,
+        effects: [],
+        statusEffects: [{ id: "evasive", chance: 1.0, duration: 2 }]
+    },
+    "tempest": {
+        id: "tempest",
+        name: "Tempest",
+        description: "Loose a howling storm on every enemy. Has a chance to slow each of them.",
+        range: "ranged",
+        tags: ["magical", "aoe", "wind"],
+        battleMessage: "{user} looses a {ability}!",
+        icon: { col: 2, row: 14 },
+        animationId: "tempest",
+        targeting: { scope: "all_enemies", select: "auto" },
+        cost: { insight: 26 },
+        accuracy: 0.9,
+        speedModifier: 0.9,
+        effects: [{ type: "damage", damageType: "wind", power: 1.0 }],
+        statusEffects: [{ id: "slowed", chance: 0.4, duration: 2 }]
+    },
+    // WATER
+    "tidal_wave": {
+        id: "tidal_wave",
+        name: "Tidal Wave",
+        description: "Bring a great wave down on every enemy. Has a good chance to leave each of them soaked.",
+        range: "ranged",
+        tags: ["magical", "aoe", "water"],
+        battleMessage: "{user} brings down a {ability}!",
+        icon: { col: 8, row: 8 },
+        animationId: "tidal_wave",
+        targeting: { scope: "all_enemies", select: "auto" },
+        cost: { insight: 26 },
+        accuracy: 0.95,
+        speedModifier: 0.9,
+        effects: [{ type: "damage", damageType: "water", power: 1.0 }],
+        statusEffects: [{ id: "wet", chance: 0.6, duration: 3 }]
+    },
+    "mending_tide": {
+        id: "mending_tide",
+        name: "Mending Tide",
+        description: "Wash an ally in cool water: it heals a fifth of their health and puts out any burning.",
+        range: "ranged",
+        tags: ["magical", "support", "healing", "water"],
+        battleMessage: "{user} washes {target} in a {ability}!",
+        icon: { col: 9, row: 8 },
+        animationId: "mending_tide",
+        targeting: { scope: "ally", select: "single" },
+        cost: { insight: 14 },
+        accuracy: 1.0,
+        effects: [
+            { type: "dispel", tags: ["burn"] },
+            { type: "recover", resource: "hp", calculation: "percent", power: 0.2 }
+        ]
+    },
+    // ICE
+    "glacial_spike": {
+        id: "glacial_spike",
+        name: "Glacial Spike",
+        description: "Drive a great spike of ice into one enemy. Slow to form and heavy, with a good chance to freeze.",
+        range: "ranged",
+        tags: ["magical", "projectile", "ice", "heavy"],
+        battleMessage: "{user} drives a {ability} into {target}!",
+        icon: { col: 4, row: 4 },
+        animationId: "glacial_spike",
+        targeting: { scope: "enemy", select: "single" },
+        cost: { insight: 20 },
+        accuracy: 0.9,
+        speedModifier: 0.85,
+        effects: [{ type: "damage", damageType: "ice", power: 1.9 }],
+        statusEffects: [{ id: "frozen", chance: 0.35, duration: 2 }]
+    },
+    "frost_ward": {
+        id: "frost_ward",
+        name: "Frost Ward",
+        description: "Sheathe an ally in a skin of ice for 3 turns: slash, blunt and pierce hits barely hurt them.",
+        range: "ranged",
+        tags: ["magical", "support", "buff", "ice"],
+        battleMessage: "{user} sheathes {target} in a {ability}!",
+        icon: { col: 5, row: 4 },
+        animationId: "frost_ward",
+        targeting: { scope: "ally", select: "single" },
+        cost: { insight: 14 },
+        accuracy: 1.0,
+        effects: [],
+        statusEffects: [{ id: "fortified", chance: 1.0, duration: 3 }]
+    },
+    // LIGHTNING
+    "chain_lightning": {
+        id: "chain_lightning",
+        name: "Chain Lightning",
+        description: "Lightning that leaps from enemy to enemy: strikes up to three different targets, with a chance to paralyze each.",
+        range: "ranged",
+        tags: ["magical", "lightning", "multihit"],
+        battleMessage: "{user} looses {ability}!",
+        icon: { col: 3, row: 5 },
+        animationId: "chain_lightning",
+        targeting: { scope: "enemy", select: "multiple", count: 3 },
+        cost: { insight: 22 },
+        accuracy: 0.95,
+        effects: [{ type: "damage", damageType: "lightning", power: 0.9 }],
+        statusEffects: [{ id: "paralyzed", chance: 0.15, duration: 2 }]
+    },
+    "lightning_strike": {
+        id: "lightning_strike",
+        name: "Lightning Strike",
+        description: "Call a bolt down out of the sky onto one enemy. Slow and devastating, with a good chance to paralyze.",
+        range: "ranged",
+        tags: ["magical", "lightning", "heavy"],
+        battleMessage: "{user} calls down a {ability} on {target}!",
+        icon: { col: 4, row: 5 },
+        animationId: "lightning_strike",
+        targeting: { scope: "enemy", select: "single" },
+        cost: { insight: 24 },
+        accuracy: 0.9,
+        speedModifier: 0.85,
+        effects: [{ type: "damage", damageType: "lightning", power: 2.2 }],
+        statusEffects: [{ id: "paralyzed", chance: 0.35, duration: 2 }]
+    },
     "arcane_dart": {
         id: "arcane_dart",
         name: "Arcane Dart",
@@ -1418,7 +1567,7 @@ export const AbilityDefinitions = {
     "take_flight": {
       id: "take_flight",
       name: "Take Flight",
-      description: "Launches into the sky for 2 turns: melee attacks cannot reach it until it lands (arrows, spells and thrown weapons still can). The climb spends it: it must recharge on its next turn.",
+      description: "Launches into the sky for 2 turns: melee attacks cannot reach it until it lands (arrows, spells and thrown weapons still can).",
       range: "self",
       tags: ["utility", "buff", "movement", "trait_trigger"],
       // Note: The trait's onBattleStart logic will likely override this message, 
@@ -1431,7 +1580,6 @@ export const AbilityDefinitions = {
       accuracy: 1.0,
       animationId: "take_flight",
       effects: [],
-      selfStatusEffects: [{ id: "recharging", chance: 1.0, duration: 1 }],   // the climb spends it: it loses its next turn (like Arcane Blast)
       // This applies the mechanical buff. You'll need a corresponding "flying" 
       // or "airborne" status in your StatusDefinitions to handle the actual 
       // stat changes (like evasion up or ground immunity).
