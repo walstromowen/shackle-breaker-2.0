@@ -888,7 +888,7 @@ export const ItemDefinitions = {
   },
 
   // --- THE AMPUTATORS' ARMOR SET (tier 3: unique, sold only by Senior Surgeon Osric, from act 2; story/covenants.js COVENANTS.amputators.wares) ---
-  // Icons: the armor sheet's column 25 (assets/icons/armor.png: a column per set, a row per slot, head to feet).
+  // Icons: the armor sheet's column 5 (assets/icons/armor.png: a column per set, a row per slot, head to feet).
   // Built like leather (stitched hide, light on the feet) but for a surgeon's work: strong against cuts and stabs (slash 20, pierce 17 for the set,
   // against leather's 13 and 9), weaker against blunt blows (11), and each piece mends the wearer (+1 HP recovery, +5 for the set) where leather
   // gives Stamina recovery and speed. Dark resistance on top of the rest (the curse's own). Several times leather's price.
@@ -899,7 +899,7 @@ export const ItemDefinitions = {
     type: "armor",
     description: "A stitched leather hood with a bone-stiffened brim. It smells of vinegar and old blood.",
     value: 280,
-    icon: { col: 25, row: 0 },
+    icon: { col: 5, row: 0 },
     tier: 3,
     defense: { blunt: 2, slash: 3, pierce: 3 },
     resistance: { ...perPhysType(0.03), ...perMagicType(0.02), dark: 0.04 },
@@ -920,7 +920,7 @@ export const ItemDefinitions = {
     type: "armor",
     description: "A surgeon's heavy leather apron, plated over the heart with boiled bone. The stains never quite come out.",
     value: 700,
-    icon: { col: 25, row: 1 },
+    icon: { col: 5, row: 1 },
     tier: 3,
     defense: { blunt: 4, slash: 7, pierce: 6 },
     resistance: { ...perPhysType(0.05), ...perMagicType(0.03), dark: 0.06 },
@@ -941,7 +941,7 @@ export const ItemDefinitions = {
     type: "armor",
     description: "Long gauntlet gloves of thin, supple hide, made for steady hands and close work.",
     value: 220,
-    icon: { col: 25, row: 2 },
+    icon: { col: 5, row: 2 },
     tier: 3,
     defense: { blunt: 1, slash: 3, pierce: 2 },
     resistance: { ...perPhysType(0.02), ...perMagicType(0.01), dark: 0.02 },
@@ -963,7 +963,7 @@ export const ItemDefinitions = {
     type: "armor",
     description: "Waxed leather trousers, laced tight and padded at the knee for long hours kneeling over the afflicted.",
     value: 450,
-    icon: { col: 25, row: 3 },
+    icon: { col: 5, row: 3 },
     tier: 3,
     defense: { blunt: 3, slash: 4, pierce: 4 },
     resistance: { ...perPhysType(0.03), ...perMagicType(0.02), dark: 0.03 },
@@ -984,7 +984,7 @@ export const ItemDefinitions = {
     type: "armor",
     description: "Hobnailed boots of thick hide, soled for floors slick with blood.",
     value: 320,
-    icon: { col: 25, row: 4 },
+    icon: { col: 5, row: 4 },
     tier: 3,
     defense: { blunt: 1, slash: 3, pierce: 2 },
     resistance: { ...perPhysType(0.02), ...perMagicType(0.01), dark: 0.02 },

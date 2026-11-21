@@ -235,8 +235,8 @@ test('Osric keeps a shop once Garrick is at rest: a plain club and mace in act 1
     for (const id of ['wooden_club', 'mace']) assert.ok(ItemDefinitions[id] && !ItemDefinitions[id].iconSheet, `${id}: a plain weapon`);
     // their icons: the armor sheet's own column for the set (a row per slot, head to feet), painted
     const png = fs.readFileSync(new URL('../../frontend/src/assets/icons/armor.png', import.meta.url));
-    assert.ok(png.readUInt32BE(16) >= 26 * 64, 'the armor sheet has the set\'s column');
-    set.forEach((id, row) => { const d = ItemDefinitions[id]; assert.ok(!d.iconSheet && d.icon.col === 25 && d.icon.row === row, `${id}: column 25, row ${row}`); });
+    assert.ok(png.readUInt32BE(16) >= 6 * 64, 'the armor sheet has the set\'s column');
+    set.forEach((id, row) => { const d = ItemDefinitions[id]; assert.ok(!d.iconSheet && d.icon.col === 5 && d.icon.row === row, `${id}: column 5, row ${row}`); });
     // the armor is the Amputators' own: no loot table and no other shop has it
     const tables = JSON.stringify(LootTableDefinitions);
     for (const id of set) assert.ok(!tables.includes(`"${id}"`), `${id}: in no loot table`);
