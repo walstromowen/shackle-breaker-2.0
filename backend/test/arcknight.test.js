@@ -26,7 +26,7 @@ test('an Arc Knight: a boss of his own, his art, his scene and fight, voiced, an
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
     const asset = (key) => { const m = new RegExp(`\\b${key}:\\s*'\\./(assets/[^']+)'`).exec(main); return m && new URL('../../frontend/src/' + m[1], import.meta.url); };
     const size = (u) => { const b = fs.readFileSync(u); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
-    assert.deepEqual(size(asset(k.spritePortrait)), [2048, 1024], 'the battle sheet');
+    assert.deepEqual(size(asset(k.spritePortrait)), [2048, 256], 'the battle sheet: two rows of sixteen 128 px frames');
     assert.deepEqual(size(asset(k.spriteOverworld)), [512, 768], 'the overworld sheet');
     assert.equal(M.ARC_KNIGHT_NPC.interaction.id, 'arc_knight');
     for (const [id, facing] of [['ARC_KNIGHT_NPC', 'UP'], ['ARC_KNIGHT_NPC_LEFT', 'LEFT'], ['ARC_KNIGHT_NPC_RIGHT', 'RIGHT']]) {
