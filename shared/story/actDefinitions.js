@@ -20,6 +20,8 @@
  *   battleRate      multiplier on the chance of an ambush per step, day and dusk (1 = unchanged)
  *   bloodMoonBattleRate  the same, on a blood moon night
  *   enemyLevelOffset     levels added to every enemy, on top of the difficulty's own offset
+ *   enemyInsightRanks    ranks added to every Insight an enemy knows (its definition's `insights`, abilities/insights.js: ActSystem.scaleEnemyInsights), up to
+ *                        the Insight's highest. A fire caster of rank 1 in act I knows rank 2 in act II, and casts that rank's spells too.
  *   enemies         extra abilities and traits for specific enemies:  { MAD_MAN: { abilities: ['reckless_charge'], traits: ['quick'] } }
  *                   (an enemy made with its own abilities keeps them: these are added)
  *   nightByDay      the chance that an ambush by day (in any biome) comes from the biome's night table instead: the night's enemies abroad in daylight
@@ -54,6 +56,7 @@ export const ACT_DEFINITIONS = {
         battleRate: 1.25,
         bloodMoonBattleRate: 1.8,
         enemyLevelOffset: 1,
+        enemyInsightRanks: 1,
         nightByDay: 0.25,
         enemyBoosts: {
             traitChance: 0.35,
@@ -96,6 +99,7 @@ export const ACT_DEFINITIONS = {
     // told Nikoli and Jaeger comes to bear (story/heroes.js). The world stays as act II left it (everything not set here comes from the acts before).
     3: {
         name: 'Act III',
-        milestone: 'act3'
+        milestone: 'act3',
+        enemyInsightRanks: 2
     }
 };

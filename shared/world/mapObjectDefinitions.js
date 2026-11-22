@@ -220,6 +220,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     CARPENTERS_BENCH: { sheet: 'objCarpentersBench', spriteX: 7, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'carpenters_bench', title: "Carpenter's Bench" } },
     STONE_BANKER: { sheet: 'objStoneBanker', spriteX: 9, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'stone_banker', title: 'Stone Banker' } },
     TAILORS_BENCH: { sheet: 'objTailorsBench', spriteX: 8, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'tailors_bench', title: "Tailor's Bench" } },
+    // the Enchanter's Table (items/enchantments.js): weapons are enchanted here, each for one Insight. Placeholder art (tools/art/enchantersTable.py).
+    ENCHANTERS_TABLE: { sheet: 'objEnchantersTable', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'enchanters_table', title: "Enchanter's Table" }, light: { hasLight: true, radius: 2, color: '170, 120, 255', maxAlpha: 0.35, flickerSpeed: 0.05, flickerAmp: 0.1 } },
 
     // --- NPCS ---
     /* People and animals standing in the world. They are map objects (placed by a biome's mapObjects rules like a tree, see PLAINS / DESERT / SNOWY_MOUNTAINS), but they have no
@@ -230,7 +232,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
                                     you come into range (OverworldController.findEncounterZones, the same as the scarecrow's `triggerLine` but all around). */
     SHADY_MERCHANT_NPC: { ...npcBody('SHADY_MERCHANT'), interaction: { type: 'ENCOUNTER', id: 'suspicious_merchant' } },
     DOG_NPC: { ...npcBody('DOG'), interaction: { type: 'ENCOUNTER', id: 'wounded_mutt' } },
-    MADMAN_NPC: { ...npcBody('MAD_MAN', 'UP'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', triggerRadius: 2 } },
+    // the madmen wander about where they stand, and stop now and then, as if listening, looking about (WorldManager.tickWanderers).
+    // Come at one from behind (the quarter at his back) and it is A Disturbing Sight, with the chances a sneak gives; from the front or the
+    // sides he sees you, and it is the fight (seenId: madman_spots_you, overworldController.seesPlayer)
+    MADMAN_NPC: { ...npcBody('MAD_MAN', 'UP'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', seenId: 'madman_spots_you', triggerRadius: 2 },
+        wander: { radius: 3, stepMs: [1100, 1500], pauseChance: 0.35, pauseMs: [1500, 4500], waypoints: 5 } },
     // the quest giver: only ever one, in one village workshop (InteriorFactory picks it: world.strangerHome); talking to him hands out the Shackled questline
     HOODED_STRANGER_NPC: { ...npcBody('HOODED_STRANGER'), interaction: { type: 'ENCOUNTER', id: 'hooded_stranger' } },
     // Nikoli, the Panzerian general: by the first snowy campfire, later in the Hooded Stranger's old workshop (WorldManager / InteriorFactory put him there)
@@ -238,9 +244,18 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // before the player has met him: he stands just north of his campfire facing up, at the snow leopards stalking down toward him; coming within 3 tiles
     // of him or of a cat starts the meeting (WorldManager._storyObjects puts the scene there, and takes it away once he has been met)
     NIKOLI_NPC_WATCHING: { ...npcBody('NIKOLI', 'UP'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
-    // the Amputators (story/encounters/story/amputators.js): Osric among the stones of the first small graveyard the player came upon in act 1, and Brother
+    // the Amputators (story/encounters/story/amputators.js): Osric among the stones of the first small graveyard the player came upon in act 1, and Surgeon
     // Garrick where Osric sends you (WorldManager._storyObjects puts them there); coming within 2 tiles of Garrick starts the fight
     OSRIC_NPC: { ...npcBody('AMPUTATOR_OSRIC'), interaction: { type: 'ENCOUNTER', id: 'amputator_osric' } },
+    // an Arc Knight standing in the gate of the Hooded Stranger's yard, facing the house (story/encounters/story/arcKnight.js, WorldManager
+    // arcKnightObjects): the only way out. Coming within a tile of him is the meeting (the door is further off than that: walking out is not)
+    ARC_KNIGHT_NPC: { ...npcBody('ARC_KNIGHT', 'UP'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },
+    ARC_KNIGHT_NPC_LEFT: { ...npcBody('ARC_KNIGHT', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },     // a gate in the east fence
+    ARC_KNIGHT_NPC_RIGHT: { ...npcBody('ARC_KNIGHT', 'RIGHT'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },   // a gate in the west fence
+    // act 2: Arc Knights on patrol, rare, out in the plains (biomeDefinitions.js, minAct 2): they walk with a purpose, and coming within 3 tiles of
+    // one is the fight (story/encounters/story/arcKnight.js arcKnightPatrol)
+    ARC_KNIGHT_PATROL: { ...npcBody('ARC_KNIGHT', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'arc_knight_patrol', triggerRadius: 3 },
+        wander: { radius: 6, stepMs: [800, 1000], pauseChance: 0.1, pauseMs: [900, 2200], straight: 0.75, waypoints: 4 } },
     GARRICK_NPC: { ...npcBody('AMPUTATOR_GARRICK', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'amputator_garrick', triggerRadius: 2 } },
     // Jaeger, posing as his brother Nikoli: in the hoard of the first catacombs the player walks into, until he has been met (InteriorFactory, CatacombGenerator)
     JAEGER_NPC: { ...npcBody('JAEGER'), interaction: { type: 'ENCOUNTER', id: 'jaeger' } },

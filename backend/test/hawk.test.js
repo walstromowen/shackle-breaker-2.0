@@ -76,7 +76,7 @@ test('the hawk starts every fight in the air: Airborne casts Take Flight for fre
 
 test('dogs a little sturdier, snow leopards a little softer', () => {
     const D = ENTITY_DEFINITIONS.DOG, L = ENTITY_DEFINITIONS.SNOW_LEOPARD;
-    assert.equal(D.baseStats.maxHp, 7); assert.equal(D.baseStats.baseAttack.slash, 5); assert.equal(D.attributes.vigor, 7);
+    assert.equal(D.baseStats.maxHp, 10); assert.equal(D.baseStats.baseAttack.slash, 5); assert.equal(D.attributes.vigor, 8);   // (buffed again with Pounce)
     assert.equal(L.baseStats.maxHp, 14); assert.equal(L.baseStats.critical, 0.15); assert.equal(L.baseStats.baseAttack.slash, 6);
 });
 
@@ -85,4 +85,35 @@ test('Flying has its own icon (wings over wind), not the speed buff\'s', async (
     assert.deepEqual(SD.flying.icon, { col: 0, row: 3 });
     const sameCell = Object.values(SD).filter(s => s.icon && s.icon.col === 0 && s.icon.row === 3).map(s => s.id);
     assert.deepEqual(sameCell, ['flying']);
+});
+
+test('a quiet trait (Airborne) opens the fight with Take Flight\'s own line only: no announcement of the trait, none for what it does; it is flying, and does not recharge', async () => {
+    const { createBattleState } = await import('../../shared/battle/battleState.js');
+    const { queuePreBattleTraits } = await import('../../shared/battle/battleQueue.js');
+    const { TurnManager } = await import('../../shared/battle/turnManager.js');
+    const { TURN_TYPES } = await import('../../shared/battle/battleConstants.js');
+    const { TRAIT_DEFINITIONS } = await import('../../shared/abilities/traitDefinitions.js');
+    const { gameState } = await import('../../shared/core/gameState.js');
+    for (const t of Object.values(TRAIT_DEFINITIONS)) if (t.triggers && t.triggers.onBattleStart) assert.equal(t.triggers.onBattleStart.quiet, true, `${t.name}: quiet`);
+    gameState.party.members = [EntityFactory.create('HAWK', 5)];
+    const state = createBattleState([EntityFactory.create('DOG', 5)], { maxActive: 3 });
+    state.turnQueue.length = 0;
+    queuePreBattleTraits(state);
+    assert.ok(!state.turnQueue.some(t => t.type === TURN_TYPES.MESSAGE_STATUS), 'no trait line');
+    const exec = state.turnQueue.find(t => t.action && t.action.id === 'take_flight');
+    assert.ok(exec.quiet);
+    const tm = new TurnManager({ state });
+    tm.processNextTurnInQueue = () => {};
+    state.turnQueue.length = 0;
+    tm._handleActionExecution(exec);
+    assert.match(state.message, /launches into the air/, 'Take Flight\'s own line');
+    const apply = state.turnQueue.find(t => t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS);
+    assert.ok(apply && apply.quiet);
+    assert.ok(state.turnQueue.some(t => t.type === TURN_TYPES.PLAY_ANIMATION), 'its animation plays');
+    state.turnQueue.length = 0;
+    tm._applyAbilityEffects(apply);
+    assert.ok(!state.turnQueue.some(t => t.type === TURN_TYPES.MESSAGE_STATUS), 'no line for what it does');
+    const hawk = state.activeParty[0];
+    assert.ok(hawk.statusEffects.some(s => s.id === 'flying'), 'flying');
+    assert.ok(!hawk.statusEffects.some(s => s.id === 'recharging'), 'and not recharging');
 });

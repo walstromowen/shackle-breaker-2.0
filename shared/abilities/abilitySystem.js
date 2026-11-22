@@ -8,6 +8,10 @@ import { gameState } from '../core/gameState.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
 import { TRAIT_DEFINITIONS } from './traitDefinitions.js';
 import { rng } from '../core/random.js';
+import { INSIGHT_ITEMS, rankOf, maxRank, requirementsForRank, corruptionForRank, spellsOfRank } from './insights.js';
+import { unmetRequirements } from '../items/weaponRequirements.js';
+import { ItemDefinitions } from '../items/itemDefinitions.js';
+import { enchantmentStatuses, STATUS_CHANCE_CAP } from '../items/enchantments.js';
 
 /* Effect types that are real but resolved by the battle code itself, not here: they must not trigger the "unknown effect type" warning. */
 const EFFECTS_HANDLED_ELSEWHERE = ['summon', 'switch_self'];
@@ -79,6 +83,7 @@ export class AbilitySystem {
 
         const result = { success: false, outcome: 'NONE', delta: 0, resource: 'hp', message: "", addedTags: [] };
         let attackHit = true;
+        let dealtDamage = false;   // a damage effect landed for more than 0 (an enchantment's status may follow it)
 
         if (def.effects && Array.isArray(def.effects)) {
             for (const effect of def.effects) {
@@ -92,6 +97,7 @@ export class AbilitySystem {
                         attackHit = false;
                         break;
                     }
+                    if (calc.damage > 0) dealtDamage = true;
                 } else if (effect.type === 'recover') {
                     const subResult = this._handleRecover(effect, source, target, def);
                     if (subResult.success) {
@@ -150,8 +156,11 @@ export class AbilitySystem {
         }
 
         // 2. Process Status Effects (Only if the attack didn't miss)
-        if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
-            for (const statusDef of def.statusEffects) {
+        // The wielder's enchanted weapons (items/enchantments.js) add their status chances to a damaging hit on an enemy: to the ability's own chance
+        // of the same status (one roll), or as a roll of their own.
+        const statusList = this._withEnchantmentStatuses(Array.isArray(def.statusEffects) ? def.statusEffects : [], source, target, dealtDamage && attackHit);
+        if (attackHit && statusList.length) {
+            for (const statusDef of statusList) {
                 if (statusDef.battleOnly && ctx.context === 'overworld') continue;   // e.g. the smoke bomb's evasion: only a fight has turns to spend it in
                 const roll = rng();
                 const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
@@ -192,6 +201,24 @@ export class AbilitySystem {
             }
         }
         return result;
+    }
+
+    /* The ability's statuses with the source's enchantment bonuses folded in (only on a damaging hit, only on someone of the other side). */
+    static _withEnchantmentStatuses(list, source, target, damaged) {
+        if (!damaged || !source || !target) return list;
+        if (!source.team || !target.team || source.team === target.team) return list;
+        const bonuses = enchantmentStatuses(source);
+        if (!bonuses.length) return list;
+        const out = list.map(s => ({ ...s }));
+        for (const b of bonuses) {
+            const same = out.find(s => s.id === b.status);
+            if (same) {
+                const own = same.chance !== undefined ? same.chance : 1.0;
+                same.chance = Math.max(own, Math.min(STATUS_CHANCE_CAP, Math.round((own + b.chance) * 1000) / 1000));   // the cap holds the bonuses back, never the ability's own chance
+            }
+            else out.push({ id: b.status, chance: b.chance, duration: b.duration });
+        }
+        return out;
     }
 
     /**
@@ -417,6 +444,58 @@ export class AbilitySystem {
         return { success: true, message: this._fillTemplate(effect.message || '{target} is no longer {trait}.', { target: entity.name, trait }) };
     }
 
+    /* { type: 'learn_insight', element }
+       Reading an Insight (abilities/insights.js): the reader's rank in `element` rises by one, teaching that rank's spells and costing its corruption.
+       It does nothing (and the Insight is kept) on someone shackled, at the element's highest rank, or when the reader's attributes fall short of what
+       the next rank asks. Each rank learned is noted in state.insightLog, newest last, for the Shmindolyn's Draught to take back. */
+    static _world_learn_insight(effect, source, target) {
+        const entity = target && (target.originalEntity || target);
+        const state = entity && entity.state;
+        const el = effect.element;
+        const book = (ItemDefinitions[INSIGHT_ITEMS[el]] || {}).name || 'the Insight';
+        const name = entity?.name || 'They';
+        if (!state || !INSIGHT_ITEMS[el]) return { success: false, message: 'Nothing happens.' };
+        if (CorruptionSystem.isShackled(entity)) return { success: false, message: `${name} cannot read through the iron.` };
+        const rank = rankOf(entity, el);
+        if (rank >= maxRank(el)) return { success: false, message: `${name} already knows all the ${book} can teach.` };
+        const attrs = StatCalculator.calculate(entity);
+        const short = unmetRequirements(requirementsForRank(el, rank + 1), attrs);
+        if (short.length) {
+            const need = short.map(u => `${u.attr[0].toUpperCase()}${u.attr.slice(1)} ${u.need} (has ${u.have})`).join(', ');
+            return { success: false, message: `${name} cannot grasp the ${book} yet. Rank ${rank + 1} asks ${need}.` };
+        }
+        state.insights = { ...(state.insights || {}), [el]: rank + 1 };
+        const r = CorruptionSystem.change(entity, corruptionForRank(rank + 1));
+        (state.insightLog = state.insightLog || []).push({ element: el, rank: rank + 1, corruption: r.amount });
+        const spells = spellsOfRank(el, rank + 1).map(id => AbilityDefinitions[id]?.name || id);
+        const taught = spells.length ? ` ${name} learns ${spells.join(' and ')}.` : ` ${name}'s ${el} magic grows stronger.`;
+        return { success: true, message: [`${name} reads the ${book} (rank ${rank + 1}).${taught}`, ...r.messages].join(' ') };
+    }
+
+    /* { type: 'forget_insight', message?, nothingToForget?, shackledMessage? }
+       The Shmindolyn's Draught: the drinker forgets the Insight rank they learned last (state.insightLog), losing its spells, and the corruption it cost
+       them is taken off again. With nothing learned, or on someone shackled, nothing happens and the draught is kept. {element} is the Insight's name. */
+    static _world_forget_insight(effect, source, target) {
+        const entity = target && (target.originalEntity || target);
+        const state = entity && entity.state;
+        const name = entity?.name || 'They';
+        if (CorruptionSystem.isShackled(entity)) return { success: false, message: this._fillTemplate(effect.shackledMessage || '{target} is shackled.', { target: name }) };
+        const log = (state && state.insightLog) || [];
+        // the last rank they learned that they still have (a rank given by the story, or at the start, is not in the log and cannot be forgotten)
+        let entry = null;
+        while (log.length && !entry) { const e = log.pop(); if (rankOf(entity, e.element) > 0) entry = e; }
+        if (!entry) return { success: false, message: this._fillTemplate(effect.nothingToForget || '{target} has nothing to forget.', { target: name }) };
+        const rank = rankOf(entity, entry.element) - 1;
+        const insights = { ...(state.insights || {}) };
+        if (rank > 0) insights[entry.element] = rank; else delete insights[entry.element];
+        state.insights = insights;
+        const r = CorruptionSystem.change(entity, -Math.abs(entry.corruption || 0));
+        entity.insight = entity.insight;
+        const element = (ItemDefinitions[INSIGHT_ITEMS[entry.element]] || {}).name || entry.element;
+        const text = this._fillTemplate(effect.message || '{target} forgets the {element}.', { target: name, element, before: r.before, after: r.after });
+        return { success: true, message: [text, ...r.messages].join(' ') };
+    }
+
     /* { type: 'cleanse_corruption', amount, message?, nothingToCleanse?, shackledMessage? }
        The Shmindolyn's Draught: lowers the drinker's corruption by `amount` (CorruptionSystem.change, which also says when a tier's grip loosens).
        With no corruption to ease, or on someone shackled (only a meteorite frees them), nothing happens and the draught is kept. */
@@ -549,4 +628,4 @@ export class AbilitySystem {
         
         return msg;
     }
-}
+}

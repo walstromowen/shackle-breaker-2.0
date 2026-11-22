@@ -10,6 +10,7 @@ import { CorruptionSystem } from '../../../../../shared/characters/corruptionSys
 import { ItemUpgradeSystem } from '../../../../../shared/items/itemUpgradeSystem.js';
 import { StatCalculator } from '../../../../../shared/characters/statCalculator.js';
 import { requirementsAt, requirementRows, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../../../../../shared/items/weaponRequirements.js';
+import { enchantedName } from '../../../../../shared/items/enchantments.js';
 
 // Stat table typography/spacing. Rows are laid out on their vertical middle, and the row height
 // is sized to the font so text never touches the row above or below.
@@ -63,7 +64,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
 
     renderRecipeDetails(state, x, w, h, hitboxes) {
         if (!state.selectedRecipe) {
-            this.ui.drawStyled('empty', 'Select a recipe or item to upgrade', x + (w / 2), h / 2);
+            this.ui.drawStyled('empty', state.isEnchanting ? 'Select a weapon to enchant' : 'Select a recipe or item to upgrade', x + (w / 2), h / 2);
             return;
         }
 
@@ -215,6 +216,86 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
                 matId => (matId === (item.defId ?? (item.definition && item.definition.id))) ? ItemUpgradeSystem.countAvailable(matId, item) : null
             );
         }
+    }
+
+    /* The Enchanter's Table: the chosen weapon, its enchantment now, what the chosen Insight could make of it, and the Enchant button (one Insight). */
+    renderEnchantDetails(state, x, w, h, hitboxes) {
+        const item = state.selectedUpgradeItem;
+        const def = item.definition || ItemDefinitions[item.defId || item.id];
+        if (!def) return;
+        const info = state.enchantInfo || {};
+        this._previewActor = this._resolvePreviewActor(state);
+        this._previewStats = (state && state.derivedStats) || null;
+
+        let cursorY = this.padding;
+        const contentX = x + this.padding;
+        const contentW = w - (this.padding * 2);
+        const activeTab = state.activeTab || 'description';
+        const tabH = 67;
+        const tabW = contentW / 3;
+        const drawTab = (label, tx, isActive, id) => this.drawTab(state, hitboxes, label, tx, cursorY, tabW, tabH, isActive, id);
+        drawTab("DESCRIPTION", contentX, activeTab === 'description', 'TAB_DESCRIPTION');
+        drawTab("STATS", contentX + tabW, activeTab === 'stats', 'TAB_STATS');
+        drawTab("SKILLS", contentX + (tabW * 2), activeTab === 'skills', 'TAB_SKILLS');
+        cursorY += tabH + 18;
+        if (state.selectedUpgradeHolder) cursorY = this._renderHolderStrip(state.selectedUpgradeHolder, contentX, cursorY, contentW) + 18;
+        else cursorY += 18;
+
+        const materials = info.insightId ? { [info.insightId]: 1 } : {};
+        const viewTop = cursorY;
+        const viewBottom = this._footerTop(materials, 0, h) - 32;
+        const wrap = (text, font, style, yy, lineH, color) => {
+            for (const line of this.ui.getWrappedLines(text, contentW, font)) {
+                this.ui.drawStyled(style, line, contentX, yy, { baseline: 'top', ...(color ? { color } : {}) });
+                yy += lineH;
+            }
+            return yy;
+        };
+
+        this._withScrollRegion(state, x, w, viewTop, viewBottom, () => {
+            let yy = viewTop;
+            if (activeTab === 'description') {
+                yy = this._renderItemHeader({ ...def, name: enchantedName(item) }, contentX, yy, contentW, item.level ?? null);
+                yy += 28;
+                this.ui.drawStyled('heading', 'Enchantment', contentX, yy, { baseline: 'top' });
+                yy += 52;
+                if (info.current) {
+                    this.ui.drawStyled('body', info.current.name.replace(` ${def.name}`, ''), contentX, yy, { baseline: 'top', color: UITheme.colors.textHighlight });
+                    yy += 40;
+                    yy = wrap(info.current.text, UITheme.fonts.body, 'body', yy, 40);
+                } else {
+                    yy = wrap('None. A new one replaces any it has.', UITheme.fonts.body, 'body', yy, 40, UITheme.colors.textMuted);
+                }
+                yy += 24;
+                if (info.message) {
+                    yy = wrap(info.message, UITheme.fonts.body, 'body', yy, 40, UITheme.colors.success);
+                    yy += 24;
+                }
+                if (info.insightId) {
+                    const book = ItemDefinitions[info.insightId]?.name || info.insightId;
+                    this.ui.drawStyled('heading', `With the ${book}`, contentX, yy, { baseline: 'top' });
+                    yy += 52;
+                    yy = wrap(info.options.length > 1 ? 'The table chooses one of these:' : 'It becomes:', UITheme.fonts.cardItalic, 'cardNote', yy, 34);
+                    yy += 8;
+                    for (const o of info.options) {
+                        this.ui.drawStyled('body', o.name, contentX, yy, { baseline: 'top', color: UITheme.colors.textHighlight });
+                        yy += 40;
+                        yy = wrap(o.text, UITheme.fonts.body, 'body', yy, 40);
+                        yy += 12;
+                    }
+                } else {
+                    yy = wrap('Choose an Insight from your bag (right) to enchant it with.', UITheme.fonts.cardItalic, 'cardNote', yy, 34);
+                }
+            } else if (activeTab === 'stats') {
+                yy = this._renderDetailedStats(item, contentX, yy, contentW);
+                yy = this._renderRequirements(def, item.level || 1, null, contentX, yy + SECTION_GAP, contentW);
+            } else if (activeTab === 'skills') {
+                yy = this._renderAbilities(def, contentX, yy, contentW);
+            }
+            return yy;
+        });
+
+        this._renderMaterialsFooter(state, contentX, viewBottom, contentW, h, materials, 0, state.canEnchantSelected, 'Enchant', 'BTN_ENCHANT', hitboxes);
     }
 
     /**

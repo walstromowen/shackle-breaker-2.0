@@ -162,7 +162,9 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 20, maxStamina: 20, maxInsight: 20,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 2, pierce: 2, blunt: 1 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_arcane" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        insights: { arcane: 1 },        // Insight ranks (abilities/insights.js), deeper each act (actDefinitions enemyInsightRanks)
+        insightAttack: false,           // its baseAttack already counts its magic
         currencyReward: { min: 5, max: 15 },
         lootTableId: "magic_addict_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES],
@@ -399,10 +401,10 @@ export const ENTITY_DEFINITIONS = {
     /* THE AMPUTATORS (story/covenants.js, story/encounters/story/amputators.js): a covenant of the not-yet-shackled who would stop the curse by cutting
        the shackles off the afflicted, and the limb with them when the iron will not give. Most of them wear the proof: a stump, a hook, a wooden leg.
        Slightly mad, all of them; none shackled. Art: borrowed for now (Osric the watchman's hunter look, Garrick the madman's). */
-    // Osric of the Saw: the covenant's first face, met in act 1 among the stones of the first small graveyard the player comes upon. Never fought.
+    // Senior Surgeon Osric ("Osric of the Saw"): the covenant's first face, met in act 1 among the stones of the first small graveyard the player comes upon. Never fought.
     "AMPUTATOR_OSRIC": {
         ...HUMANOID_TEMPLATE,
-        name: "Osric of the Saw",
+        name: "Senior Surgeon Osric",
         level: 1,
         spriteOverworld: "osricSprite",
         spritePortrait: "osricPortrait",
@@ -411,10 +413,10 @@ export const ENTITY_DEFINITIONS = {
         abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: [...HUMANOID_TEMPLATE.tags, "AMPUTATOR"]
     },
-    // Brother Garrick: an Amputator going the way of the ones he cut. Fought once, for Osric (quest amputators_trial): a little stronger than his kind.
+    // Surgeon Garrick: an Amputator going the way of the ones he cut. Fought once, for Osric (quest amputators_trial): a little stronger than his kind.
     "AMPUTATOR_GARRICK": {
         ...HUMANOID_TEMPLATE,
-        name: "Brother Garrick",
+        name: "Surgeon Garrick",
         level: 1,
         spriteOverworld: "garrickSprite",
         spritePortrait: "garrickPortrait",
@@ -437,6 +439,46 @@ export const ENTITY_DEFINITIONS = {
         lootTableId: "garrick_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "eviscerate", "low_sweep", "intimidate"],
         tags: [...HUMANOID_TEMPLATE.tags, "AMPUTATOR", "ELITE"]
+    },
+
+    // An Arc Knight: the corrupted king's new royal guard (docs/story.md). In the year before Altus fell the king came to rely on them over the old guard
+    // (Mentoras's, who used no magic): they took the artifact's fire into their blades and plate, and his voice came with it. Now they enforce his will
+    // in the dark lands; the fire burns in this one's blade still, and it is hungry. Act 1's mini boss: he paces outside the Hooded Stranger's workshop once the magic addicts are
+    // put down (story/encounters/story/arcKnight.js). Armoured, fire in all he does; ice and water get through.
+    "ARC_KNIGHT": {
+        ...HUMANOID_TEMPLATE,
+        name: "Arc Knight",
+        level: 1,
+        spriteOverworld: "arcKnightSprite",
+        spritePortrait: "arcKnightPortrait",
+        crySound: "calcifiedCrusaderCry",
+        deathSound: "calcifiedCrusaderCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 16, strength: 16, dexterity: 11, intelligence: 12, attunement: 14
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 50, maxStamina: 30, maxInsight: 30, speed: 6, critical: 0.1, corruption: 60,
+            maxHpMultiplier: 4,   // tuned with tools/krakenSim.mjs (BOSS=ARC_KNIGHT, level 11): won about 70% alone, 80-95% in a party, the party left with a third of its health or so
+            baseDefense: {
+                ...HUMANOID_TEMPLATE.baseStats.baseDefense,
+                blunt: 3, slash: 5, pierce: 4, fire: 6, arcane: 3, ice: -1, water: -1
+            },
+            baseResistance: {
+                blunt: 0.1, slash: 0.25, pierce: 0.2,
+                fire: 0.6, arcane: 0.2, ice: -0.2, water: -0.2
+            },
+            baseAttack: { slash: 5, fire: 6 }
+        },
+        // no gear: the burning blade is part of him
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        currencyReward: { min: 120, max: 260 },
+        lootTableId: "arc_knight_drops",
+        // a swordsman whose blade is fire ("rest" is only the AI's fallback when he can afford nothing); Inferno is the firestorm on the whole party
+        // every boss has (it burns him too)
+        abilities: ["rest", "slash", "cleave", "fireball", "flamethrower", "inferno", "bolster"],
+        tags: [...HUMANOID_TEMPLATE.tags, "CURSED", "ALTERIAN", "MAGICAL", "ARMORED", "BOSS", "ELITE"]
     },
 
     "HOLLOW_HARVESTER": {
@@ -480,7 +522,9 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { fire: 0.4, light: 0.2, earth: 0.5, lightning: 0.5 },
             baseAttack: { blunt: 1, fire: 4, arcane: 2, light: 1 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_fire" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        insights: { fire: 1 },
+        insightAttack: false,
         currencyReward: { min: 6, max: 16 },
         lootTableId: "scorched_vagrant_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "flamethrower"],
@@ -531,7 +575,9 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { ice: 0.2, water: 0.2, dark: 0.3, wind: 0.2, earth: 0.5, lightning: 0.5 },
             baseAttack: { blunt: 1, ice: 3, dark: 4, wind: 2 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        insights: { dark: 1 },
+        insightAttack: false,
         currencyReward: { min: 10, max: 25 },
         lootTableId: "miragewright_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "flamethrower", "fireball"],
@@ -669,7 +715,9 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { pierce: 0.2, ice: 0.15, dark: 0.5, arcane: 0.15, light: -0.3, fire: -0.15 },
             baseAttack: { blunt: 1, dark: 4, light: 3 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness", head: "tattered_hood" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, head: "tattered_hood" },
+        insights: { dark: 1 },
+        insightAttack: false,
         currencyReward: { min: 8, max: 20 },
         lootTableId: "ancient_cultist_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "spite", "healing_rain"],
@@ -691,15 +739,16 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "dogDeath",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 7, dexterity: 12, strength: 7
+            vigor: 8, dexterity: 12, strength: 8
         },
+        // a dog recruited from the wild (woundedMutt.js) has to keep up: a bite that hurts (pierce 3 -> 7) and the weight to Pounce (blunt 2 -> 6)
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 7, maxStamina: 9, speed: 7, critical: 0.08,
-            baseAttack: { blunt: 2, slash: 5, pierce: 3 }
+            maxHp: 10, maxStamina: 12, speed: 8, critical: 0.08,
+            baseAttack: { blunt: 6, slash: 5, pierce: 7 }
         },
         lootTableId: "canine_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
+        abilities: [...BEAST_TEMPLATE.abilities, 'howl', 'pounce'],
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
     },
 

@@ -6,6 +6,7 @@ import { Formatting } from '../../../../../shared/core/formatting.js';
 import { isCursed, drawCursedPortrait } from '../../../ui/curseOverlay.js';
 import { portraitFrame } from '../../../ui/animatedPortrait.js';
 import { StatusTips } from '../../../ui/statusTooltip.js';
+import { Covenants } from '../../../../../shared/story/covenants.js';
 
 export class EquipmentPanel {
   constructor(ui, loader) {
@@ -61,8 +62,12 @@ export class EquipmentPanel {
     if (member.shackled) {
       this.ui.drawStyled('subtitle', 'Shackled', centerX + levelW / 2 + 8, headerY + 86, { color: UITheme.colors.failure, align: 'left' });
     }
+    // the covenant this character has sworn to, and their rank in it (story/covenants.js: each party member swears for themselves)
+    const covenant = Covenants.label(member);
+    this.ui.drawText(covenant ? `Covenant: ${covenant}` : 'Covenant: none', centerX, headerY + 110, UITheme.fonts.cardSmall,
+      covenant ? UITheme.colors.textHighlight : UITheme.colors.textMuted, 'center', 'middle');
 
-    this._drawVitals(member, stats, centerX, headerY + 139, x, w);
+    this._drawVitals(member, stats, centerX, headerY + 153, x, w);   // (a line lower than it was: the covenant sits under the level)
 
     const equipStartY = y + 228;
     this._drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, equipStartY, w, hitboxes, heldItem, hoveredId, menuOpen);

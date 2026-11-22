@@ -670,15 +670,15 @@ export const QuestDefinitions = {
     },
 
     // ========================================================
-    // THE AMPUTATORS (story/covenants.js, story/encounters/story/amputators.js): Osric of the Saw's errand, before he offers the covenant's oath
+    // THE AMPUTATORS (story/covenants.js, story/encounters/story/amputators.js): Senior Surgeon Osric's errand, before he offers the covenant's oath
     // ========================================================
     "amputators_trial": {
         id: "amputators_trial",
-        name: "The Laughing Brother",
+        name: "The Laughing Surgeon",
         turnIn: "AMPUTATOR_OSRIC",
-        description: "Osric of the Saw, an Amputator with a hook for a hand, keeps watch over a small graveyard. One of his brotherhood, Brother Garrick, has begun to hear the chain sing. He wears no iron yet, but the rot needs none to get in. Osric cannot bring himself to do it. Find Garrick where Osric marked your map, put him to rest, and return to Osric.",
+        description: "Senior Surgeon Osric, an Amputator with a hook for a hand, keeps watch over a small graveyard. One of his order, Surgeon Garrick, has begun to hear the chain sing. He wears no iron yet, but the rot needs none to get in. Osric cannot bring himself to do it. Find Garrick where Osric marked your map, put him to rest, and return to Osric.",
         objectives: [
-            { id: "obj_garrick", type: "kill_enemy", targetId: "AMPUTATOR_GARRICK", amount: 1, description: "Put Brother Garrick to rest" }
+            { id: "obj_garrick", type: "kill_enemy", targetId: "AMPUTATOR_GARRICK", amount: 1, description: "Put Surgeon Garrick to rest" }
         ],
         rewards: { exp: 140, currency: 90, items: [{ id: "bandage", amount: 3 }, { id: "healing_tonic", amount: 1 }] }
     }

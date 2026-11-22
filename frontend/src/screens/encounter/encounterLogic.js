@@ -118,6 +118,20 @@ export class EncounterLogic {
                     const hasTag = activeCharacter.tags?.includes(targetTag);
                     return hasTrait || hasTag;
                 }
+                // a covenant (story/covenants.js) of the character the encounter is about: its own choices, as an origin has ([AMP] ...)
+                case "in_covenant": {
+                    const who = EncounterLogic.rollerEntity();
+                    return cond.covenant ? Covenants.isMember(cond.covenant, who) : !!Covenants.of(who);
+                }
+                case "not_in_covenant": {
+                    const who = EncounterLogic.rollerEntity();
+                    return cond.covenant ? !Covenants.isMember(cond.covenant, who) : !Covenants.of(who);
+                }
+                // sworn to it once before (renounced since): the oath can be taken again, its gift is not given twice
+                case "covenant_sworn_before":
+                    return Covenants.swornBefore(cond.covenant, EncounterLogic.rollerEntity());
+                case "covenant_never_sworn":
+                    return !Covenants.swornBefore(cond.covenant, EncounterLogic.rollerEntity());
                 case "has_any_trait": {
                     const activeCharacter = EncounterLogic.rollerEntity();
                     return !!(activeCharacter && activeCharacter.traits && activeCharacter.traits.length > 0);
@@ -329,19 +343,28 @@ export class EncounterLogic {
                 }
                 // a story character leaves, or a thing is taken, as the scene tells it: every object of that kind on this player's map goes, and nothing is
                 // written into the shared world (in a party, the others' stories keep theirs). `{ objectId }` (story/encounters/story/heroesNorth.js)
-                // Osric's quest: where Brother Garrick is (the world's, picked once: WorldManager.pickAmputatorQuarry), and a gold pin on this player's map
+                // Osric's quest: where Surgeon Garrick is (the world's, picked once: WorldManager.pickAmputatorQuarry), and a gold pin on this player's map
                 case "AMPUTATOR_QUARRY": {
                     const at = worldManager && worldManager.pickAmputatorQuarry ? worldManager.pickAmputatorQuarry() : null;
                     if (at && !getMarkers().some(m => m.col === at[0] && m.row === at[1] && !m.map)) {
                         const m = addMarker(at[0], at[1], { color: 'gold' });
-                        if (m) m.label = 'Brother Garrick';
+                        if (m) m.label = 'Surgeon Garrick';
                     }
                     if (worldManager && worldManager.refreshStoryObjects) worldManager.refreshStoryObjects();
                     break;
                 }
                 // swearing to a covenant (story/covenants.js): this player's own oath, breaking any other
+                // the oath is the active character's own (each party member can be in a different covenant); on another player's character,
+                // their browser applies it
                 case "JOIN_COVENANT": {
-                    if (payload.covenantId && Covenants.join(payload.covenantId)) generalMessages.push(`Joined the covenant: ${COVENANTS[payload.covenantId].name}`);
+                    const who = EncounterLogic.activeMember();
+                    if (who && payload.covenantId && Covenants.join(payload.covenantId, who)) generalMessages.push(`${who.name} joined the covenant: ${Covenants.label(who)}`);
+                    break;
+                }
+                case "RENOUNCE_COVENANT": {
+                    const who = EncounterLogic.activeMember();
+                    const was = who && Covenants.of(who);
+                    if (was && Covenants.renounce(who)) generalMessages.push(`${who.name} renounced the oath: ${COVENANTS[was].name}`);
                     break;
                 }
                 case "REMOVE_STORY_NPC": {
@@ -352,7 +375,10 @@ export class EncounterLogic {
                 case "DESTROY_OBJECT":
                     const ctx = model.context;
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {
+                        const o = worldManager.getObjectAt ? worldManager.getObjectAt(ctx.col, ctx.row) : null;
                         worldManager.modifyWorld(ctx.col, ctx.row, null, ctx.mapId);
+                        // a wanderer (a madman, an Arc Knight on patrol) away from its home cell: the home is cleared too, or it would be made there again
+                        if (o && o._home && (o._home[0] !== ctx.col || o._home[1] !== ctx.row)) worldManager.modifyWorld(o._home[0], o._home[1], null, ctx.mapId);
                     }
                     break;
                 case "GIVE_ITEM":

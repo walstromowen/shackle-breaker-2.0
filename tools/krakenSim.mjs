@@ -23,7 +23,10 @@ const { ItemFactory } = await import(ROOT + '/shared/items/itemFactory.js');
 const { InventorySystem } = await import(ROOT + '/shared/items/inventorySystem.js');
 const { ENTITY_DEFINITIONS } = await import(ROOT + '/shared/characters/entityDefinitions.js');
 const { bossHpFactor, PARTY_SCALING } = await import(ROOT + '/shared/battle/spawnTableFactory.js');
-const { requirementsAt } = await import(ROOT + '/shared/items/weaponRequirements.js');
+const { requirementsAt: weaponRequirementsAt } = await import(ROOT + '/shared/items/weaponRequirements.js');
+const { elementOfInsight, requirementsForRank } = await import(ROOT + '/shared/abilities/insights.js');
+// an Insight is read, not held (shared/abilities/insights.js): a caster's "weapon level" is their rank in its element, asking the same attributes
+const requirementsAt = (id, level) => { const el = elementOfInsight(id); return el ? requirementsForRank(el, level) : weaponRequirementsAt(id, level); };
 const { BattleController } = await import(ROOT + '/frontend/src/screens/battle/battleController.js');
 const K = { ...JSON.parse(process.env.KNOBS || '{}') };
 const { MAX_LINEUP } = await import(ROOT + '/shared/core/multiplayerParty.js');
@@ -55,10 +58,12 @@ function buildCharacter(cls, level) {
     }
     wl = Math.min(wl, WEAPON_CAP);   // WEAPON_CAP=3 for a party that hasn't forged steel yet (levels 4 and 5 need steel ingots)
     const equipment = {};
-    if (cls.weapon) { const it = ItemFactory.createItem(cls.weapon); it.level = wl; equipment[it.slot === 'twoHand' ? 'twoHand' : 'mainHand'] = it; }
+    const insights = {};
+    if (cls.weapon && elementOfInsight(cls.weapon)) insights[elementOfInsight(cls.weapon)] = wl;
+    else if (cls.weapon) { const it = ItemFactory.createItem(cls.weapon); it.level = wl; equipment[it.slot === 'twoHand' ? 'twoHand' : 'mainHand'] = it; }
     const armorLevel = Math.min(5, 1 + Math.floor((level - 4) / 6));
     for (const id of ARMOR[cls.armor]) { const it = ItemFactory.createItem(id); if (it) { it.level = Math.min(armorLevel, it.maxLevel || 1); equipment[it.slot] = it; } }
-    const e = EntityFactory.create('HUMANOID', { attributes: { ...attrs }, equipment, level, traits: [], levelEdge: false });
+    const e = EntityFactory.create('HUMANOID', { attributes: { ...attrs }, equipment, insights, level, traits: [], levelEdge: false });
     Object.assign(e.state ? e.state.attributes : e.attributes, attrs);
     e.hp = e.maxHp; e.stamina = e.maxStamina; e.insight = e.maxInsight;
     return e;

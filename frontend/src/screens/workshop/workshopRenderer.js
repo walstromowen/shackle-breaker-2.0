@@ -42,7 +42,9 @@ export class WorkshopRenderer {
         this.recipeRenderer.render(state, 0, leftW, h, hitboxes);
 
         // 2. Render Center Column (Crafting vs Upgrading)
-        if (state.selectedUpgradeItem) {
+        if (state.selectedUpgradeItem && state.isEnchanting) {
+            this.detailsRenderer.renderEnchantDetails(state, leftW, centerW, h, hitboxes);
+        } else if (state.selectedUpgradeItem) {
             this.detailsRenderer.renderUpgradeDetails(state, leftW, centerW, h, hitboxes);
         } else {
             this.detailsRenderer.renderRecipeDetails(state, leftW, centerW, h, hitboxes);

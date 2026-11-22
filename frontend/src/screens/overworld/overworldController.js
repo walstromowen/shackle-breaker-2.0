@@ -417,7 +417,18 @@ export class OverworldController extends BaseController {
         this.revealSurroundings();   // the world map grows as the party walks
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
-        if (!this.encounterZones) this.encounterZones = this.findEncounterZones(gameState.player.col, gameState.player.row); // standing in a zone when the world opens: it does not fire
+        if (this.worldManager.tickWanderers) this.worldManager.tickWanderers();   // an Arc Knight walking his beat (story/encounters/story/arcKnight.js)
+        if (!this.encounterZones) {
+            // standing in a zone when the world opens: it does not fire, unless it is an ambush (interaction.onArrival: the Arc Knight waiting outside
+            // the Hooded Stranger's door), which does, a moment after the world is there
+            const zones = this.findEncounterZones(gameState.player.col, gameState.player.row);
+            for (const [key, obj] of zones) if (obj.interaction && obj.interaction.onArrival) { zones.delete(key); this._arrivalAmbush = 0.6; }
+            this.encounterZones = zones;
+        }
+        if (this._arrivalAmbush !== undefined && !this.isLocked) {
+            this._arrivalAmbush -= dt;
+            if (this._arrivalAmbush <= 0) { this._arrivalAmbush = undefined; this.checkEncounterZones(); }
+        }
         this._updateEntering(dt);
 
         this.worldManager.getActiveObjects().forEach(obj => {
@@ -900,7 +911,7 @@ export class OverworldController extends BaseController {
 
         // the first snowy campfire the player comes upon becomes Nikoli's camp (WorldManager.noticeNikoliCampfire)
         if (this.worldManager.noticeNikoliCampfire) this.worldManager.noticeNikoliCampfire(gameState.player.col, gameState.player.row);
-        // and in act 1, the first small graveyard the player comes upon is where Osric of the Saw waits (WorldManager.noticeAmputatorGraveyard)
+        // and in act 1, the first small graveyard the player comes upon is where Senior Surgeon Osric waits (WorldManager.noticeAmputatorGraveyard)
         if (this.worldManager.noticeAmputatorGraveyard) this.worldManager.noticeAmputatorGraveyard(gameState.player.col, gameState.player.row);
         const stepOnObj = this.worldManager.getObjectAt(gameState.player.col, gameState.player.row);
         // --- UPDATED: Handle Walk-Over Pickups ---
@@ -1007,10 +1018,24 @@ export class OverworldController extends BaseController {
             if (before.has(key)) continue;
             this.isLocked = true;
             this.setAnimIdle();
-            events.emit('INTERACT', { ...obj.interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
+            // one that can see you coming (interaction.seenId: a madman): come at it from behind and it is its own encounter (A Disturbing Sight,
+            // with the chances a sneak gives); from the front or the sides it sees you, and it is the other (seenId: the fight)
+            const seen = obj.interaction.seenId && this.seesPlayer(obj);
+            const interaction = seen ? { ...obj.interaction, id: obj.interaction.seenId } : obj.interaction;
+            events.emit('INTERACT', { ...interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
             return true;
         }
         return false;
+    }
+
+    /** Does a map character see the player: are they in front of it or beside it, not behind it? Behind is the quarter at its back (within
+     *  45 degrees of straight behind), by the way it faces (a wanderer: the way it walks or looks, obj._facing). */
+    seesPlayer(obj) {
+        const facing = obj._facing || (obj.character && obj.character.facing) || 'DOWN';
+        const [fx, fy] = { DOWN: [0, 1], UP: [0, -1], LEFT: [-1, 0], RIGHT: [1, 0] }[facing] || [0, 1];
+        const dx = gameState.player.col - obj.col, dy = gameState.player.row - obj.row;
+        const along = dx * fx + dy * fy, across = Math.abs(dx * fy - dy * fx);
+        return !(along < 0 && across <= -along);
     }
 
     checkTileEvents() {

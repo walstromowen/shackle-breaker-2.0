@@ -19,6 +19,12 @@ export const AUDIO_CHANNELS = {
 };
 const VOICE_DIR = './assets/audio/voice/';
 const VOICE_DUCK = 0.55;   // the music while someone speaks (a share of its own level)
+// Dolos speaking (a hushing voice, tools/voice "hush"): every other sound is muffled, as if through a wall
+const MUFFLE_OPEN = 20000; // the world's low-pass when nothing muffles it (Hz: open)
+const MUFFLE_SHUT = 280;   // and while Dolos speaks: only the deep thud of things gets through
+const MUFFLE_LEVEL = 0.45; // how loud the muffled world still is (a share of its own level)
+const HUSH_FALL = 0.06;    // how fast the world muffles at his first word (seconds)
+const HUSH_RISE = 1.6;     // and how slowly it clears after his last
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // LOUDNESS MATCHING for sound effects. The sound files were recorded at very different levels (a Panzerkamfer cry is 18 dB louder than a
@@ -89,11 +95,19 @@ class AudioManager {
         // Connect nodes
         this.voiceGain = this.ctx.createGain();
         this.musicDuck = this.ctx.createGain();   // the music dips under a voice (playVoice), on top of its own slider
+        // every sound but the voice: muffled while a hushing voice speaks (Dolos: the world dulls around him, as if heard through a wall; playVoice)
+        this.worldHush = this.ctx.createGain();
+        this.worldMuffle = this.ctx.createBiquadFilter();
+        this.worldMuffle.type = 'lowpass';
+        this.worldMuffle.frequency.value = MUFFLE_OPEN;
+        this.worldMuffle.Q.value = 0.7;
+        this.worldHush.connect(this.worldMuffle);
+        this.worldMuffle.connect(this.masterGain);
         this.musicGain.connect(this.musicDuck);
-        this.musicDuck.connect(this.masterGain);
+        this.musicDuck.connect(this.worldHush);
         this.voiceGain.connect(this.masterGain);
-        this.sfxGain.connect(this.masterGain);
-        this.ambientGain.connect(this.masterGain); // NEW
+        this.sfxGain.connect(this.worldHush);
+        this.ambientGain.connect(this.worldHush); // NEW
         this.masterGain.connect(this.ctx.destination);
 
         this.isInitialized = true;
@@ -443,8 +457,9 @@ class AudioManager {
         for (const f of files) this._voiceBuffer(f);
     }
 
-    /** Plays one stage's lines in order: items are { file } (a clip) or { pause: seconds }, starting after `delay` seconds (when the first
-     *  word appears). Stops whatever voice was playing first. */
+    /** Plays one stage's lines in order: items are { file, hush } (a clip; hush: its manifest "h", [[start, end], ...] seconds in it when
+     *  every other sound falls silent) or { pause: seconds }, starting after `delay` seconds (when the first word appears). Stops whatever
+     *  voice was playing first. */
     async playVoice(items, delay = 0) {
         this.stopVoice();
         if (!this.isInitialized || !items || !items.length) return;
@@ -464,7 +479,9 @@ class AudioManager {
                     src.connect(this.voiceGain);
                     src.onended = resolve;
                     this._voiceSource = src;
-                    src.start();
+                    const t0 = this.ctx.currentTime;
+                    src.start(t0);
+                    if (item.hush) this._hushDuring(t0, item.hush);
                 });
             }
         } finally {
@@ -477,6 +494,32 @@ class AudioManager {
         this._voiceToken = (this._voiceToken || 0) + 1;
         if (this._voiceSource) { try { this._voiceSource.stop(); } catch (e) { /* already done */ } this._voiceSource = null; }
         this._duck(false);
+        this._unhush();
+    }
+
+    /* The world muffled around a hushing voice (tools/voice: voices.json "hush", Dolos): for each [start, end] (seconds into the clip that started
+       at t0: his first word to his last) every sound but the voice dulls at once, as if heard through a wall (a low-pass closing, the level
+       dropping), stays so while he speaks, and clears after. */
+    _hushDuring(t0, ranges) {
+        if (!this.worldHush) return;
+        const g = this.worldHush.gain, f = this.worldMuffle.frequency, now = this.ctx.currentTime;
+        for (const p of [g, f]) { p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); }
+        for (const [a, b] of ranges) {
+            const start = t0 + Math.max(0, a), end = t0 + Math.max(a, b);
+            g.setValueAtTime(1, start); g.linearRampToValueAtTime(MUFFLE_LEVEL, start + HUSH_FALL);
+            f.setValueAtTime(MUFFLE_OPEN, start); f.exponentialRampToValueAtTime(MUFFLE_SHUT, start + HUSH_FALL);
+            g.setValueAtTime(MUFFLE_LEVEL, end); g.linearRampToValueAtTime(1, end + HUSH_RISE);
+            f.setValueAtTime(MUFFLE_SHUT, end); f.exponentialRampToValueAtTime(MUFFLE_OPEN, end + HUSH_RISE);
+        }
+    }
+
+    /** The world clear again at once (the voice was stopped mid-hush). */
+    _unhush() {
+        if (!this.worldHush) return;
+        const g = this.worldHush.gain, f = this.worldMuffle.frequency, now = this.ctx.currentTime;
+        for (const p of [g, f]) { p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); }
+        g.linearRampToValueAtTime(1, now + 0.4);
+        f.exponentialRampToValueAtTime(MUFFLE_OPEN, now + 0.4);
     }
 
     _duck(on) {

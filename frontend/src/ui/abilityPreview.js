@@ -239,9 +239,8 @@ export class AbilityPreview {
             chips.push({ label: 'Acc:', value: `${Math.floor(ability.accuracy * 100)}%`, tone: 'normal' });
         }
 
-        if (ability.speed !== undefined) {
-            chips.push({ label: 'Spd:', value: ability.speed.toString(), tone: 'normal' });
-        }
+        const speed = this.getSpeed(ability, actor, stats);
+        if (speed) chips.push({ label: 'Spd:', value: speed.text, tone: speed.tone || 'normal' });
 
         if (ability.range !== undefined) {
             const r = ability.range.toString();
@@ -259,6 +258,23 @@ export class AbilityPreview {
         }
 
         return chips;
+    }
+
+    // ------------------------------------------------------------------- speed
+    /**
+     * How fast the ability goes for this character: their speed times the ability's speedModifier, the number turn order compares
+     * (BattleQueue: actor speed x speedModifier). { text, value }; "x0.85" when there is no character to read a speed from; null for an
+     * ordinary ability with no character.
+     */
+    static getSpeed(ability, actor, stats = null) {
+        if (!ability) return null;
+        const mod = ability.speedModifier ?? 1;
+        let base = stats && typeof stats.speed === 'number' ? stats.speed : undefined;
+        if (base === undefined && actor) base = actor.stats?.speed ?? actor.calculatedStats?.speed;
+        if (typeof base !== 'number') return mod !== 1 ? { text: `x${mod}`, value: null } : null;
+        const value = Math.round(base * mod * 10) / 10;
+        const text = mod === 1 ? `${value}` : `${value} (x${mod})`;
+        return { text, value, tone: mod > 1 ? 'accent' : 'normal' };
     }
 
     // ------------------------------------------------------------------ damage

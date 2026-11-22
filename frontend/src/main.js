@@ -236,6 +236,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objCarpentersBench: './assets/mapObjects/objCarpentersBench.png',
     objStoneBanker: './assets/mapObjects/objStoneBanker.png',
     objTailorsBench: './assets/mapObjects/objTailorsBench.png',
+    objEnchantersTable: './assets/mapObjects/objEnchantersTable.png',
     objCampfire: './assets/mapObjects/objCampfire.png',
     objStandingTorch: './assets/mapObjects/objStandingTorch.png',
         objWaypointAlterian: './assets/mapObjects/objWaypointAlterian.png',
@@ -293,6 +294,7 @@ ui_icons: './assets/icons/ui_icons.png',
     madmanSprite: './assets/sprites/madman/madman_sprite.png',
     osricSprite: './assets/sprites/amputator_osric/osric_sprite.png',       // the Amputators (story/encounters/story/amputators.js): blank until their art is in
     garrickSprite: './assets/sprites/amputator_garrick/garrick_sprite.png',
+    arcKnightSprite: './assets/sprites/arc_knight/arc_knight_sprite.png',   // made from its 8-direction idle frames (tools/art/overworldSheetFromRotations.py)
     shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png',
     infernusSentinelSprite: './assets/sprites/infernus_sentinel/infernus_sentinel_sprite.png',   // the catacombs' boss as its map object draws it (128 px frames, a still statue)
     hoodedStrangerSprite: './assets/sprites/hooded_stranger/hooded_stranger_sprite.png',   // the quest giver in a village workshop (one front frame; tools/art/overworldSheetFromFrame.py)
@@ -310,7 +312,7 @@ ui_icons: './assets/icons/ui_icons.png',
     madmanPortrait: './assets/sprites/madman/madman_portrait.png',
     osricPortrait: './assets/sprites/amputator_osric/osric_portrait.png',
     garrickPortrait: './assets/sprites/amputator_garrick/garrick_portrait.png',
-    arcKnightPortrait: './assets/sprites/arc_knight/arc_knight_portrait.png',
+    arcKnightPortrait: './assets/sprites/arc_knight/arc_knight_portrait.png',   // an Arc Knight, act 1's mini boss (story/encounters/story/arcKnight.js): 32 front idle frames
     magicAddictPortrait: './assets/sprites/magic_addict/magic_addict_portrait.png',
     rotterPortrait: './assets/sprites/rotter/rotter_portrait.png',
     germanSheepherdSprite: './assets/sprites/dogs/german_sheepherd_sprite.png',
@@ -401,6 +403,16 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     flamethrowerAnimation: './assets/abilityAnimations/flamethrower.png',
     waterfallAnimation: './assets/abilityAnimations/waterfall.png',
     overloadAnimation: './assets/abilityAnimations/overload.png',
+    // the Insights' newer spells (tools/art/insightSpellSheets.py)
+    gustAnimation: './assets/abilityAnimations/gust.png',
+    downwindAnimation: './assets/abilityAnimations/downwind.png',
+    tempestAnimation: './assets/abilityAnimations/tempest.png',
+    tidalWaveAnimation: './assets/abilityAnimations/tidal_wave.png',
+    mendingTideAnimation: './assets/abilityAnimations/mending_tide.png',
+    glacialSpikeAnimation: './assets/abilityAnimations/glacial_spike.png',
+    frostWardAnimation: './assets/abilityAnimations/frost_ward.png',
+    chainLightningAnimation: './assets/abilityAnimations/chain_lightning.png',
+    lightningStrikeAnimation: './assets/abilityAnimations/lightning_strike.png',
     spiteAnimation: './assets/abilityAnimations/spite.png',
     boulderThrowAnimation: './assets/abilityAnimations/boulder_throw.png',
     quickStabAnimation: './assets/abilityAnimations/quick_stab.png',
@@ -522,6 +534,19 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     clawSfx: './assets/audio/sfx/abilities/claw.mp3',
     talonStrikeSfx: './assets/audio/sfx/abilities/talon_strike.mp3',   // a diving whoosh and a raking tear (ElevenLabs)
     takeFlightSfx: './assets/audio/sfx/abilities/take_flight.mp3',     // heavy wing beats and a rising rush of air (ElevenLabs)
+    pounceSfx: './assets/audio/sfx/abilities/pounce.mp3',             // a snarl and a heavy thud (ElevenLabs)
+    // the Insights' newer spells (ElevenLabs, tools/voice/makeInsightSfx.sh)
+    gustSfx: './assets/audio/sfx/abilities/insight/gust.mp3',
+    downwindSfx: './assets/audio/sfx/abilities/insight/downwind.mp3',
+    tempestSfx: './assets/audio/sfx/abilities/insight/tempest.mp3',
+    tidalWaveSfx: './assets/audio/sfx/abilities/insight/tidal_wave.mp3',
+    mendingTideSfx: './assets/audio/sfx/abilities/insight/mending_tide.mp3',
+    glacialSpikeCastSfx: './assets/audio/sfx/abilities/insight/glacial_spike_cast.mp3',
+    glacialSpikeImpactSfx: './assets/audio/sfx/abilities/insight/glacial_spike_impact.mp3',
+    frostWardSfx: './assets/audio/sfx/abilities/insight/frost_ward.mp3',
+    chainLightningSfx: './assets/audio/sfx/abilities/insight/chain_lightning.mp3',
+    lightningStrikeChargeSfx: './assets/audio/sfx/abilities/insight/lightning_strike_charge.mp3',
+    lightningStrikeImpactSfx: './assets/audio/sfx/abilities/insight/lightning_strike_impact.mp3',
     vineLashSfx: './assets/audio/sfx/abilities/vine_lash.mp3',
     recklessChargeApproachSfx: './assets/audio/sfx/abilities/reckless_charge/reckless_charge_approach.mp3',
     recklessChargeImpactSfx: './assets/audio/sfx/abilities/reckless_charge/reckless_charge_impact.mp3',

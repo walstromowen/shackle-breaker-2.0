@@ -157,7 +157,7 @@ const stages = {
         text: "Empty it.",
         outcomes: [{ weight: 1, results: [
             { type: "MODIFY_CURRENCY", payload: { amount: 350 } },
-            { type: "GIVE_ITEM", payload: { itemId: "shmindolyns_draught", qty: 1 } },   // eases corruption
+            { type: "GIVE_ITEM", payload: { itemId: "shmindolyns_draught", qty: 1 } },   // forgets the last Insight learned
             { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "ruined_carriage_valuables", rolls: 1 } },
             LOOTED, END
         ] }]

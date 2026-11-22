@@ -76,9 +76,15 @@ export class WorkshopRecipeRenderer extends WorkshopBaseRenderer {
 
         this.ui.endClip();
 
+        // the Enchanter's Table has no recipes: say how it works instead
+        if (state.isEnchanting) {
+            const lines = this.ui.getWrappedLines('Choose a weapon from your bag, then an Insight to spend on it. The table chooses the enchantment: a new one replaces the old.', w - 48, UITheme.fonts.cardItalic);
+            lines.forEach((line, i) => this.ui.drawStyled('cardNote', line, x + 24, listTop + 8 + i * 34, { baseline: 'top' }));
+        }
+
         if (needsBar) {
             const barX = x + w - UITheme.scrollbar.width - 6;
             this.drawListScrollbar(barX, listTop, listH, contentH, scroll, 'RECIPES', hitboxes, state.hoveredHitboxId);
         }
     }
-}
+}

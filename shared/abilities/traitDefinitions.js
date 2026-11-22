@@ -174,35 +174,36 @@ export const TRAIT_DEFINITIONS = {
         name: "Iron Willed",
         description: "Automatically casts Bolster at the start of battle.",
         triggers: {
-            onBattleStart: { ability: "bolster", battleMessage: "{actor}'s Iron Will hardens their resolve!", animationId: "trait_activate" }
+            onBattleStart: { quiet: true, ability: "bolster", battleMessage: "{actor}'s Iron Will hardens their resolve!", animationId: "trait_activate" }
         }
     },
     'intimidating': {
         name: "Intimidating",
         description: "Automatically casts Intimidate on a random enemy at the start of combat.",
         triggers: {
-            onBattleStart: { ability: "intimidate", target: "random_enemy", battleMessage: "{actor} asserts a terrifying presence!", animationId: "trait_activate" }
+            onBattleStart: { quiet: true, ability: "intimidate", target: "random_enemy", battleMessage: "{actor} asserts a terrifying presence!", animationId: "trait_activate" }
         }
     },
     'stealthy': {
         name: "Stealthy",
         description: "Automatically shrinks away and casts Hide at the start of combat.",
         triggers: {
-            onBattleStart: { ability: "hide", battleMessage: "{actor} quickly ducks into the shadows!", animationId: "trait_activate" }
+            onBattleStart: { quiet: true, ability: "hide", battleMessage: "{actor} quickly ducks into the shadows!", animationId: "trait_activate" }
         }
     },
+    // A trait whose onBattleStart is `quiet` casts its ability with no words (battleQueue.queuePreBattleTraits): only the animation plays.
     'airborne': {
         name: "Airborne",
         description: "Takes to the skies at the start of battle and flies for 2 turns, out of reach of melee attacks.",
         triggers: {
-            onBattleStart: { ability: "take_flight", battleMessage: "{actor} takes to the air!", animationId: "take_flight" }
+            onBattleStart: { quiet: true, ability: "take_flight", battleMessage: "{actor} takes to the air!", animationId: "take_flight" }
         }
     },
     'ghostly': {
         name: "Ghostly",
         description: "Exists partially out of phase with reality.",
         triggers: {
-            onBattleStart: { ability: "become_ethereal", battleMessage: "{actor}'s physical form fades...", animationId: "trait_activate" }
+            onBattleStart: { quiet: true, ability: "become_ethereal", battleMessage: "{actor}'s physical form fades...", animationId: "trait_activate" }
         }
     }
 };

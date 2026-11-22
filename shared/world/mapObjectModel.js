@@ -27,6 +27,7 @@ export class MapObjectModel {
         this.isStairs = definition.isStairs || false;
         this.allowedDirections = definition.allowedDirections || null;
         this.interaction = definition.interaction || null;
+        this.wander = definition.wander || null;   // it walks about its home cell (WorldManager.tickWanderers): { radius, stepMs, pauseChance, pauseMs, straight }
 
         /* Lighting (see LightingRenderer).
            light: this object gives off light: { hasLight, radius (tiles), maxAlpha (strength 0..1), color: '255, 120, 50', flickerAmp, flickerSpeed }.

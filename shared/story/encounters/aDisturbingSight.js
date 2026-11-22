@@ -78,9 +78,10 @@ export const aDisturbingSight = {
                 {
                     text: "[ALT] Call out calmly to the stranger.",
                     type: "skill_check",
-                    attribute: "alterian",
+                    attribute: "alterian",   // (no attribute of that name: a plain roll. The choice is an Alterian's alone: the origin's tag below)
                     threshold: 12,
                     conditions: [
+                        { type: "has_tag", tag: "LANG_ALTERIAN" },   // the Alterian origin (characterCreator ORIGINS)
                         { type: "context_flag_not_set", flagId: "failed_disturbing_alt" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
@@ -502,3 +503,31 @@ export const aDisturbingSight = {
         },
     }
 };
+
+/* A madman who sees you coming (MADMAN_NPC approached from the front or the sides: overworldController.seesPlayer). Come at one from behind for
+   A Disturbing Sight and the chances a sneak gives; this one has seen you, and there is nothing left but the fight, its music already playing. */
+export const madmanSpotsYou = {
+    id: "madman_spots_you",
+    title: "A Disturbing Sight",
+    imageSheet: "encounter_a_disturbing_sight",
+    initialStage: "spotted",
+    stages: {
+        spotted: {
+            displayText: "Seen",
+            image: { col: 1, row: 0 },
+            bgm: "plainsBattleBgm",
+            sfx: "madmanCry",
+            sfxVolume: 0.7,
+            text: "The madman wheels round, and his wet eyes find you. \"Hee hee! Found you! Magic say open you up!\" He comes at you on all fours.",
+            decisions: [
+                {
+                    text: "Draw your weapon.",
+                    outcomes: [{ weight: 100, results: [
+                        { type: "DESTROY_OBJECT" },
+                        { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"], bgm: "plainsBattleBgm" } }
+                    ] }]
+                }
+            ]
+        }
+    }
+};

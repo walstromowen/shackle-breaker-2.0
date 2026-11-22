@@ -17,6 +17,7 @@
 
 import { gameState } from '../../../shared/core/gameState.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
+import { Covenants } from '../../../shared/story/covenants.js';
 import { retireQuests } from '../../../shared/story/questSystem.js';
 import { EntityModel } from '../../../shared/characters/entityModel.js';
 import { ItemFactory } from '../../../shared/items/itemFactory.js';
@@ -26,14 +27,50 @@ import { WeatherFactory } from '../../../shared/world/weatherFactory.js';
 const SAVE_FORMAT = 'shackle-breaker-save';
 
 /* Bump this when the saved shape changes and add a migration below, so saves from older builds keep loading. */
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 
 /* MIGRATIONS[n] upgrades the `data` of a version-n save to version n + 1. Example for the day it is needed:
      MIGRATIONS[1] = (data) => { data.party.somethingNew = 0; return data; };                                                            */
 const MIGRATIONS = {
     // v1 -> v2: the Bandage item was replaced by the Healing Herb. Every "bandage" in the save (inventory, hotbar, quest rewards) becomes "healing_herb".
-    1: (data) => renameStrings(data, { bandage: 'healing_herb' })
+    1: (data) => renameStrings(data, { bandage: 'healing_herb' }),
+    // v2 -> v3: Insights are no longer held weapons but read (abilities/insights.js). An Insight a member held becomes their rank in its element (its
+    // level), at no corruption: they had it already. One carried at level n becomes n Insights to read (the copies its upgrades used up).
+    2: (data) => migrateInsights(data)
 };
+
+const INSIGHT_ELEMENT = {
+    insight_of_fire: 'fire', insight_of_water: 'water', insight_of_earth: 'earth', insight_of_lightning: 'lightning', insight_of_ice: 'ice',
+    insight_of_wind: 'wind', insight_of_arcane: 'arcane', insight_of_light: 'light', insight_of_darkness: 'dark'
+};
+
+function migrateInsights(data) {
+    const idOf = (item) => (typeof item === 'string' ? item : item && item.defId);
+    const asCopies = (list) => {
+        const out = [];
+        const counts = {};
+        for (const item of list || []) {
+            const id = idOf(item);
+            if (INSIGHT_ELEMENT[id]) counts[id] = (counts[id] || 0) + (typeof item === 'object' ? Math.max(1, item.level || 1) * Math.max(1, item.qty || 1) : 1);
+            else out.push(item);
+        }
+        for (const [id, qty] of Object.entries(counts)) out.push({ defId: id, qty, level: 1 });
+        return out;
+    };
+    for (const m of (data.party && data.party.members) || []) {
+        const insights = { ...(m.insights || {}) };
+        for (const [slot, item] of Object.entries(m.equipment || {})) {
+            const el = INSIGHT_ELEMENT[idOf(item)];
+            if (!el) continue;
+            insights[el] = Math.max(insights[el] || 0, Math.min(5, (typeof item === 'object' && item.level) || 1));
+            m.equipment[slot] = null;
+        }
+        if (Object.keys(insights).length) m.insights = insights;
+        if (Array.isArray(m.inventory)) m.inventory = asCopies(m.inventory);
+    }
+    if (data.party && Array.isArray(data.party.inventory)) data.party.inventory = asCopies(data.party.inventory);
+    return data;
+}
 
 function renameStrings(node, map) {
     if (typeof node === 'string') return Object.prototype.hasOwnProperty.call(map, node) ? map[node] : node;
@@ -304,8 +341,8 @@ export const SaveManager = {
                 nikoliCampfire: world.nikoliCampfire || null,           // Nikoli's camp, "col,row" of the campfire (WorldManager)
                 jaegerCatacomb: world.jaegerCatacomb || null,           // the catacombs Jaeger waits in (InteriorFactory)
                 strangerSnowHome: world.strangerSnowHome || null,       // act 3: the snowy house Mentoras and Codey go to (story/heroes.js)
-                amputatorGraveyard: world.amputatorGraveyard || null,   // Osric of the Saw's seat among the graves, "col,row" (WorldManager)
-                amputatorQuarry: world.amputatorQuarry || null,         // where Brother Garrick is (WorldManager.pickAmputatorQuarry)
+                amputatorGraveyard: world.amputatorGraveyard || null,   // Senior Surgeon Osric's seat among the graves, "col,row" (WorldManager)
+                amputatorQuarry: world.amputatorQuarry || null,         // where Surgeon Garrick is (WorldManager.pickAmputatorQuarry)
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
                 castlesBuilt: clone(world.castlesBuilt || {}),   // the castles whose objects are written into the world (StructureSpawner._buildCastle)
@@ -402,6 +439,7 @@ export const SaveManager = {
         };
         retireQuests(gameState);       // a save on a quest that was cut picks up from the one that replaced it
         ActSystem.catchUp(gameState);   // a save that beat Darius but never saw A Dark Truth: it plays on the map (SceneManager), and grants act 2 there
+        Covenants.migrate(gameState);   // an oath kept as the player's milestone (older saves) goes to the party's lead
 
         replaceContents(gameState.player, {
             col: data.player.col,

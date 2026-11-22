@@ -1,4 +1,5 @@
 import { StatCalculator } from '../../../../shared/characters/statCalculator.js';
+import { ranksOf, spellsAt } from '../../../../shared/abilities/insights.js';
 import { canWear } from '../../../../shared/items/equipRules.js';
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { AbilitySystem } from '../../../../shared/abilities/abilitySystem.js';
@@ -223,12 +224,18 @@ export class CharacterSummaryLogic {
             }
         }
         
+        // spells known from Insight ranks (abilities/insights.js): labelled with the Insight and the rank
+        const fromInsight = new Map();
+        for (const [el, rank] of Object.entries(ranksOf(member))) {
+            for (const id of spellsAt(el, rank)) if (!fromInsight.has(id)) fromInsight.set(id, `Insight, rank ${rank}`);
+        }
+
         const intrinsicAbilities = member.abilities || (member.template && member.template.abilities) || [];
         intrinsicAbilities.forEach(ability => {
             const id = typeof ability === 'string' ? ability : ability.id;
             const abilityData = typeof ability === 'object' ? ability : { id, name: id };
             if (!abilityMap.has(id)) {
-                abilityMap.set(id, { ...abilityData, source: 'Intrinsic', isEquipment: false });
+                abilityMap.set(id, { ...abilityData, source: fromInsight.get(id) || 'Intrinsic', isEquipment: false, isInsight: fromInsight.has(id) });
             }
         });
         

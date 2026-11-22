@@ -42,6 +42,34 @@ export const ItemDefinitions = {
       5: { currency: 300, materials: { "bronze_ingot": 5, "iron_ingot": 5, "hard_wood": 10 } }
     }
   },
+  "mace": {
+    id: "mace",
+    name: "Mace",
+    slot: "oneHand",
+    type: "weapon",
+    description: "A plain iron mace with a flanged head. No edge to keep, and it finds the bone through any armor.",
+    value: 150,
+    icon: { col: 16, row: 0 },           // (a blank cell of the weapons sheet until it is painted)
+    attack: { blunt: 5, pierce: 1 },     // the club's weight, and the flanges bite
+    requirements: { strength: 10, vigor: 6 },
+    requirementGrowth: { strength: 2, vigor: 1 },
+    grantedAbilities: ["strike"],
+    maxLevel: 5,
+    statGrowth: {
+      attack: { blunt: 1 }
+    },
+    abilityUnlocks: {
+      2: ["guard_break"],
+      3: ["reckless_charge"],
+      4: ["wild_swing"]
+    },
+    upgradeCosts: {
+      2: { currency: 50, materials: { "iron_ingot": 2, "hard_wood": 2 } },
+      3: { currency: 130, materials: { "iron_ingot": 4, "bronze_ingot": 2 } },
+      4: { currency: 260, materials: { "iron_ingot": 6, "bronze_ingot": 4 } },
+      5: { currency: 450, materials: { "steel_ingot": 4, "iron_ingot": 6 } }
+    }
+  },
   "dagger": {
     id: "dagger",
     name: "Dagger",
@@ -375,7 +403,7 @@ export const ItemDefinitions = {
     }
   },
   // The Amputators' saw (story/covenants.js): a toothed bone-saw on a hooked haft, made to take a shackle off and the hand with it if it must.
-  // Given to whoever joins the covenant; Brother Garrick carries one. (Icon: the dagger's for now.)
+  // Given to whoever joins the covenant; Surgeon Garrick carries one.
   "amputators_saw": {
     id: "amputators_saw",
     name: "Amputator's Saw",
@@ -383,7 +411,7 @@ export const ItemDefinitions = {
     type: "weapon",
     description: 'A toothed bone-saw on a hooked haft, its teeth dark with old work. "Cut the chain and spare the soul. If the chain will not come, take what it holds." - the Amputators\' creed.',
     value: 220,
-    icon: { col: 0, row: 0 },
+    icon: { col: 17, row: 0 },   // its own icon on the weapons sheet
     attack: { slash: 4, pierce: 1 },
     requirements: { strength: 9, dexterity: 10 },
     requirementGrowth: { strength: 2, dexterity: 2 },
@@ -456,238 +484,207 @@ export const ItemDefinitions = {
     }
   },
 
-  // --- INSIGHT WEAPONS ---
-  // Upgrading an insight weapon costs ONE MORE copy of the same insight per level (2, 3, 4 and 5), plus currency.
+  // --- INSIGHTS ---
+  // Consumables: reading one raises the reader's rank in its element by one (AbilitySystem's `learn_insight`, abilities/insights.js). `insight` holds what
+  // the ranks give: `spells` by rank (1: what the first one teaches), `attack` at rank 1 and `attackGrowth` for each rank above it, and the attributes
+  // each rank asks for (`requirements` at rank 1, `requirementGrowth` for each rank above it). They were held weapons once (the icons are still on the
+  // weapons sheet).
   "insight_of_fire": {
     id: "insight_of_fire",
     name: "Insight of Fire",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a firey truth.",
+    type: "consumable",
+    description: "An insight into a firey truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 0, row: 1 },
-    attack: { fire: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["fireball"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { fire: 3 }
-    },
-    abilityUnlocks: {
-      3: ["meteor_shower"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_fire": 1 } },
-      3: { currency: 150, materials: { "insight_of_fire": 1 } },
-      4: { currency: 300, materials: { "insight_of_fire": 1 } },
-      5: { currency: 500, materials: { "insight_of_fire": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_fire",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "fire",
+      maxRank: 5,
+      attack: { fire: 5 },
+      attackGrowth: { fire: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["fireball"], 3: ["meteor_shower"] }
     }
   },
   "insight_of_water": {
     id: "insight_of_water",
     name: "Insight of Water",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a watery truth.",
+    type: "consumable",
+    description: "An insight into a watery truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 1, row: 1 },
-    attack: { water: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["water_blast"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { water: 3 }
-    },
-    abilityUnlocks: {
-      2: ["waterfall"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_water": 1 } },
-      3: { currency: 150, materials: { "insight_of_water": 1 } },
-      4: { currency: 300, materials: { "insight_of_water": 1 } },
-      5: { currency: 500, materials: { "insight_of_water": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_water",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "water",
+      maxRank: 5,
+      attack: { water: 5 },
+      attackGrowth: { water: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["water_blast"], 2: ["waterfall"], 3: ["tidal_wave"], 4: ["mending_tide"] }
     }
   },
   "insight_of_earth": {
     id: "insight_of_earth",
     name: "Insight of Earth",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into an earthy truth.",
+    type: "consumable",
+    description: "An insight into an earthy truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 2, row: 1 },
-    attack: { earth: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["vine_lash"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { earth: 3 }
-    },
-    abilityUnlocks: {
-      2: ["boulder_throw"],
-      3: ["earthquake"],
-      4: ["acid_pool"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_earth": 1 } },
-      3: { currency: 150, materials: { "insight_of_earth": 1 } },
-      4: { currency: 300, materials: { "insight_of_earth": 1 } },
-      5: { currency: 500, materials: { "insight_of_earth": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_earth",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "earth",
+      maxRank: 5,
+      attack: { earth: 5 },
+      attackGrowth: { earth: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["vine_lash"], 2: ["boulder_throw"], 3: ["earthquake"], 4: ["acid_pool"] }
     }
   },
   "insight_of_lightning": {
     id: "insight_of_lightning",
     name: "Insight of Lightning",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into an electrifying truth.",
+    type: "consumable",
+    description: "An insight into an electrifying truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 3, row: 1 },
-    attack: { lightning: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["shock"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { lightning: 3 }
-    },
-    abilityUnlocks: {
-      2: ["overload"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_lightning": 1 } },
-      3: { currency: 150, materials: { "insight_of_lightning": 1 } },
-      4: { currency: 300, materials: { "insight_of_lightning": 1 } },
-      5: { currency: 500, materials: { "insight_of_lightning": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_lightning",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "lightning",
+      maxRank: 5,
+      attack: { lightning: 5 },
+      attackGrowth: { lightning: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["shock"], 2: ["overload"], 3: ["chain_lightning"], 4: ["lightning_strike"] }
     }
   },
   "insight_of_ice": {
     id: "insight_of_ice",
     name: "Insight of Ice",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a frozen truth.",
+    type: "consumable",
+    description: "An insight into a frozen truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 4, row: 1 },
-    attack: { ice: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["ice_shard"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { ice: 3 }
-    },
-    abilityUnlocks: {
-      2: ["frigid_gale"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_ice": 1 } },
-      3: { currency: 150, materials: { "insight_of_ice": 1 } },
-      4: { currency: 300, materials: { "insight_of_ice": 1 } },
-      5: { currency: 500, materials: { "insight_of_ice": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_ice",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "ice",
+      maxRank: 5,
+      attack: { ice: 5 },
+      attackGrowth: { ice: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["ice_shard"], 2: ["frigid_gale"], 3: ["glacial_spike"], 4: ["frost_ward"] }
     }
   },
   "insight_of_wind": {
     id: "insight_of_wind",
     name: "Insight of Wind",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a booming truth.",
+    type: "consumable",
+    description: "An insight into a booming truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 5, row: 1 },
-    attack: { wind: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["strike"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { wind: 3 }
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_wind": 1 } },
-      3: { currency: 150, materials: { "insight_of_wind": 1 } },
-      4: { currency: 300, materials: { "insight_of_wind": 1 } },
-      5: { currency: 500, materials: { "insight_of_wind": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_wind",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "wind",
+      maxRank: 5,
+      attack: { wind: 5 },
+      attackGrowth: { wind: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["gust"], 2: ["downwind"], 3: ["tempest"] }
     }
   },
   "insight_of_arcane": {
     id: "insight_of_arcane",
     name: "Insight of Arcane",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into an arcane truth.",
+    type: "consumable",
+    description: "An insight into an arcane truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 6, row: 1 },
-    attack: { arcane: 5},
-    requirements: { intelligence: 10, attunement: 7 },
-    requirementGrowth: { intelligence: 2, attunement: 2 },
-    grantedAbilities: ["arcane_dart"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { arcane: 3 }
-    },
-    abilityUnlocks: {
-      2: ["magic_missile"],
-      3: ["arcane_blast"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_arcane": 1 } },
-      3: { currency: 150, materials: { "insight_of_arcane": 1 } },
-      4: { currency: 300, materials: { "insight_of_arcane": 1 } },
-      5: { currency: 500, materials: { "insight_of_arcane": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_arcane",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "arcane",
+      maxRank: 5,
+      attack: { arcane: 5 },
+      attackGrowth: { arcane: 3 },
+      requirements: { intelligence: 10, attunement: 7 },
+      requirementGrowth: { intelligence: 2, attunement: 2 },
+      spells: { 1: ["arcane_dart"], 2: ["magic_missile"], 3: ["arcane_blast"] }
     }
   },
   "insight_of_light": {
     id: "insight_of_light",
     name: "Insight of Light",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a luminous truth.",
+    type: "consumable",
+    description: "An insight into a luminous truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 7, row: 1 },
-    attack: { light: 5},
-    requirements: { intelligence: 10, attunement: 7 },
-    requirementGrowth: { intelligence: 2, attunement: 2 },
-    grantedAbilities: ["spite"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { light: 3 }
-    },
-    abilityUnlocks: {
-      2: ["purify"],
-      3: ["healing_rain"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_light": 1 } },
-      3: { currency: 150, materials: { "insight_of_light": 1 } },
-      4: { currency: 300, materials: { "insight_of_light": 1 } },
-      5: { currency: 500, materials: { "insight_of_light": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_light",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "light",
+      maxRank: 5,
+      attack: { light: 5 },
+      attackGrowth: { light: 3 },
+      requirements: { intelligence: 10, attunement: 7 },
+      requirementGrowth: { intelligence: 2, attunement: 2 },
+      spells: { 1: ["spite"], 2: ["purify"], 3: ["healing_rain"] }
     }
   },
   "insight_of_darkness": {
     id: "insight_of_darkness",
     name: "Insight of Darkness",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a shadowy truth.",
+    type: "consumable",
+    description: "An insight into a shadowy truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 8, row: 1 },
-    attack: { dark: 5},
-    requirements: { intelligence: 10, attunement: 7 },
-    requirementGrowth: { intelligence: 2, attunement: 2 },
-    grantedAbilities: ["spirit_reap"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { dark: 3 }
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_darkness": 1 } },
-      3: { currency: 150, materials: { "insight_of_darkness": 1 } },
-      4: { currency: 300, materials: { "insight_of_darkness": 1 } },
-      5: { currency: 500, materials: { "insight_of_darkness": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_dark",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "dark",
+      maxRank: 5,
+      attack: { dark: 5 },
+      attackGrowth: { dark: 3 },
+      requirements: { intelligence: 10, attunement: 7 },
+      requirementGrowth: { intelligence: 2, attunement: 2 },
+      spells: { 1: ["spirit_reap"] }
     }
   },
 
@@ -856,6 +853,340 @@ export const ItemDefinitions = {
     upgradeCosts: {
       2: { currency: 15, materials: { "soft_wood": 1 } },
       3: { currency: 45, materials: { "leather": 1 } }
+    }
+  },
+
+  // --- THE ARTIFICERS' ARMOR SET (tier 3: rare, found only in encounter loot - battlefield_loot, alterian_officer_loot, ruined_carriage_valuables,
+  // iron_chest_loot - and now and then on Darius; lootTableDefinitions.js) ---
+  // The working clothes of the king's artificers, who wove magic into cloth and steel. A hybrid that leans to the magical: against blows and
+  // blades a little short of leather (blunt 8, slash 11, pierce 8 and 7% resistance for the set, against leather's 9 / 13 / 9 and 9%), and
+  // better than cloth against every element (16 defense and 20% resistance to each, against cloth's 11 and 15%). Each piece feeds the wearer's
+  // insight (+1 Insight recovery, +5 for the set).
+  // Icons: the armor sheet's column 4 (a column per set, a row per slot, head to feet), before the Amputators'.
+  "artificers_hood": {
+    id: "artificers_hood",
+    name: "Artificer's Hood",
+    slot: "head",
+    type: "armor",
+    description: "A deep violet hood over a steel cap, its lining stitched with warding thread. The face inside stays in shadow.",
+    value: 340,
+    icon: { col: 4, row: 0 },
+    tier: 3,
+    defense: { blunt: 1, slash: 2, pierce: 1, ...perMagicType(3) },
+    resistance: { ...perPhysType(0.01), ...perMagicType(0.04) },
+    resources: { insightRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: perMagicType(1) },
+    upgradeCosts: {
+      2: { currency: 120, materials: { "linen": 3, "iron_ingot": 1 } },
+      3: { currency: 320, materials: { "linen": 5, "iron_ingot": 2 } },
+      4: { currency: 600, materials: { "linen": 6, "steel_ingot": 2 } },
+      5: { currency: 950, materials: { "linen": 8, "steel_ingot": 3 } }
+    }
+  },
+  "artificers_robe": {
+    id: "artificers_robe",
+    name: "Artificer's Robe",
+    slot: "torso",
+    type: "armor",
+    description: "Layered violet robes belted over a mail shirt, a steel pauldron on the casting shoulder. The king's artificers wove magic into cloth and steel alike.",
+    value: 850,
+    icon: { col: 4, row: 1 },
+    tier: 3,
+    grantedAbilities: ["draw_insight"],
+    defense: { blunt: 3, slash: 4, pierce: 3, ...perMagicType(5) },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.06) },
+    resources: { insightRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1, ...perMagicType(1) } },
+    upgradeCosts: {
+      2: { currency: 280, materials: { "linen": 5, "iron_ingot": 2 } },
+      3: { currency: 700, materials: { "linen": 8, "iron_ingot": 3 } },
+      4: { currency: 1250, materials: { "linen": 10, "steel_ingot": 3 } },
+      5: { currency: 2000, materials: { "linen": 12, "steel_ingot": 5 } }
+    }
+  },
+  "artificers_wraps": {
+    id: "artificers_wraps",
+    name: "Artificer's Wraps",
+    slot: "arms",
+    type: "armor",
+    description: "Violet cloth bound tight over mail, leaving the fingers bare for fine work. Faint burns score the knuckles.",
+    value: 280,
+    icon: { col: 4, row: 2 },
+    tier: 3,
+    defense: { blunt: 1, slash: 2, pierce: 1, ...perMagicType(2) },
+    resistance: { ...perPhysType(0.01), ...perMagicType(0.03) },
+    resources: { insightRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: perMagicType(1) },
+    upgradeCosts: {
+      2: { currency: 100, materials: { "linen": 2, "iron_ingot": 1 } },
+      3: { currency: 260, materials: { "linen": 4, "iron_ingot": 1 } },
+      4: { currency: 480, materials: { "linen": 5, "steel_ingot": 1 } },
+      5: { currency: 760, materials: { "linen": 6, "steel_ingot": 2 } }
+    }
+  },
+  "artificers_leggings": {
+    id: "artificers_leggings",
+    name: "Artificer's Leggings",
+    slot: "legs",
+    type: "armor",
+    description: "Mail leggings under a long violet skirt, tied at the hip with a knotted cord.",
+    value: 560,
+    icon: { col: 4, row: 3 },
+    tier: 3,
+    defense: { blunt: 2, slash: 2, pierce: 2, ...perMagicType(4) },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.04) },
+    resources: { insightRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: perMagicType(1) },
+    upgradeCosts: {
+      2: { currency: 200, materials: { "linen": 4, "iron_ingot": 1 } },
+      3: { currency: 500, materials: { "linen": 6, "iron_ingot": 2 } },
+      4: { currency: 900, materials: { "linen": 8, "steel_ingot": 2 } },
+      5: { currency: 1400, materials: { "linen": 10, "steel_ingot": 3 } }
+    }
+  },
+  "artificers_boots": {
+    id: "artificers_boots",
+    name: "Artificer's Boots",
+    slot: "feet",
+    type: "armor",
+    description: "Steel-capped boots wound with violet cloth to the shin, quiet on stone.",
+    value: 380,
+    icon: { col: 4, row: 4 },
+    tier: 3,
+    defense: { blunt: 1, slash: 1, pierce: 1, ...perMagicType(2) },
+    resistance: { ...perPhysType(0.01), ...perMagicType(0.03) },
+    resources: { insightRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: perMagicType(1) },
+    upgradeCosts: {
+      2: { currency: 130, materials: { "linen": 3, "iron_ingot": 1 } },
+      3: { currency: 340, materials: { "linen": 4, "iron_ingot": 1 } },
+      4: { currency: 620, materials: { "linen": 6, "steel_ingot": 1 } },
+      5: { currency: 980, materials: { "linen": 7, "steel_ingot": 2 } }
+    }
+  },
+
+  // --- THE AMPUTATORS' ARMOR SET (tier 3: unique, sold only by Senior Surgeon Osric, from act 2; story/covenants.js COVENANTS.amputators.wares) ---
+  // Icons: the armor sheet's column 5 (assets/icons/armor.png: a column per set, a row per slot, head to feet).
+  // Built like leather (stitched hide, light on the feet) but for a surgeon's work: strong against cuts and stabs (slash 20, pierce 17 for the set,
+  // against leather's 13 and 9), weaker against blunt blows (11), and each piece mends the wearer (+1 HP recovery, +5 for the set) where leather
+  // gives Stamina recovery and speed. Dark resistance on top of the rest (the curse's own). Several times leather's price.
+  "amputators_hood": {
+    id: "amputators_hood",
+    name: "Amputator's Hood",
+    slot: "head",
+    type: "armor",
+    description: "A stitched leather hood with a bone-stiffened brim. It smells of vinegar and old blood.",
+    value: 280,
+    icon: { col: 5, row: 0 },
+    tier: 3,
+    defense: { blunt: 2, slash: 3, pierce: 3 },
+    resistance: { ...perPhysType(0.03), ...perMagicType(0.02), dark: 0.04 },
+    resources: { hpRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1, pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 100, materials: { "leather": 3, "bone": 3 } },
+      3: { currency: 250, materials: { "leather": 5, "bone": 5, "iron_ingot": 1 } },
+      4: { currency: 450, materials: { "leather": 6, "steel_ingot": 1 } },
+      5: { currency: 700, materials: { "leather": 8, "steel_ingot": 2, "bone": 8 } }
+    }
+  },
+  "amputators_apron": {
+    id: "amputators_apron",
+    name: "Amputator's Apron",
+    slot: "torso",
+    type: "armor",
+    description: "A surgeon's heavy leather apron, plated over the heart with boiled bone. The stains never quite come out.",
+    value: 700,
+    icon: { col: 5, row: 1 },
+    tier: 3,
+    defense: { blunt: 4, slash: 7, pierce: 6 },
+    resistance: { ...perPhysType(0.05), ...perMagicType(0.03), dark: 0.06 },
+    resources: { hpRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { blunt: 1, slash: 2, pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 250, materials: { "leather": 5, "bone": 4 } },
+      3: { currency: 600, materials: { "leather": 8, "bone": 6, "iron_ingot": 3 } },
+      4: { currency: 1000, materials: { "leather": 10, "steel_ingot": 3 } },
+      5: { currency: 1600, materials: { "leather": 12, "steel_ingot": 5, "bone": 10 } }
+    }
+  },
+  "amputators_gloves": {
+    id: "amputators_gloves",
+    name: "Amputator's Gloves",
+    slot: "arms",
+    type: "armor",
+    description: "Long gauntlet gloves of thin, supple hide, made for steady hands and close work.",
+    value: 220,
+    icon: { col: 5, row: 2 },
+    tier: 3,
+    defense: { blunt: 1, slash: 3, pierce: 2 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.01), dark: 0.02 },
+    resources: { hpRecovery: 1 },
+    combat: { accuracy: 3 },             // steady hands
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1 } },
+    upgradeCosts: {
+      2: { currency: 80, materials: { "leather": 2, "bone": 2 } },
+      3: { currency: 200, materials: { "leather": 4, "bone": 4, "iron_ingot": 1 } },
+      4: { currency: 350, materials: { "leather": 5, "steel_ingot": 1 } },
+      5: { currency: 550, materials: { "leather": 6, "steel_ingot": 2, "bone": 6 } }
+    }
+  },
+  "amputators_trousers": {
+    id: "amputators_trousers",
+    name: "Amputator's Trousers",
+    slot: "legs",
+    type: "armor",
+    description: "Waxed leather trousers, laced tight and padded at the knee for long hours kneeling over the afflicted.",
+    value: 450,
+    icon: { col: 5, row: 3 },
+    tier: 3,
+    defense: { blunt: 3, slash: 4, pierce: 4 },
+    resistance: { ...perPhysType(0.03), ...perMagicType(0.02), dark: 0.03 },
+    resources: { hpRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1, pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 160, materials: { "leather": 4, "bone": 3 } },
+      3: { currency: 400, materials: { "leather": 6, "bone": 5, "iron_ingot": 2 } },
+      4: { currency: 700, materials: { "leather": 8, "steel_ingot": 2 } },
+      5: { currency: 1100, materials: { "leather": 10, "steel_ingot": 3, "bone": 8 } }
+    }
+  },
+  "amputators_boots": {
+    id: "amputators_boots",
+    name: "Amputator's Boots",
+    slot: "feet",
+    type: "armor",
+    description: "Hobnailed boots of thick hide, soled for floors slick with blood.",
+    value: 320,
+    icon: { col: 5, row: 4 },
+    tier: 3,
+    defense: { blunt: 1, slash: 3, pierce: 2 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.01), dark: 0.02 },
+    resources: { hpRecovery: 1 },
+    maxLevel: 5,
+    statGrowth: { defense: { pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 110, materials: { "leather": 3, "bone": 2 } },
+      3: { currency: 280, materials: { "leather": 4, "bone": 4, "iron_ingot": 1 } },
+      4: { currency: 500, materials: { "leather": 6, "steel_ingot": 1 } },
+      5: { currency: 800, materials: { "leather": 7, "steel_ingot": 2, "bone": 6 } }
+    }
+  },
+
+  // --- THE ARC KNIGHTS' ARMOR SET (tier 3: dropped, rarely, by Arc Knights; story/encounters/story/arcKnight.js) ---
+  // The plate of the king's Arc Knights, his new royal guard (docs/story.md), the artifact's magic worked into the steel: against blows and blades just short of iron (blunt 13, slash
+  // 16, pierce 13 and 14% resistance for the set, against iron's 14 / 17 / 14 and 15%), and strong against fire, ice and the arcane (9 defense
+  // and 18% resistance to each, where other sets have next to none). The magic carries its weight: no cost to speed (iron's is -4). The metal
+  // draws lightning: 10% weaker against it.
+  // Icons: the armor sheet's column 6 (a column per set, a row per slot, head to feet), after the Amputators'.
+  "arc_knight_helm": {
+    id: "arc_knight_helm",
+    name: "Arc Knight's Helm",
+    slot: "head",
+    type: "armor",
+    description: "The great helm of the king's new guard: blackened steel, its eye-slit edged with an ember glow that never quite goes out.",
+    value: 380,
+    icon: { col: 6, row: 0 },
+    tier: 3,
+    defense: { blunt: 2, slash: 3, pierce: 2, fire: 2, ice: 2, arcane: 2 },
+    resistance: { ...perPhysType(0.03), ...perMagicType(0.01), fire: 0.04, ice: 0.04, arcane: 0.04, lightning: -0.02 },
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1, pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 150, materials: { "iron_ingot": 3, "steel_ingot": 1 } },
+      3: { currency: 400, materials: { "iron_ingot": 4, "steel_ingot": 3 } },
+      4: { currency: 750, materials: { "steel_ingot": 5, "coal": 4 } },
+      5: { currency: 1200, materials: { "steel_ingot": 8, "coal": 6 } }
+    }
+  },
+  "arc_knight_cuirass": {
+    id: "arc_knight_cuirass",
+    name: "Arc Knight's Cuirass",
+    slot: "torso",
+    type: "armor",
+    description: "Blackened plate over a scorched gambeson, warm to the touch. The Arc Knights worked the artifact's fire into the steel itself; the old royal guard would not, and was sent home.",
+    value: 950,
+    icon: { col: 6, row: 1 },
+    tier: 3,
+    abilityUnlocks: { 2: ["bolster"] },
+    defense: { blunt: 5, slash: 6, pierce: 5, fire: 3, ice: 3, arcane: 3 },
+    resistance: { ...perPhysType(0.05), ...perMagicType(0.01), fire: 0.06, ice: 0.06, arcane: 0.06, lightning: -0.02 },
+    maxLevel: 5,
+    statGrowth: { defense: { blunt: 1, slash: 2, pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 300, materials: { "iron_ingot": 3, "steel_ingot": 1 } },
+      3: { currency: 800, materials: { "iron_ingot": 4, "steel_ingot": 3 } },
+      4: { currency: 1400, materials: { "steel_ingot": 5, "coal": 4 } },
+      5: { currency: 2200, materials: { "steel_ingot": 8, "coal": 6 } }
+    }
+  },
+  "arc_knight_gauntlets": {
+    id: "arc_knight_gauntlets",
+    name: "Arc Knight's Gauntlets",
+    slot: "arms",
+    type: "armor",
+    description: "Articulated steel gauntlets, the palms scorched black from years of holding fire.",
+    value: 300,
+    icon: { col: 6, row: 2 },
+    tier: 3,
+    defense: { blunt: 2, slash: 2, pierce: 2, fire: 1, ice: 1, arcane: 1 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.01), fire: 0.02, ice: 0.02, arcane: 0.02, lightning: -0.02 },
+    maxLevel: 5,
+    statGrowth: { defense: { slash: 1 } },
+    upgradeCosts: {
+      2: { currency: 120, materials: { "iron_ingot": 3, "steel_ingot": 1 } },
+      3: { currency: 320, materials: { "iron_ingot": 4, "steel_ingot": 3 } },
+      4: { currency: 600, materials: { "steel_ingot": 5, "coal": 4 } },
+      5: { currency: 950, materials: { "steel_ingot": 8, "coal": 6 } }
+    }
+  },
+  "arc_knight_greaves": {
+    id: "arc_knight_greaves",
+    name: "Arc Knight's Greaves",
+    slot: "legs",
+    type: "armor",
+    description: "Plated greaves, lighter than they look: the magic in them carries the weight.",
+    value: 600,
+    icon: { col: 6, row: 3 },
+    tier: 3,
+    defense: { blunt: 2, slash: 3, pierce: 2, fire: 2, ice: 2, arcane: 2 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.01), fire: 0.04, ice: 0.04, arcane: 0.04, lightning: -0.02 },
+    maxLevel: 5,
+    statGrowth: { defense: { blunt: 1, slash: 1 } },
+    upgradeCosts: {
+      2: { currency: 200, materials: { "iron_ingot": 3, "steel_ingot": 1 } },
+      3: { currency: 550, materials: { "iron_ingot": 4, "steel_ingot": 3 } },
+      4: { currency: 1000, materials: { "steel_ingot": 5, "coal": 4 } },
+      5: { currency: 1600, materials: { "steel_ingot": 8, "coal": 6 } }
+    }
+  },
+  "arc_knight_sabatons": {
+    id: "arc_knight_sabatons",
+    name: "Arc Knight's Sabatons",
+    slot: "feet",
+    type: "armor",
+    description: "Heavy steel sabatons, their soles worn smooth by a watch no one relieved.",
+    value: 420,
+    icon: { col: 6, row: 4 },
+    tier: 3,
+    defense: { blunt: 2, slash: 2, pierce: 2, fire: 1, ice: 1, arcane: 1 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.01), fire: 0.02, ice: 0.02, arcane: 0.02, lightning: -0.02 },
+    maxLevel: 5,
+    statGrowth: { defense: { pierce: 1 } },
+    upgradeCosts: {
+      2: { currency: 150, materials: { "iron_ingot": 3, "steel_ingot": 1 } },
+      3: { currency: 400, materials: { "iron_ingot": 4, "steel_ingot": 3 } },
+      4: { currency: 750, materials: { "steel_ingot": 5, "coal": 4 } },
+      5: { currency: 1200, materials: { "steel_ingot": 8, "coal": 6 } }
     }
   },
 
@@ -1350,14 +1681,15 @@ export const ItemDefinitions = {
     icon: { col: 11, row: 1 },   // a sealed bottle of strange ale (its own cell: it used to borrow the invigorating tonic's jar)
     stackable: true
   },
-  // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: it eases the corruption of the character it is used on
-  // (by 25). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js). Used from the character's page, outside a fight; on someone with no
-  // corruption, or someone shackled, it does nothing and is kept. (Bad traits are forgotten with Kurtus's Brew now.)
+  // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: the drinker forgets the Insight rank they learned
+  // last, and the corruption it cost them eases (AbilitySystem._world_forget_insight). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js).
+  // Used from the character's page, outside a fight; on someone who has learned nothing, or someone shackled, it does nothing and is kept. (Traits are
+  // forgotten with Kurtus's Brew: the one gained last.)
   "shmindolyns_draught": {
     id: "shmindolyns_draught",
     name: "Shmindolyn's Draught",
     type: "consumable",
-    description: "A frothing draught brewed to the recipe of Shmindolyn, a healer of legend: it tastes of honey and woodsmoke. Eases the corruption of the one who drinks it by 25. It cannot reach someone already shackled.",
+    description: "A frothing draught brewed to the recipe of Shmindolyn, a healer of legend: it tastes of honey and woodsmoke. The drinker forgets the Insight they learned last, and the corruption it cost them eases. It cannot reach someone already shackled.",
     value: 300,
     icon: { col: 10, row: 1 },   // a foaming tankard
     useAbility: "shmindolyns_draught",

@@ -22,7 +22,7 @@ export const INTERIOR_DEFINITIONS = {
         floorTile: 'LAYER_2',
         wallTile: 'LAYER_3',
         doorObject: 'HOUSE_EXIT_DOOR',
-        craftingStations: ['ANVIL', 'FORGE', 'CARPENTERS_BENCH', 'STONE_BANKER', 'TAILORS_BENCH']
+        craftingStations: ['ANVIL', 'FORGE', 'CARPENTERS_BENCH', 'STONE_BANKER', 'TAILORS_BENCH', 'ENCHANTERS_TABLE']
     },
     CAVE: {
         generatorType: 'CAVE',

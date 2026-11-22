@@ -78,3 +78,27 @@ test('with a recording, the words appear as they are said and are done when the 
     const controller = fs.readFileSync(new URL('../../frontend/src/screens/encounter/encounterController.js', import.meta.url), 'utf8');
     assert.match(controller, /this\.lastText = this\.actionMessage;\s*\r?\n\s*this\._speak\(this\.actionMessage\);/, 'the line a choice says is spoken too');
 });
+
+test('Dolos speaks through the Madman only rarely, no louder than him, and the world is muffled while he does', () => {
+    const cfg = JSON.parse(fs.readFileSync(new URL('../../tools/voice/voices.json', import.meta.url), 'utf8'));
+    const manifest = JSON.parse(fs.readFileSync(new URL('../../frontend/src/assets/audio/voice/manifest.json', import.meta.url), 'utf8'));
+    assert.equal(cfg.voices.DOLOS.hush, true, 'his voice muffles the world');
+    const madman = linesOf('a_disturbing_sight', E.a_disturbing_sight).filter(l => l.speaker === 'MADMAN');
+    const parts = (l) => { const d = cfg.voices.MADMAN.directions[l.text]; return Array.isArray(d) ? d : [d || l.text]; };
+    const withDolos = madman.filter(l => parts(l).some(p => p && p.voice === 'DOLOS'));
+    assert.ok(withDolos.length >= 1 && withDolos.length <= madman.length / 3, `rarely: ${withDolos.length} of ${madman.length} lines`);
+    for (const l of madman) {
+        const e = manifest[l.key];
+        assert.ok(e && fs.existsSync(new URL(`../../frontend/src/assets/audio/voice/${e.f}`, import.meta.url)), `${l.text}: recorded`);
+        if (withDolos.includes(l)) {
+            assert.ok(Array.isArray(e.h) && e.h.length, `${l.text}: its clip says when the world is muffled`);
+            for (const [a, b] of e.h) assert.ok(a >= 0 && b > a && b <= e.d + 0.05, `${l.text}: the hush lies inside the clip (${a}-${b} of ${e.d})`);
+        } else assert.ok(!e.h, `${l.text}: no hush without Dolos`);
+    }
+    // the game: every sound but the voice goes through the hush, and the encounter passes the clip's hush on
+    const am = fs.readFileSync(new URL('../../frontend/src/engine/audioManager.js', import.meta.url), 'utf8');
+    for (const ch of ['musicDuck', 'sfxGain', 'ambientGain']) assert.ok(am.includes(`this.${ch}.connect(this.worldHush)`), `${ch} is muffled with the world`);
+    assert.ok(am.includes('this.voiceGain.connect(this.masterGain)'), 'the voice is not');
+    assert.ok(am.includes('this.worldHush.connect(this.worldMuffle)') && am.includes("this.worldMuffle.type = 'lowpass'"), 'muffled through a low-pass, not cut');
+    assert.ok(fs.readFileSync(new URL('../../frontend/src/screens/encounter/encounterController.js', import.meta.url), 'utf8').includes('hush: clip.h'));
+});

@@ -1,6 +1,6 @@
 // 1. Directly import the individual encounters
 import { applyEncounterTraits } from './encounterTraits.js';
-import { aDisturbingSight } from './encounters/aDisturbingSight.js';
+import { aDisturbingSight, madmanSpotsYou } from './encounters/aDisturbingSight.js';
 import { woundedMutt } from './encounters/woundedMutt.js';
 import { bonfire } from './encounters/bonfire.js';
 import { wildHunt } from './encounters/wildHunt.js';
@@ -17,6 +17,7 @@ import { nikoli, nikoliAfterBattle, nikoliBrothersWon } from './encounters/story
 import { dryKrakenAmbush, codeyFreed } from './encounters/story/codey.js';
 import { jaeger } from './encounters/story/jaeger.js';
 import { amputatorOsric, amputatorGarrick, amputatorGarrickFallen } from './encounters/story/amputators.js';
+import { arcKnight, arcKnightFallen, arcKnightPatrol } from './encounters/story/arcKnight.js';
 import { codey, strangerMark, brothersSword, pursuer, pursuerWon } from './encounters/story/heroesNorth.js';
 import { ruinedCarriage, ruinedCarriageCleared } from './encounters/ruinedCarriage.js';
 import { quicksand, cyclone, cycloneHeart } from './encounters/desertHazards.js';
@@ -35,6 +36,7 @@ import { shackledBetrayal, shackledBetrayalEnd } from './encounters/story/shackl
 export const encounterDefinitions = {
     [woundedMutt.id]: woundedMutt,
     [aDisturbingSight.id]: aDisturbingSight,
+    [madmanSpotsYou.id]: madmanSpotsYou,   // a madman who sees you coming (front or sides): the fight
     [bonfire.id]: bonfire,
     [wildHunt.id]: wildHunt,
     [treasureChest.id]: treasureChest,
@@ -48,8 +50,11 @@ export const encounterDefinitions = {
     [hoodedStranger.id]: hoodedStranger,   // the Shackled quest giver, in one village workshop
     [nikoli.id]: nikoli,   // Nikoli, the Panzerian general, hunting for Commander Mentoras (story/encounters/story/nikoli.js)
     [nikoliAfterBattle.id]: nikoliAfterBattle,
-    [amputatorOsric.id]: amputatorOsric,   // the Amputators' Osric of the Saw, in the first small graveyard of act 1 (story/encounters/story/amputators.js)
-    [amputatorGarrick.id]: amputatorGarrick,   // Brother Garrick, going mad: Osric's quest
+    [amputatorOsric.id]: amputatorOsric,   // the Amputators' Senior Surgeon Osric, in the first small graveyard of act 1 (story/encounters/story/amputators.js)
+    [arcKnight.id]: arcKnight,   // an Arc Knight, act 1's mini boss, outside the Hooded Stranger's workshop (story/encounters/story/arcKnight.js)
+    [arcKnightFallen.id]: arcKnightFallen,
+    [arcKnightPatrol.id]: arcKnightPatrol,   // act 2: Arc Knights on patrol in the plains, rare
+    [amputatorGarrick.id]: amputatorGarrick,   // Surgeon Garrick, going mad: Osric's quest
     [amputatorGarrickFallen.id]: amputatorGarrickFallen,
     [dryKrakenAmbush.id]: dryKrakenAmbush,   // act 2: the Dry Kraken rises out of the desert, holding Codey (story/encounters/story/codey.js, story/storyAmbush.js)
     [codeyFreed.id]: codeyFreed,

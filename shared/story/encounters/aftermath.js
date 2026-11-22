@@ -387,9 +387,10 @@ export const aftermath = {
                 {
                     text: "[ALT] \"You should come with me, we are safer together.\"",
                     type: "skill_check",
-                    attribute: "alterian",
+                    attribute: "alterian",   // (no attribute of that name: a plain roll. The choice is an Alterian's alone: the origin's tag below)
                     threshold: 10,
                     conditions: [
+                        { type: "has_tag", tag: "LANG_ALTERIAN" },   // the Alterian origin (characterCreator ORIGINS)
                         { type: "context_flag_not_set", flagId: "failed_recruit" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],

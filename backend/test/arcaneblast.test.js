@@ -38,12 +38,12 @@ test('Arcane Blast streams the arcane_blast.png swirl to the target, with no imp
     for (const t of [...d.audio, ...d.vfx].map(c => c.start)) assert.ok(t >= 0 && t <= 1);
 });
 
-test('the Arcane Blast sprite is the repo asset, and the Insight of Arcane staff unlocks the ability at level 3', () => {
+test('the Arcane Blast sprite is the repo asset, and the Insight of Arcane teaches the ability at rank 3', () => {
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
     assert.match(main, /arcaneBlastAnimation:\s*'\.\/assets\/abilityAnimations\/arcane_blast\.png'/);
     assert.ok(fs.existsSync(new URL('../../frontend/src/assets/abilityAnimations/arcane_blast.png', import.meta.url)));
-    assert.deepEqual(I.insight_of_arcane.abilityUnlocks[3], ['arcane_blast']);
-    assert.ok(I.insight_of_arcane.abilityUnlocks[2].includes('magic_missile'));
+    assert.deepEqual(I.insight_of_arcane.insight.spells[3], ['arcane_blast']);
+    assert.ok(I.insight_of_arcane.insight.spells[2].includes('magic_missile'));
 });
 
 test('the Arcane Blast orbs fly in one straight, dense line: no sideways scatter, orbs overlapping', () => {

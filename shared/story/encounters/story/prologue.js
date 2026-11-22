@@ -7,6 +7,9 @@
  *
  * The music is the plains daytime overworld track, started by the first stage and cut to silence when the chain breaks.
  *
+ * The madmen: the prisoner chained ahead of the player speaks to them (stages mad_*, and road_ask when the player asks where the line is going):
+ * the cursed madmen of the world, in their voice (voiceLines.js: their quoted words are the MADMAN's), frantic, laughing, a little beast.
+ *
  * Besides the usual stage fields this encounter uses a few that only the encounter scene reads (all optional on any stage):
  *   tone:     'cold'  words glow pale green and the embers turn cold (the cursed road); the default is warm ember
  *   effect:   'snap'  a white flash and a jolt when the stage opens
@@ -58,16 +61,67 @@ export const prologue = {
             image: { sheet: "encounter_prologue", col: 1, row: 0 },
             sfx: "magicAddictCry",   // one of the prisoners ahead: the magic addicts' cry
             sfxVolume: 0.55,
-            text: "The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops.",
+            text: "The prisoners ahead laugh and mutter to themselves. Their laughter has no joy in it, and it never stops.",
             decisions: [
                 {
                     text: "Listen to them.",
-                    customActionText: "The prisoners' words make no sense, yet they laugh as if reminiscing over a shared memory.",
-                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "mad_turn" } }] }]
                 },
                 {
                     text: "Ignore them.",
-                    customActionText: "Eyes on the ground, you keep walking, hoping to drown out their endless laughter.",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "mad_ignore" } }] }]
+                }
+            ]
+        },
+        // the prisoner chained ahead of you: one of the cursed madmen
+        mad_turn: {
+            displayText: "The Prisoners",
+            tone: "cold",
+            image: { sheet: "encounter_prologue", col: 1, row: 0 },
+            text: "The one chained ahead of you twists around, grinning, his eyes wet and far too wide. \"New one! Hee hee! New one hears it too, yes? The whispers?\"",
+            decisions: [
+                {
+                    text: "\"Hears what?\"",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "mad_whispers" } }] }]
+                },
+                {
+                    text: "\"Leave me alone.\"",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "mad_alone" } }] }]
+                }
+            ]
+        },
+        mad_whispers: {
+            displayText: "The Prisoners",
+            tone: "cold",
+            image: { sheet: "encounter_prologue", col: 1, row: 0 },
+            text: "\"Shhh! Magic tell me where we go!\" He leans in, close enough that you smell the rot on his breath. \"Nowhere! We go nowhere! Hahaha!\"",
+            decisions: [
+                {
+                    text: "Pull away.",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
+                }
+            ]
+        },
+        mad_alone: {
+            displayText: "The Prisoners",
+            tone: "cold",
+            image: { sheet: "encounter_prologue", col: 1, row: 0 },
+            text: "\"Alone? Hahaha! Never alone! Magic always listening!\" He snaps his teeth at you like a dog, then turns back to the road, giggling.",
+            decisions: [
+                {
+                    text: "Walk on.",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
+                }
+            ]
+        },
+        mad_ignore: {
+            displayText: "The Prisoners",
+            tone: "cold",
+            image: { sheet: "encounter_prologue", col: 1, row: 0 },
+            text: "You keep your eyes on the ground. Still, the one chained ahead of you giggles without turning. \"Eyes down, eyes down! Hee hee! No help. Magic see you anyway.\"",
+            decisions: [
+                {
+                    text: "Walk on.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
                 }
             ]
@@ -103,7 +157,18 @@ export const prologue = {
                 },
                 {
                     text: "Ask where you are going.",
-                    customActionText: "Sheepishly, you ask anyone who is listening where you are going. After a short pause, the prisoners around you burst out in a chorus of laughter.",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "road_ask" } }] }]
+                }
+            ]
+        },
+        road_ask: {
+            displayText: "The Road",
+            tone: "cold",
+            image: { sheet: "encounter_prologue", col: 3, row: 0 },
+            text: "You ask where you are going. A pause, then the whole line bursts out laughing, the one ahead of you loudest of all. \"Where?! Hahaha! Where iron go! Where iron always go!\"",
+            decisions: [
+                {
+                    text: "Walk.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "slack" } }] }]
                 }
             ]

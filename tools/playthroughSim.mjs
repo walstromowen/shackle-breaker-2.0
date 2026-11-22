@@ -36,7 +36,10 @@ const { AbilityFactory } = await import(ROOT + '/shared/abilities/abilityFactory
 const { CombatCalculator } = await import(ROOT + '/shared/battle/combatCalculator.js');
 const { SpawnTableFactory } = await import(ROOT + '/shared/battle/spawnTableFactory.js');
 const { ActSystem } = await import(ROOT + '/shared/story/actSystem.js');
-const { requirementsAt } = await import(ROOT + '/shared/items/weaponRequirements.js');
+const { requirementsAt: weaponRequirementsAt } = await import(ROOT + '/shared/items/weaponRequirements.js');
+const { elementOfInsight, requirementsForRank } = await import(ROOT + '/shared/abilities/insights.js');
+// an Insight is read, not held (shared/abilities/insights.js): a caster's "weapon level" is their rank in its element, asking the same attributes
+const requirementsAt = (id, level) => { const el = elementOfInsight(id); return el ? requirementsForRank(el, level) : weaponRequirementsAt(id, level); };
 const { DIFFICULTY_MODIFIERS } = await import(ROOT + '/shared/core/constants.js');
 // DOLOS_PHASE=gaze (or respite, stirring, calm): play every fight in that phase of Dolos's attention (story/dolos.js): his enemy levels and his
 // extra ambushers (the ambush size is his through SpawnTableFactory)
@@ -104,11 +107,13 @@ function buildPlayer(run, cls, level) {
         run.weaponLevel++;
     }
     const equipment = {};
-    if (cls.weapon) { const it = ItemFactory.createItem(cls.weapon); it.level = run.weaponLevel; equipment[it.slot === 'twoHand' ? 'twoHand' : 'mainHand'] = it; }
+    const insights = {};
+    if (cls.weapon && elementOfInsight(cls.weapon)) insights[elementOfInsight(cls.weapon)] = run.weaponLevel;
+    else if (cls.weapon) { const it = ItemFactory.createItem(cls.weapon); it.level = run.weaponLevel; equipment[it.slot === 'twoHand' ? 'twoHand' : 'mainHand'] = it; }
     const set = level >= run.armorAt ? cls.armor : 'tattered';
     const armorLevel = set === 'tattered' ? 1 : Math.min(5, 1 + Math.floor((level - run.armorAt) / 6));
     for (const id of ARMOR[set]) { const it = ItemFactory.createItem(id); if (!it) continue; it.level = Math.min(armorLevel, it.maxLevel || 1); equipment[it.slot] = it; }
-    const e = EntityFactory.create('HUMANOID', { attributes: { ...run.attrs }, equipment, level, traits: [], levelEdge: false });
+    const e = EntityFactory.create('HUMANOID', { attributes: { ...run.attrs }, equipment, insights, level, traits: [], levelEdge: false });
     Object.assign(e.state ? e.state.attributes : e.attributes, run.attrs);
     return e;
 }
