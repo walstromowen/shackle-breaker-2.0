@@ -87,8 +87,9 @@ test('a thunderstorm is its own weather: rain with lightning, rolled on the plai
     assert.equal(t.appliedStatusId, 'wet');
     assert.ok(TimeSystem.allowedWeatherFor('PLAINS').has('THUNDERSTORM'));
     assert.ok(!TimeSystem.allowedWeatherFor('DESERT').has('THUNDERSTORM'));
-    const anims = fs.readFileSync(new URL('../../shared/battle/animation/battleAnimationDefinition.js', import.meta.url), 'utf8');
-    assert.ok(anims.includes('"weatherThunderstorm": anim('));
+    // in a fight: no one-off animation, its look for the whole fight (frontend battleWeather.js) has the lightning
+    const { BATTLE_WEATHER } = await import('../../frontend/src/screens/battle/battleWeather.js');
+    assert.ok(BATTLE_WEATHER.thunderstorm.lightning && !t.animationId);
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
     for (const k of ['thunderClose', 'thunderMid', 'thunderFar']) {
         const m = main.match(new RegExp(`${k}: '\\./(assets/[^']+)'`));

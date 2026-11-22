@@ -28,3 +28,9 @@ test('the battle scene plays the weather\'s sound (not silence), clear skies non
     assert.match(fn, /battleAmbience \|\| w\.audioEffect/);
     assert.ok(!/\['battle', 'encounter'/.test(fn), 'a fight is no longer silent');
 });
+
+test('the weather has no one-off animation at the start of a fight any more: only its message and status, then its look for the whole fight', async () => {
+    const anims = fs.readFileSync(new URL('../../shared/battle/animation/battleAnimationDefinition.js', import.meta.url), 'utf8');
+    for (const name of ['weatherRain', 'weatherThunderstorm', 'weatherFog', 'weatherSandstorm', 'weatherBlizzard']) assert.ok(!anims.includes(`"${name}": anim(`), `${name} is gone`);
+    for (const def of Object.values(W)) assert.ok(!def.animationId, `${def.id}: no animation`);
+});

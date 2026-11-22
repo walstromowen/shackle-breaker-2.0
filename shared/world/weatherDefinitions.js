@@ -1,6 +1,6 @@
-/* Weather. `animationId` is the battle animation that plays when the weather announces itself at the start of a fight (see battleAnimationDefinitions.js:
-   weatherRain, weatherFog, weatherSandstorm, weatherBlizzard). It plays on everyone in the battle. Clear skies have none. After it, the weather stays for
-   the whole fight: its look (frontend/src/screens/battle/battleWeather.js, by id) and `battleAmbience`, the sound looped under the fight (audioEffect if none). */
+/* Weather. In a fight it announces itself (battleMessage) and puts its status on everyone (appliedStatusId), then stays for the whole fight: its look
+   (frontend/src/screens/battle/battleWeather.js, by id: the backdrop tinted, the weather falling or blowing across the field) and `battleAmbience`, the
+   sound looped under the fight (audioEffect if none). Clear skies have none of it. */
 export const WeatherDefinitions = {
     CLEAR: {
         id: 'clear',
@@ -12,7 +12,6 @@ export const WeatherDefinitions = {
     RAIN: {
         id: 'rain',
         name: 'Rain',
-        animationId: 'weatherRain', 
         visualEffect: 'particle_rain',
         audioEffect: 'weatherRain', 
         durationRange: [8,20],
@@ -25,7 +24,6 @@ export const WeatherDefinitions = {
     THUNDERSTORM: {
         id: 'thunderstorm',
         name: 'Thunderstorm',
-        animationId: 'weatherThunderstorm',
         visualEffect: 'particle_rain',
         audioEffect: 'weatherRain',
         durationRange: [4, 10],
@@ -35,7 +33,6 @@ export const WeatherDefinitions = {
     FOG: {
         id: 'fog',
         name: 'Dense Fog',
-        animationId: 'weatherFog',
         visualEffect: 'overlay_fog',
         audioEffect: 'weatherFog', 
         durationRange: [8, 12],
@@ -46,7 +43,6 @@ export const WeatherDefinitions = {
     SANDSTORM: {
         id: 'sandstorm',
         name: 'Sandstorm',
-        animationId: 'weatherSandstorm',
         visualEffect: 'particle_sand',
         audioEffect: 'weatherFog',
         durationRange: [10,20],
@@ -60,7 +56,6 @@ export const WeatherDefinitions = {
     BLIZZARD: {
         id: 'blizzard',
         name: 'Blizzard',
-        animationId: 'weatherBlizzard',
         visualEffect: 'particle_blizzard',
         audioEffect: 'weatherFog',
         battleAmbience: 'snowWind',

@@ -560,10 +560,7 @@ export class TurnManager {
             });
         }
         
-        if (weather.animationId) {
-            this.state.activeAnimation = BattleAnimationFactory.create(weather.animationId, null, targets);
-        } else {
-            this.processNextTurnInQueue();
-        }
+        // no animation of its own: the weather is on screen for the whole fight already (frontend battleWeather.js)
+        this.processNextTurnInQueue();
     }
 }

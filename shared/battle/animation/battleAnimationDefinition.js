@@ -1274,68 +1274,6 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.5, 1, 30), flash: flash(0.5, 0.8, 'brightness(200%) sepia(100%) hue-rotate(200deg) saturate(300%) drop-shadow(0 0 10px blue)') }
     }),
-    // Weather animation (WeatherDefinitions BLIZZARD). Plays on everyone in the fight, so it uses no actor motion.
-    "weatherBlizzard": anim(2.8, {
-        audio: [sfx(0, 'spookyWind', { volume: 0.9, pitch: 1.3 })],
-        background: background(0, 2.8, 'current', 'brightness(135%) saturate(35%) hue-rotate(195deg) contrast(90%)'),
-        vfx: [
-            // wind-driven snow, fast and fine
-            repeat(0, 20, 0.13, t => burst(t, { glow: false, count: 16, color: '#ffffff', scale: 0.2, angle: 158, cone: 24, minSpeed: 650, maxSpeed: 1000, minLife: 0.45, maxLife: 0.7, gravity: 150, area: [200, 520], offsetX: 380, alpha: 0.9 })),
-            // big slow flakes tumbling through
-            repeat(0.05, 9, 0.28, t => burst(t, { glow: false, count: 3, color: '#e4f4ff', scale: 0.45, angle: 150, cone: 40, minSpeed: 250, maxSpeed: 450, minLife: 0.8, maxLife: 1.2, gravity: 90, area: [500, 400], offsetX: 200, alpha: 0.8 })),
-            // ice-blue shimmer on each combatant as the cold bites
-            burst(0.4, { count: 12, color: '#9fe3ff', scale: 0.5, minSpeed: 40, maxSpeed: 130, minLife: 0.4, maxLife: 0.8, gravity: -30 })
-        ],
-        target: { shake: shake(0.2, 2.5, 3), flash: flash(0.3, 2.4, 'brightness(125%) saturate(60%) hue-rotate(185deg)') }
-    }),
-    // Weather animation (WeatherDefinitions FOG). Plays on everyone in the fight, so it uses no actor motion.
-    "weatherFog": anim(2.6, {
-        audio: [sfx(0, 'weatherFog', { volume: 0.6, pitch: 0.85 })],
-        background: background(0, 2.6, 'current', 'brightness(115%) saturate(30%) contrast(75%) sepia(10%)'),
-        vfx: [
-            // banks of mist rolling over each combatant
-            spawn(0.0, 'smokeAnimation', { life: 1.6, scale: 4.5, blend: 'normal', move: 'expand_and_fade', alpha: 0.45, offsetX: -50 }),
-            spawn(0.5, 'smokeAnimation', { life: 1.6, scale: 5, blend: 'normal', move: 'expand_and_fade', alpha: 0.4, offsetX: 60, offsetY: 30 }),
-            spawn(1.0, 'smokeAnimation', { life: 1.4, scale: 4.2, blend: 'normal', move: 'expand_and_fade', alpha: 0.4, offsetX: -20, offsetY: -30 }),
-            // slow drifting wisps
-            repeat(0, 6, 0.4, t => burst(t, { count: 4, color: '#d5dbe1', scale: 2.2, angle: 0, cone: 40, minSpeed: 15, maxSpeed: 40, minLife: 1.2, maxLife: 1.8, area: [320, 160], alpha: 0.25 }))
-        ],
-        target: { flash: flash(0.3, 2.2, 'brightness(112%) saturate(55%) contrast(90%)') }
-    }),
-    // Weather animation (WeatherDefinitions RAIN). Plays on everyone in the fight, so it uses no actor motion.
-    "weatherRain": anim(2.5, {
-        audio: [sfx(0.04, 'weatherRainShort', { volume: 0.8 })],
-        background: background(0, 2.5, 'current', 'brightness(70%) saturate(80%) sepia(20%) hue-rotate(170deg)'),
-        vfx: [
-            // sheets of drops falling over every combatant, slightly slanted by the wind
-            repeat(0, 12, 0.19, t => burst(t, { glow: false, count: 14, color: '#9cc2ff', scale: 0.22, angle: 102, cone: 8, minSpeed: 500, maxSpeed: 700, minLife: 0.45, maxLife: 0.6, gravity: 500, area: [420, 40], offsetY: -250, alpha: 0.85 })),
-            // splashes where they land
-            repeat(0.2, 10, 0.22, t => burst(t, { glow: false, count: 5, color: '#dff0ff', scale: 0.18, angle: 270, cone: 140, minSpeed: 60, maxSpeed: 160, minLife: 0.2, maxLife: 0.35, gravity: 600, area: [260, 20], offsetY: 90 }))
-        ],
-        target: { flash: flash(0.08, 0.88, 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)') }
-    }),
-    // Weather animation (WeatherDefinitions THUNDERSTORM): the rain, a darker sky, and a lightning flash over everyone followed by a clap of thunder.
-    "weatherThunderstorm": anim(2.8, {
-        audio: [sfx(0.04, 'weatherRainShort', { volume: 0.8 }), sfx(0.75, 'thunderClose', { volume: 0.85 })],
-        background: background(0, 2.8, 'current', 'brightness(55%) saturate(70%) sepia(25%) hue-rotate(180deg)'),
-        vfx: [
-            repeat(0, 14, 0.19, t => burst(t, { glow: false, count: 16, color: '#9cc2ff', scale: 0.22, angle: 100, cone: 10, minSpeed: 550, maxSpeed: 750, minLife: 0.45, maxLife: 0.6, gravity: 500, area: [420, 40], offsetY: -250, alpha: 0.85 })),
-            repeat(0.2, 12, 0.2, t => burst(t, { glow: false, count: 5, color: '#dff0ff', scale: 0.18, angle: 270, cone: 140, minSpeed: 60, maxSpeed: 160, minLife: 0.2, maxLife: 0.35, gravity: 600, area: [260, 20], offsetY: 90 }))
-        ],
-        target: { flash: flash(0.6, 0.85, 'brightness(260%) saturate(30%) contrast(120%)'), shake: shake(0.75, 1.1, 8) }
-    }),
-    // Weather animation (WeatherDefinitions SANDSTORM). Plays on everyone in the fight, so it uses no actor motion.
-    "weatherSandstorm": anim(2.6, {
-        audio: [sfx(0, 'spookyWind', { volume: 0.7, pitch: 0.9 })],
-        background: background(0, 2.6, 'current', 'sepia(85%) saturate(190%) brightness(88%) hue-rotate(-8deg)'),
-        vfx: [
-            // grit blown hard from right to left across the whole field
-            repeat(0, 18, 0.13, t => burst(t, { glow: false, count: 16, color: '#d9b36a', scale: 0.3, angle: 172, cone: 14, minSpeed: 900, maxSpeed: 1300, minLife: 0.4, maxLife: 0.6, area: [200, 520], offsetX: 380, blend: 'source-over', alpha: 0.9 })),
-            // heavier dust that hangs in the air
-            repeat(0.1, 7, 0.33, t => burst(t, { glow: false, count: 4, color: '#b98f4a', scale: 1.6, angle: 175, cone: 20, minSpeed: 150, maxSpeed: 300, minLife: 0.8, maxLife: 1.2, area: [300, 260], blend: 'source-over', alpha: 0.35 }))
-        ],
-        target: { shake: shake(0.2, 2.3, 5), flash: flash(0.3, 2.2, 'sepia(100%) saturate(220%) brightness(105%)') }
-    }),
     // Whirlwind Slash: the wielder spins (a ring of cuts around them), then a spinning ring tears through every enemy.
     "whirlwind_slash": anim(1.7, {
         audio: [sfx(0.08, 'cleaveSfx', { volume: 0.9, pitch: 1.1 }), sfx(0.32, 'slashSfx', { volume: 1, pitch: 1.2 })],

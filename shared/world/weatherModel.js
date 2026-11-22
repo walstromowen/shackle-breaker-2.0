@@ -10,7 +10,6 @@ export class WeatherModel {
         this.battleAmbience = definition.battleAmbience || null;   // the sound under a fight in it (else audioEffect): battleWeather.js, SceneManager
         
         // Pull battle-specific properties from the definition
-        this.animationId = definition.animationId || null; 
         this.traitId = definition.traitId || null;        
         
         // Pull the status effect ID to apply to combatants during this weather
