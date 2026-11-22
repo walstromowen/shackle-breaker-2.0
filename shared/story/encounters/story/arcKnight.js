@@ -5,7 +5,7 @@
    the guard of the corrupted king, enforcers of his will in the dark lands. "Soldiers with bright blades", the Hooded Stranger calls them (he does not
    say what he was; nothing here may give him away). This one is just one of them, burning still. Once the player has put down three magic addicts for the Stranger (quest shackled3, "Sparks of the Mad") and handed it in, he
    stands in the gate of the Stranger's yard, the only way out (world flag arc_knight_roused; WorldManager arcKnightObjects), and coming near him
-   is the meeting: a word, a few more, and the fight. He is bound to the King's will and has one errand, the player's death; he says no more than
+   is the meeting: the narrator sees him, he speaks (the fight's music starts), his blade at your throat, and the fight. He is bound to the King's will and has one errand, the player's death; he says no more than
    that. Put down, the voice leaves him, and he is gone for good (arc_knight_slain).
    From act 2 others like him are abroad, rare, on patrol in the plains (ARC_KNIGHT_PATROL): they say nothing; coming near one is the fight
    (arcKnightPatrol).
@@ -22,9 +22,12 @@ const end = (results = []) => [{ weight: 100, results: [...results, { type: "END
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
 
 const STAGES = {
-    ak_meet: stage("A knight in blackened plate fills the gate of the yard, his sword a bar of living flame. He does not move. Only the helm turns, slow, until its slit finds you. \"Hold.\"",
-        next("ak_4"), { sfx: "unsheathSwordSfx", sfxVolume: 0.5 }),
-    ak_4: stage("He lifts the blade. Fire runs down its edge. \"The King's guard. The King's word. You die here.\"",
+    ak_meet: stage("A knight in blackened plate fills the gate of the yard, the only way out. His great helm is scorched about the eye-slit, and his sword is a bar of living flame. He stands as still as the fence posts beside him.",
+        next("ak_hold"), { sfx: "unsheathSwordSfx", sfxVolume: 0.5 }),
+    // he turns on you: the fight's music starts here, before the choice, and carries on into the battle unbroken (the same track)
+    ak_hold: stage("The helm turns toward you, slow. \"Hold.\" The fire along his blade flickers. \"He knows your face.\"",
+        next("ak_4"), { bgm: "apexPredatorBgm" }),
+    ak_4: stage("He lifts his blade and lays its burning edge at your throat. \"Stand still, shackled one. It is easier this way.\"",
         [{
             text: "Draw your weapon.",
             outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: {
@@ -32,8 +35,7 @@ const STAGES = {
                 bgm: "apexPredatorBgm",   // a mini boss: a hunt's music, not the plains'
                 afterVictory: { encounterId: "arc_knight_fallen" }
             } }] }]
-        }, { text: "Back away.", customActionText: "You step back. He does not follow. He does not leave the gate.", outcomes: end() }],
-        // he turns hostile here: the fight's music starts with his words, before the choice, and carries on into the battle unbroken (the same track)
+        }, { text: "Back away.", customActionText: "You step back from the blade. He does not follow. He does not leave the gate.", outcomes: end() }],
         { bgm: "apexPredatorBgm" }),
     // after the fight
     fallen: stage("The knight drops to one knee. The fire on his blade gutters and goes out, and something leaves the helm with it: the far voice behind his own. \"Cold. I had forgotten cold.\"",
