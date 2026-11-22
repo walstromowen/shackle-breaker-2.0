@@ -76,7 +76,7 @@ test('the hawk starts every fight in the air: Airborne casts Take Flight for fre
 
 test('dogs a little sturdier, snow leopards a little softer', () => {
     const D = ENTITY_DEFINITIONS.DOG, L = ENTITY_DEFINITIONS.SNOW_LEOPARD;
-    assert.equal(D.baseStats.maxHp, 7); assert.equal(D.baseStats.baseAttack.slash, 5); assert.equal(D.attributes.vigor, 7);
+    assert.equal(D.baseStats.maxHp, 10); assert.equal(D.baseStats.baseAttack.slash, 5); assert.equal(D.attributes.vigor, 8);   // (buffed again with Pounce)
     assert.equal(L.baseStats.maxHp, 14); assert.equal(L.baseStats.critical, 0.15); assert.equal(L.baseStats.baseAttack.slash, 6);
 });
 
@@ -87,7 +87,7 @@ test('Flying has its own icon (wings over wind), not the speed buff\'s', async (
     assert.deepEqual(sameCell, ['flying']);
 });
 
-test('a quiet trait (Airborne) opens the fight with no words: no line of its own, none for Take Flight, none for what it does; it is flying, and does not recharge', async () => {
+test('a quiet trait (Airborne) opens the fight with Take Flight\'s own line only: no announcement of the trait, none for what it does; it is flying, and does not recharge', async () => {
     const { createBattleState } = await import('../../shared/battle/battleState.js');
     const { queuePreBattleTraits } = await import('../../shared/battle/battleQueue.js');
     const { TurnManager } = await import('../../shared/battle/turnManager.js');
@@ -106,7 +106,7 @@ test('a quiet trait (Airborne) opens the fight with no words: no line of its own
     tm.processNextTurnInQueue = () => {};
     state.turnQueue.length = 0;
     tm._handleActionExecution(exec);
-    assert.equal(state.message, '', 'no line for Take Flight');
+    assert.match(state.message, /launches into the air/, 'Take Flight\'s own line');
     const apply = state.turnQueue.find(t => t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS);
     assert.ok(apply && apply.quiet);
     assert.ok(state.turnQueue.some(t => t.type === TURN_TYPES.PLAY_ANIMATION), 'its animation plays');

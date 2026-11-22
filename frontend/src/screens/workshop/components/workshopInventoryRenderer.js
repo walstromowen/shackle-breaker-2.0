@@ -70,9 +70,11 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
                 // Gear entries point at the live item (_ref), so two identical swords - one in the
                 // bag and one equipped - never highlight together. Stacked materials fall back to id.
                 const selectedItem = state.selectedUpgradeItem;
-                const isSelected = !!selectedItem && (item._ref
+                const isSelected = (!!selectedItem && (item._ref
                     ? item._ref === selectedItem
-                    : (selectedItem.id === item.id && selectedItem.instanceId === item.instanceId));
+                    : (selectedItem.id === item.id && selectedItem.instanceId === item.instanceId)))
+                    // at the Enchanter's Table the Insight chosen to spend is marked too
+                    || (!!state.selectedEnchantInsight && !item._ref && item.id === state.selectedEnchantInsight);
 
                 // The item chosen for upgrading is "selected" (bar); the slot under the mouse / keyboard cursor is "highlighted"
                 const flags = this.ui.flags(`PARTY_ITEM_${index}`, state.hoveredHitboxId, { selected: isSelected });

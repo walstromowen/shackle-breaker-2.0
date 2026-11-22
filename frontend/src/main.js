@@ -236,6 +236,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objCarpentersBench: './assets/mapObjects/objCarpentersBench.png',
     objStoneBanker: './assets/mapObjects/objStoneBanker.png',
     objTailorsBench: './assets/mapObjects/objTailorsBench.png',
+    objEnchantersTable: './assets/mapObjects/objEnchantersTable.png',
     objCampfire: './assets/mapObjects/objCampfire.png',
     objStandingTorch: './assets/mapObjects/objStandingTorch.png',
         objWaypointAlterian: './assets/mapObjects/objWaypointAlterian.png',
@@ -533,6 +534,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     clawSfx: './assets/audio/sfx/abilities/claw.mp3',
     talonStrikeSfx: './assets/audio/sfx/abilities/talon_strike.mp3',   // a diving whoosh and a raking tear (ElevenLabs)
     takeFlightSfx: './assets/audio/sfx/abilities/take_flight.mp3',     // heavy wing beats and a rising rush of air (ElevenLabs)
+    pounceSfx: './assets/audio/sfx/abilities/pounce.mp3',             // a snarl and a heavy thud (ElevenLabs)
     // the Insights' newer spells (ElevenLabs, tools/voice/makeInsightSfx.sh)
     gustSfx: './assets/audio/sfx/abilities/insight/gust.mp3',
     downwindSfx: './assets/audio/sfx/abilities/insight/downwind.mp3',

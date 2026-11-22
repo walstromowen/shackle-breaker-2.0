@@ -1,30 +1,37 @@
 /* An Arc Knight: act 1's mini boss.
 
-   The Arc Knights were a new breed of knight the king instated in the years leading up to the fall of Altus: soldiers infused with magic, made to
-   hold back the mad. "Soldiers with bright blades", the Hooded Stranger calls them (the clever went strange first). This one is just one of them,
-   burning still. Once the player has put down three magic addicts for the Stranger (quest shackled3, "Sparks of the Mad") and handed it in, he
-   waits on the footpath outside the Stranger's workshop (world flag arc_knight_roused; WorldManager arcKnightObjects), and the player meets him
-   on walking out: a few words, and the fight. He felt the sparks go out, and the fire in him wants the player's. Put down, he is gone for good
-   (arc_knight_slain).
+   The Arc Knights are the king's new royal guard (docs/story.md). In the year leading up to the fall of Altus the king came to rely on them over the
+   old guard, Mentoras's, who used no magic: they took the artifact's fire into their weapons and armour, and the old guard was sent home. Now they are
+   the guard of the corrupted king, enforcers of his will in the dark lands. "Soldiers with bright blades", the Hooded Stranger calls them (he does not
+   say what he was; nothing here may give him away). This one is just one of them, burning still. Once the player has put down three magic addicts for the Stranger (quest shackled3, "Sparks of the Mad") and handed it in, he
+   stands in the gate of the Stranger's yard, the only way out (world flag arc_knight_roused; WorldManager arcKnightObjects), and coming near him
+   is the meeting: a few words, and the fight. He is the King's still: knelt once to take the fire and the King's voice with it, and never rose,
+   bound and cursed past the fall, the King speaking through him (a thrall's voice, with a far one behind it). The mad are nothing to him; he has
+   come because the King wants the player dead. Put down, the voice leaves him, and he is gone for good (arc_knight_slain).
    From act 2 others like him are abroad, rare, on patrol in the plains (ARC_KNIGHT_PATROL): they say nothing; coming near one is the fight
    (arcKnightPatrol).
 
    The world's: like Nikoli and Osric, his story belongs to the world being played (story/worldStory.js): in a party everyone meets the same knight.
-   How he talks: an old knight of Altus inside a great helm, formal and slow, the fire crackling in his throat. */
+   How he talks: an old knight of Altus inside a great helm, formal and slow, the fire crackling in his throat, and hollow: a man speaking under
+   another's will. */
 import { next } from '../stageKit.js';
 
 const TITLE = "Arc Knight";
 const IMG = { col: 0, row: 0 };
-const OBJECTS = ['ARC_KNIGHT_NPC'];
+const OBJECTS = ['ARC_KNIGHT_NPC', 'ARC_KNIGHT_NPC_LEFT', 'ARC_KNIGHT_NPC_RIGHT'];
 const end = (results = []) => [{ weight: 100, results: [...results, { type: "END_ENCOUNTER", payload: null }] }];
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
 
 const STAGES = {
-    ak_meet: stage("A knight in blackened plate stands on the path, his sword a bar of living flame. The helm turns toward you, slow. \"You. You smell of sparks gone out. Three of them. I felt each one die.\"",
-        next("ak_3"), { sfx: "unsheathSwordSfx", sfxVolume: 0.5 }),
-    ak_3: stage("\"The King made us of fire, to hold back the mad. Arc Knights, he called us. The last wall of Altus.\" A sound like a forge drawing breath. \"The wall cracked first.\"",
+    ak_meet: stage("A knight in blackened plate fills the gate of the yard, the only way out, his sword a bar of living flame. The helm turns toward you, slow, and something cold looks out of the slit. \"Hold.\" The word rings strangely, as if a second voice spoke it with him, from very far away.",
+        next("ak_2"), { sfx: "unsheathSwordSfx", sfxVolume: 0.5 }),
+    ak_2: stage("\"You think I come for the three you burned out for the old man. I do not. The mad are nothing to me. Let them rot in their ditches.\"",
+        next("ak_3")),
+    ak_3: stage("\"I was of the King's guard. The new guard. The old one would not take the artifact's fire, so he sent them home and gave it to us instead: in our blades, in our plate, in us.\"",
+        next("ak_kneel")),
+    ak_kneel: stage("\"I knelt, and the King put his fire in me, and his voice with it. I have not risen from that kneeling since.\" The flames along the blade bend, as if a wind blew on them from somewhere far off. \"He speaks still, even from the ruin. We keep these lands for him now.\"",
         next("ak_4")),
-    ak_4: stage("The flames along his blade lean toward you, hungry. \"Now the fire wants more. It wants yours. Stand still, shackled one. It is quicker that way.\"",
+    ak_4: stage("The helm tilts, listening to something you cannot hear. \"He knows your face, shackled one. He wants it gone from the world.\" \"I would not. I cannot help it. Draw.\"",
         [{
             text: "Draw your weapon.",
             outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: {
@@ -32,9 +39,11 @@ const STAGES = {
                 bgm: "apexPredatorBgm",   // a mini boss: a hunt's music, not the plains'
                 afterVictory: { encounterId: "arc_knight_fallen" }
             } }] }]
-        }, { text: "Back away.", customActionText: "You step back. He does not follow. The helm turns back to the door, and he waits.", outcomes: end() }]),
+        }, { text: "Back away.", customActionText: "You step back. He does not follow, and he does not move from the gate. There is no other way out.", outcomes: end() }]),
     // after the fight
-    fallen: stage("The knight drops to one knee, and the fire on his blade gutters and goes out. \"Cold. I had forgotten cold.\" A long breath rattles in the helm. \"The King lied to all of us.\" Then he is still.",
+    fallen: stage("The knight drops to one knee. The fire on his blade gutters and goes out, and something leaves the helm with it: the far voice behind his own. \"Cold. I had forgotten cold.\"",
+        next("fallen_2"), { bgm: "none" }),
+    fallen_2: stage("A tired breath, a man's. \"He is gone from my head. Do you know how long it has been?\" \"He has others still kneeling. He will send them.\" Then he is still.",
         [{ text: "Leave him to the dark.", outcomes: end([
             { type: "GRANT_MILESTONE", payload: { id: "arc_knight_slain" } },
             ...OBJECTS.map(objectId => ({ type: "REMOVE_STORY_NPC", payload: { objectId } }))
@@ -63,7 +72,7 @@ export const arcKnightPatrol = {
     tone: "cold",
     initialStage: "spotted",
     stages: {
-        spotted: stage("An Arc Knight on his patrol turns, and sees you. The fire along his blade flares white. He says nothing. He does not need to.",
+        spotted: stage("An Arc Knight of the King's guard, keeping these roads in his master's name, turns and sees you. The fire along his blade flares white. He says nothing. He does not need to.",
             [{
                 text: "Draw your weapon.",
                 outcomes: [{ weight: 100, results: [

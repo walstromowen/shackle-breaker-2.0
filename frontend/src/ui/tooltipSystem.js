@@ -6,6 +6,7 @@ import { AbilityDefinitions } from '../../../shared/abilities/abilityDefinitions
 import { requirementsOf, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../../../shared/items/weaponRequirements.js';
 import { StatCalculator } from '../../../shared/characters/statCalculator.js';
 import { rankOf, maxRank, requirementsForRank } from '../../../shared/abilities/insights.js';
+import { enchantmentOf, enchantedName, describeEnchantment } from '../../../shared/items/enchantments.js';
 
 export class TooltipSystem {
   constructor(ui, loader = null) {
@@ -518,6 +519,13 @@ export class TooltipSystem {
       lines.push({ type: 'spacer' });
     }
 
+    // 4a. The weapon's enchantment (items/enchantments.js)
+    const ench = enchantmentOf(item);
+    if (ench) {
+      lines.push({ text: `${ench.name}: ${describeEnchantment(item)}`, color: UITheme.colors.textHighlight });
+      lines.push({ type: 'spacer' });
+    }
+
     // 4b. Attribute requirements (weapons), at the item's own level
     lines.push(...this._requirementLines(item, member));
 
@@ -530,7 +538,7 @@ export class TooltipSystem {
     }
 
     return {
-      title: def.name || item.name,
+      title: (ench ? enchantedName(item) : null) || def.name || item.name,
       type: typeText,
       color: this._getRarityColor(def.rarity),
       weight: def.weight,

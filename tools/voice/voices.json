@@ -437,19 +437,21 @@
     },
     "ARC_KNIGHT": {
       "id": "otHDnempUlES9g5yQxNE",
-      "name": "Arc Knight (Shackle Breaker): designed for an Arc Knight, one of the magic-infused knights the king made before Altus fell, inside a great iron helm: deep, resonant, slow and formal old-world English, commanding and weary, a dry crackling rasp as if fire burns in his throat; the helm treatment puts the iron around his voice",
+      "name": "Arc Knight (Shackle Breaker): designed for an Arc Knight, one of the magic-infused knights the king made before Altus fell, inside a great iron helm: deep, resonant, slow and formal old-world English, commanding and weary, a dry crackling rasp as if fire burns in his throat; the helm treatment puts the iron around his voice. A thrall: he speaks under the King's will, hollow and compelled",
       "model": "eleven_v3",
       "settings": {
         "stability": 0.5
       },
       "fx": "helm",
       "directions": {
-        "You. You smell of sparks gone out. Three of them. I felt each one die.": "[slow, grave, the words heavy] You. [a low, crackling breath] You smell of sparks gone out. [measured] Three of them. [quieter, almost grieving] I felt each one die.",
-        "The King made us of fire, to hold back the mad. Arc Knights, he called us. The last wall of Altus.": "[formal, proud, weary] The King made us of fire, to hold back the mad. [slower] Arc Knights, he called us. [grave] The last wall of Altus.",
-        "The wall cracked first.": "[flat, bitter, a crackling rasp] The wall cracked first.",
-        "Now the fire wants more. It wants yours. Stand still, shackled one. It is quicker that way.": "[low, hungry, menacing] Now the fire wants more. It wants yours. [cold, commanding] Stand still, shackled one. [almost gentle] It is quicker that way.",
+        "Hold.": "[hollow, deep, commanding, as if two voices said it at once] Hold.",
+        "You think I come for the three you burned out for the old man. I do not. The mad are nothing to me. Let them rot in their ditches.": "[slow, cold, indifferent] You think I come for the three you burned out for the old man. [flat] I do not. [contemptuous, quiet] The mad are nothing to me. [cold] Let them rot in their ditches.",
         "Cold. I had forgotten cold.": "[weak, wondering, the fire gone from his voice] Cold. [a long breath] I had forgotten cold.",
-        "The King lied to all of us.": "[a dying whisper, bitter] The King lied to all of us."
+        "He knows your face, shackled one. He wants it gone from the world. I would not. I cannot help it. Draw.": "[hollow, compelled, not his own words] He knows your face, shackled one. [cold, final] He wants it gone from the world. [a long, crackling breath, then strained, the man fighting through] I would not. [anguished, through clenched teeth] I cannot help it. [the voice going hollow and commanding again] Draw.",
+        "He is gone from my head. Do you know how long it has been? He has others still kneeling. He will send them.": "[weak, relieved, a free man's voice, tired almost to laughing] He is gone from my head. [a broken breath] Do you know how long it has been? [fading to a dying whisper, a warning] He has others still kneeling. [barely audible] He will send them.",
+        "I was of the King's guard. The new guard. The old one would not take the artifact's fire, so he sent them home and gave it to us instead: in our blades, in our plate, in us.": "[proud, formal, cold] I was of the King's guard. [a hard edge] The new guard. [contemptuous of the old] The old one would not take the artifact's fire, so he sent them home [slower, heavier, the pride turning to dread] and gave it to us instead: in our blades, in our plate, [a hollow whisper] in us.",
+        "He speaks still, even from the ruin. We keep these lands for him now.": "[hushed, haunted, listening] He speaks still, [a dread whisper] even from the ruin. [hollow, compelled, cold] We keep these lands for him now.",
+        "I knelt, and the King put his fire in me, and his voice with it. I have not risen from that kneeling since.": "[slower, heavier] I knelt, and the King put his fire in me, [hollow] and his voice with it. [bitter, weary, almost a whisper] I have not risen from that kneeling since."
       }
     }
   }

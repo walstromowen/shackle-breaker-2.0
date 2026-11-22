@@ -48,18 +48,33 @@ function amputatorObjects(out) {
 }
 
 /* An Arc Knight (story/encounters/story/arcKnight.js): once shackled3 is handed in (world flag arc_knight_roused; an older save: the quest done),
-   he stands on the footpath before the Hooded Stranger's workshop door, facing it, until he is put down (arc_knight_slain): the player meets him on
-   walking out (his trigger fires on arrival, overworldController). The yard's three free rows lie below the door (structures.js): the cell in front
-   of it is where the player comes out, the next is the footpath. */
+   he stands in the gate of the Hooded Stranger's yard, facing the house, until he is put down (arc_knight_slain): the only way out, and coming near
+   him is the meeting. The workshop's yard (structures.js, a compact smithy yard) is a 7 x 7 fence ring round the door: the door in the middle of the
+   house's bottom row, the footpath on the row below it, and ONE gate: south of the door in the bottom fence, or in the east or west fence on the
+   footpath's row (the footpath's dirt tells which). While he waits the fence is whole again: a piece the years knocked out (wear) is mended. */
 function arcKnightRoused() {
     if (storyHas('arc_knight_slain')) return false;
     const done = gameState.quests && Array.isArray(gameState.quests.completed) && gameState.quests.completed.includes('shackled3');
     return !!(gameState.world.strangerHome && (storyHas('arc_knight_roused') || done));
 }
+export function strangerYardGate(dc, dr) {
+    const w = gameState.world;
+    const isPath = (c, r) => (w.terrainOverrides || {})[`${c},${r}`] === 1 || !!(w.levelPaths || {})[`${c},${r}`];
+    if (isPath(dc + 2, dr + 1)) return { col: dc + 3, row: dr + 1, facing: 'LEFT' };
+    if (isPath(dc - 2, dr + 1)) return { col: dc - 3, row: dr + 1, facing: 'RIGHT' };
+    return { col: dc, row: dr + 3, facing: 'UP' };
+}
 function arcKnightObjects(out) {
     if (!arcKnightRoused()) return;
     const [dc, dr] = String(gameState.world.strangerHome).split(/[_,]/).map(Number);
-    if (Number.isFinite(dc) && Number.isFinite(dr)) out.set(`${dc},${dr + 2}`, 'ARC_KNIGHT_NPC');
+    if (!Number.isFinite(dc) || !Number.isFinite(dr)) return;
+    const gate = strangerYardGate(dc, dr);
+    out.set(`${gate.col},${gate.row}`, { UP: 'ARC_KNIGHT_NPC', LEFT: 'ARC_KNIGHT_NPC_LEFT', RIGHT: 'ARC_KNIGHT_NPC_RIGHT' }[gate.facing]);
+    // the fence mended where it is broken (never the gate: he is the gate now)
+    const changes = gameState.world.changes || {};
+    const mend = (c, r, id) => { if (!(c === gate.col && r === gate.row) && changes[`${c},${r}`] === null) out.set(`${c},${r}`, id); };
+    for (let c = dc - 2; c <= dc + 2; c++) { mend(c, dr - 3, 'WOODEN_FENCE_H'); mend(c, dr + 3, 'WOODEN_FENCE_H'); }
+    for (let r = dr - 2; r <= dr + 2; r++) { mend(dc - 3, r, 'WOODEN_FENCE_V'); mend(dc + 3, r, 'WOODEN_FENCE_V'); }
 }
 
 /* Wanderers: map objects whose definition has `wander` (the madmen, the act 2 Arc Knights on patrol) walk about their home cell, never leaving its

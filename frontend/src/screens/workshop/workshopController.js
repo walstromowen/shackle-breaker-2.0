@@ -9,6 +9,9 @@ import { ItemUpgradeSystem } from '../../../../shared/items/itemUpgradeSystem.js
 import { ScrollManager } from '../../ui/scrollManager.js';
 import { QuestDefinitions } from '../../../../shared/story/questDefinitions.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
+import { canUpgradeAt, ENCHANTERS_TABLE } from '../../../../shared/items/workstations.js';
+import { canEnchant, rollEnchantment, enchantedName, describeEnchantment, enchantmentsOfElement } from '../../../../shared/items/enchantments.js';
+import { elementOfInsight } from '../../../../shared/abilities/insights.js';
 
 export class WorkshopController extends BaseController {
     constructor(input) {
@@ -26,6 +29,11 @@ export class WorkshopController extends BaseController {
         // Upgrading State
         this.selectedUpgradeItem = null;
         this.canUpgradeSelected = false;
+
+        // Enchanting State (the Enchanter's Table: items/enchantments.js): the weapon is selectedUpgradeItem, the Insight to spend is chosen from the bag
+        this.selectedEnchantInsight = null;   // an Insight's item id
+        this.canEnchantSelected = false;
+        this.lastEnchantMessage = null;
         
         // Default to the description tab when opening the workshop
         this.activeTab = 'description';
@@ -61,7 +69,7 @@ export class WorkshopController extends BaseController {
     // FOCUS & KEYBOARD (shared standard, see BaseController)
     // ========================================================
     // The things the keyboard cursor may land on
-    static FOCUSABLE = /^(BTN_CLOSE|BTN_CRAFT|BTN_UPGRADE|TAB_|RECIPE_|PARTY_ITEM_)/i;
+    static FOCUSABLE = /^(BTN_CLOSE|BTN_CRAFT|BTN_UPGRADE|BTN_ENCHANT|TAB_|RECIPE_|PARTY_ITEM_)/i;
 
     _focusables() {
         return this.currentHitboxes.filter(h => WorkshopController.FOCUSABLE.test(h.id));
@@ -146,12 +154,18 @@ export class WorkshopController extends BaseController {
         // Read station data passed in from the Overworld interaction via SceneManager
         this.stationId = data?.station || 'any';
         this.stationTitle = data?.title || 'Workshop';
+        this.selectedUpgradeItem = null;
+        this.selectedEnchantInsight = null;
+        this.canEnchantSelected = false;
+        this.lastEnchantMessage = null;
 
         // Fetch all unlocked visible recipes, then filter based on station
         const allRecipes = CraftingManager.getVisibleRecipes(gameState);
         this.availableRecipes = allRecipes.filter(recipe => {
             // If we passed 'all' (e.g. from debug/menu), show everything.
             // Otherwise, only show recipes assigned to this exact station OR generic 'any' prep recipes.
+            // (the Enchanter's Table crafts nothing: it enchants)
+            if (this.isEnchanting) return false;
             return this.stationId === 'all' || recipe.station === this.stationId || recipe.station === 'any';
         });
 
@@ -234,8 +248,53 @@ export class WorkshopController extends BaseController {
     selectUpgradeItem(item) {
         this.detailsScrollOffset = 0;
         this.selectedRecipe = null;
+        if (this.selectedUpgradeItem !== item) this.lastEnchantMessage = null;
         this.selectedUpgradeItem = item;
         this.checkUpgradeability();
+        this.checkEnchantability();
+    }
+
+    // --- ENCHANTING (the Enchanter's Table) ---
+    get isEnchanting() { return this.stationId === ENCHANTERS_TABLE; }
+
+    checkEnchantability() {
+        const item = this.selectedUpgradeItem;
+        this.canEnchantSelected = !!(this.isEnchanting && item && canEnchant(item) && this.selectedEnchantInsight
+            && InventorySystem.hasItem(this.selectedEnchantInsight, 1));
+    }
+
+    executeEnchant() {
+        const item = this.selectedUpgradeItem;
+        const element = elementOfInsight(this.selectedEnchantInsight);
+        if (!this.canEnchantSelected || !element) { this.playErrorSound(); return; }
+        const before = enchantedName(item);
+        const rolled = rollEnchantment(element);
+        if (!rolled) { this.playErrorSound(); return; }
+        InventorySystem.removeItem(this.selectedEnchantInsight, 1);
+        item.enchantment = rolled;
+        this._refreshHolderStats(item);
+        this.lastEnchantMessage = `${before} becomes the ${enchantedName(item)}.`;
+        if (!InventorySystem.hasItem(this.selectedEnchantInsight, 1)) this.selectedEnchantInsight = null;
+        this.checkEnchantability();
+        this.updateHitboxes(this.currentHitboxes);
+        this.playConfirmSound();
+        this.playSfx(UI_SFX.success, 0.8);
+    }
+
+    /* What the table shows for the selected weapon: its enchantment now, and what the chosen Insight could make of it. */
+    _enchantInfo() {
+        const item = this.selectedUpgradeItem;
+        if (!this.isEnchanting || !item) return null;
+        const element = elementOfInsight(this.selectedEnchantInsight);
+        return {
+            current: item.enchantment ? { name: enchantedName(item), text: describeEnchantment(item) } : null,
+            insightId: this.selectedEnchantInsight,
+            element,
+            options: element ? enchantmentsOfElement(element).map(e => e.kind === 'status'
+                ? { name: e.name, text: e.description }
+                : { name: e.name, text: `25% to 50% of its physical attack becomes ${element}.` }) : [],
+            message: this.lastEnchantMessage
+        };
     }
 
     // --- CRAFTING LOGIC ---
@@ -381,6 +440,12 @@ export class WorkshopController extends BaseController {
             return;
         }
 
+        if (normalizedId === 'BTN_ENCHANT') {
+            if (this.canEnchantSelected) this.executeEnchant();
+            else this.playErrorSound();
+            return;
+        }
+
         if (normalizedId === 'BTN_UPGRADE') {
             if (this.canUpgradeSelected) this.executeUpgrade();
             else this.playErrorSound();
@@ -416,6 +481,15 @@ export class WorkshopController extends BaseController {
             const inventoryList = this._getFormattedInventory();
             const selected = inventoryList[index];
             
+            // at the Enchanter's Table an Insight in the bag is the one to spend, and the chosen weapon stays chosen
+            if (selected && this.isEnchanting && !selected._ref && elementOfInsight(selected.id || selected.defId)) {
+                this.selectedEnchantInsight = selected.id || selected.defId;
+                this.lastEnchantMessage = null;
+                this.checkEnchantability();
+                this.playConfirmSound();
+                return;
+            }
+
             if (selected) {
                 // Gear entries (carried OR equipped) carry a direct reference to the live item.
                 // Stacked materials have no reference, so the formatted object is used as-is.
@@ -525,7 +599,7 @@ export class WorkshopController extends BaseController {
         return {
             ...item,
             defId: itemId,
-            name: item.name || def.name || itemId,
+            name: enchantedName(item) || item.name || def.name || itemId,   // "Searing Shortsword"
             type: item.type || def.type || 'item',
             slot: item.slot || def.slot || '',
             icon: item.icon || def.icon,
@@ -547,11 +621,15 @@ export class WorkshopController extends BaseController {
         const carriedGear = [];
         const stackables = new Map();
 
+        // what this station can work: the Enchanter's Table enchants weapons (and spends Insights); every other station upgrades the gear of its trade
+        // (items/workstations.js), with every material shown for reference
+        const workable = (item) => this.isEnchanting ? canEnchant(item) : canUpgradeAt(item, this.stationId);
+
         gameState.party.inventory.forEach(item => {
             if (!item) return;
 
             if (this._isGear(item)) {
-                carriedGear.push(this._formatGear(item));
+                if (workable(item)) carriedGear.push(this._formatGear(item));
             } else {
                 const itemId = item.defId || item.id;
                 const currentQty = stackables.get(itemId) || 0;
@@ -561,10 +639,12 @@ export class WorkshopController extends BaseController {
 
         // Gear currently worn by party members, so it can be upgraded without unequipping
         const equippedGear = this._getEquippedEntries()
-            .filter(entry => this._isGear(entry.item))
+            .filter(entry => typeof entry.item === 'object' && this._isGear(entry.item) && workable(entry.item))
             .map(entry => this._formatGear(entry.item, entry));
 
-        const aggregated = Array.from(stackables, ([defId, qty]) => {
+        const aggregated = Array.from(stackables, ([defId, qty]) => ({ defId, qty }))
+            .filter(({ defId }) => !this.isEnchanting || elementOfInsight(defId))
+            .map(({ defId, qty }) => {
             const def = ItemDefinitions[defId] || {};
             return {
                 defId: defId,
@@ -574,6 +654,7 @@ export class WorkshopController extends BaseController {
                 type: def.type || 'item',
                 slot: def.slot || '',
                 icon: def.icon || null,
+                iconSheet: def.iconSheet || null,   // an Insight's art is on the weapons sheet
                 description: def.description || '',
                 cost: def.cost || def.value || 0
             };
@@ -598,6 +679,12 @@ export class WorkshopController extends BaseController {
             selectedUpgradeHolder: this._findHolder(this.selectedUpgradeItem),
             canUpgradeSelected: this.canUpgradeSelected,
             activeTab: this.activeTab,
+
+            // Enchanting (the Enchanter's Table)
+            isEnchanting: this.isEnchanting,
+            selectedEnchantInsight: this.selectedEnchantInsight,
+            canEnchantSelected: this.canEnchantSelected,
+            enchantInfo: this._enchantInfo(),
             
             // Layout & Scrolling Support
             layout: this.layout,

@@ -1083,7 +1083,7 @@ export const ItemDefinitions = {
   },
 
   // --- THE ARC KNIGHTS' ARMOR SET (tier 3: dropped, rarely, by Arc Knights; story/encounters/story/arcKnight.js) ---
-  // The plate of the king's Arc Knights, worked with the same magic as the knights: against blows and blades just short of iron (blunt 13, slash
+  // The plate of the king's Arc Knights, his new royal guard (docs/story.md), the artifact's magic worked into the steel: against blows and blades just short of iron (blunt 13, slash
   // 16, pierce 13 and 14% resistance for the set, against iron's 14 / 17 / 14 and 15%), and strong against fire, ice and the arcane (9 defense
   // and 18% resistance to each, where other sets have next to none). The magic carries its weight: no cost to speed (iron's is -4). The metal
   // draws lightning: 10% weaker against it.
@@ -1093,7 +1093,7 @@ export const ItemDefinitions = {
     name: "Arc Knight's Helm",
     slot: "head",
     type: "armor",
-    description: "A great helm of blackened steel, its eye-slit edged with a faint ember glow that never quite goes out.",
+    description: "The great helm of the king's new guard: blackened steel, its eye-slit edged with an ember glow that never quite goes out.",
     value: 380,
     icon: { col: 6, row: 0 },
     tier: 3,
@@ -1113,7 +1113,7 @@ export const ItemDefinitions = {
     name: "Arc Knight's Cuirass",
     slot: "torso",
     type: "armor",
-    description: "Blackened plate over a scorched gambeson, warm to the touch. The king's magic was worked into the steel itself.",
+    description: "Blackened plate over a scorched gambeson, warm to the touch. The Arc Knights worked the artifact's fire into the steel itself; the old royal guard would not, and was sent home.",
     value: 950,
     icon: { col: 6, row: 1 },
     tier: 3,

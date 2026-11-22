@@ -24,6 +24,12 @@ fall, when the player breaks out of the king's chain line. This page is a living
   - *Likely link, to confirm:* the "great catastrophe from a time long past" the Namuh know of is the fall of Infernus.
   - *Open question:* how the artifact came back to the surface (the meteor shower) after Infernus fell with it.
 - **The Shackle Breakers**: runaways from the king's prisons, bound in magical chains. Rumoured to be a myth. The player is one.
+- **The Royal Guard and the Arc Knights**: the old **royal guard** of Altus, commanded by Mentoras, used no magic. In the year leading up to the fall
+  the king came to rely on his new **Arc Knights** instead: knights who infused their weapons and armour with the artifact's magic (the fire in
+  their blades and plate). The old guard was phased out. The Arc Knights are the guard of the corrupted king now, the **enforcers of his will** in
+  the dark lands: they knelt to take the fire, and the king's voice came with it; bound and cursed, they serve him still, even from the ruin (in the
+  game, act 1's mini boss waits in the Hooded Stranger's yard, and from act 2 more of them patrol the plains). They mean nothing to the mad and the
+  mad nothing to them: they come for whoever the king wants dead.
 
 ## The stones, the artifact and magic
 

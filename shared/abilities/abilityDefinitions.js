@@ -422,6 +422,23 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "pierce", power: 1.0 }],
         statusEffects: [{ id: "bleed", chance: 0.15, duration: 3 }]
     },
+    // A dog's leap (the Dog): it throws its whole weight at the target. Blunt, a little slow to wind up, and it can bowl the target over.
+    "pounce": {
+        id: "pounce",
+        name: "Pounce",
+        description: "Leap on the target with your full weight. A heavy blow with a chance to knock it off its feet.",
+        range: "melee",
+        tags: ["physical", "contact", "beast", "blunt"],
+        battleMessage: "{user} leaps and slams into {target}!",
+        icon: { col: 12, row: 2 },
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 14 },
+        accuracy: 0.9,
+        speedModifier: 0.95,
+        animationId: "pounce",
+        effects: [{ type: "damage", damageType: "blunt", power: 1.15 }],
+        statusEffects: [{ id: "knocked_down", chance: 0.2, duration: 1 }]
+    },
     // A bird of prey's attack (the Hawk): it drops out of the sky talons first. Pierce, which armour stops less well than slash.
     "talon_strike": {
         id: "talon_strike",
@@ -849,7 +866,7 @@ export const AbilityDefinitions = {
         cost: { insight: 30 },
         speedModifier: 0.8,
         accuracy: 0.90,
-        effects: [{ type: "damage", damageType: "fire", power: 2.5, recoil: 0.30 }]
+        effects: [{ type: "damage", damageType: "fire", power: 2.2, recoil: 0.30 }]   // was 2.5
     },
     "flamethrower": {
         id: "flamethrower",

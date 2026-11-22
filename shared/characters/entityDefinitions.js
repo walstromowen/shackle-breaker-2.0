@@ -441,8 +441,9 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "AMPUTATOR", "ELITE"]
     },
 
-    // An Arc Knight: one of the magic-infused knights the king instated in the years before Altus fell, to hold back the mad; the fire he was given
-    // burns in his blade still, and it is hungry. Act 1's mini boss: he paces outside the Hooded Stranger's workshop once the magic addicts are
+    // An Arc Knight: the corrupted king's new royal guard (docs/story.md). In the year before Altus fell the king came to rely on them over the old guard
+    // (Mentoras's, who used no magic): they took the artifact's fire into their blades and plate, and his voice came with it. Now they enforce his will
+    // in the dark lands; the fire burns in this one's blade still, and it is hungry. Act 1's mini boss: he paces outside the Hooded Stranger's workshop once the magic addicts are
     // put down (story/encounters/story/arcKnight.js). Armoured, fire in all he does; ice and water get through.
     "ARC_KNIGHT": {
         ...HUMANOID_TEMPLATE,
@@ -738,15 +739,16 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "dogDeath",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 7, dexterity: 12, strength: 7
+            vigor: 8, dexterity: 12, strength: 8
         },
+        // a dog recruited from the wild (woundedMutt.js) has to keep up: a bite that hurts (pierce 3 -> 7) and the weight to Pounce (blunt 2 -> 6)
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 7, maxStamina: 9, speed: 7, critical: 0.08,
-            baseAttack: { blunt: 2, slash: 5, pierce: 3 }
+            maxHp: 10, maxStamina: 12, speed: 8, critical: 0.08,
+            baseAttack: { blunt: 6, slash: 5, pierce: 7 }
         },
         lootTableId: "canine_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
+        abilities: [...BEAST_TEMPLATE.abilities, 'howl', 'pounce'],
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
     },
 

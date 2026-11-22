@@ -361,6 +361,19 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.1, 0.3, 22), flash: flash(0.1, 0.3, 'brightness(150%) sepia(100%) hue-rotate(330deg) saturate(300%)') }
     }),
+    // Pounce: the dog springs (a long lunge with a hop), lands on the target with a thud and a spray of dust.
+    "pounce": anim(1.3, {
+        seconds: true,
+        hit: 0.3,
+        audio: [sfx(0, 'pounceSfx', { volume: 1 })],
+        actor: lunge(0, 0.35, 150, { flash: flash(0.05, 0.35, 'brightness(125%)') }),
+        vfx: [
+            spawn('hit', 'impactAnimation', { life: 0.35, move: 'expand_and_fade', scale: 2 }),
+            burst('hit', { count: 14, color: '#b89a74', shape: 'puff', scale: 0.9, minSpeed: 60, maxSpeed: 180, gravity: 120, minLife: 0.3, maxLife: 0.6, glow: false }),
+            ...repeat(0.02, 3, 0.05, t => burst(t, { at: 'source', count: 3, color: '#e8e0d0', shape: 'streak', length: 60, scale: 0.6, rotation: 1.571, angle: 180, cone: 10, minSpeed: 300, maxSpeed: 500, minLife: 0.15, maxLife: 0.25, glow: false }))
+        ],
+        target: { shake: shake('hit', 'hit+0.45', 40), flash: flash('hit', 'hit+0.25', 'brightness(220%)') }
+    }),
     // Talon Strike: the attacker lunges; the talons drop onto the target out of the sky, a raking spray and a red flash where they bite.
     "talon_strike": anim(1.3, {
         seconds: true,
@@ -677,8 +690,12 @@ export const BattleAnimationDefinitions = {
         ],
         background: background(0, 2, 'voidBackground', 'brightness(50%) sepia(100%) hue-rotate(350deg) saturate(500%)'),
         actor: { shake: { start: 0.6, end: 1.2, intensity: 20 }, flash: flash(0.5, 1.5, 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%) drop-shadow(0 0 15px red)') },
+        // the burn's own flames (the burn status's sheet), roaring up over every target and swelling, with embers flung off them
         vfx: [
-            spawn(0.4, 'firePunchAnimation', { life: 1, move: 'expand_and_fade', scale: 4.5 })
+            spawn(0.4, 'burnAnimation', { life: 1.1, move: 'expand_and_fade', scale: 3.4 }),
+            spawn(0.5, 'burnAnimation', { life: 0.9, move: 'float_up_and_pop', scale: 2.4, offsetX: -40, offsetY: 20 }),
+            spawn(0.55, 'burnAnimation', { life: 0.9, move: 'float_up_and_pop', scale: 2.4, offsetX: 40, offsetY: 20 }),
+            burst(0.6, { count: 24, color: '#ff8a2a', shape: 'fleck', scale: 0.9, minSpeed: 80, maxSpeed: 260, gravity: -140, minLife: 0.5, maxLife: 0.9, spinJitter: 8 })
         ],
         target: { shake: shake(0.6, 1.5, 45), flash: flash(0.6, 1.6, 'brightness(300%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 15px red)') }
     }),

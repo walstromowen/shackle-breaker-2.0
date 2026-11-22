@@ -11,6 +11,7 @@ import { rng } from '../core/random.js';
 import { INSIGHT_ITEMS, rankOf, maxRank, requirementsForRank, corruptionForRank, spellsOfRank } from './insights.js';
 import { unmetRequirements } from '../items/weaponRequirements.js';
 import { ItemDefinitions } from '../items/itemDefinitions.js';
+import { enchantmentStatuses, STATUS_CHANCE_CAP } from '../items/enchantments.js';
 
 /* Effect types that are real but resolved by the battle code itself, not here: they must not trigger the "unknown effect type" warning. */
 const EFFECTS_HANDLED_ELSEWHERE = ['summon', 'switch_self'];
@@ -82,6 +83,7 @@ export class AbilitySystem {
 
         const result = { success: false, outcome: 'NONE', delta: 0, resource: 'hp', message: "", addedTags: [] };
         let attackHit = true;
+        let dealtDamage = false;   // a damage effect landed for more than 0 (an enchantment's status may follow it)
 
         if (def.effects && Array.isArray(def.effects)) {
             for (const effect of def.effects) {
@@ -95,6 +97,7 @@ export class AbilitySystem {
                         attackHit = false;
                         break;
                     }
+                    if (calc.damage > 0) dealtDamage = true;
                 } else if (effect.type === 'recover') {
                     const subResult = this._handleRecover(effect, source, target, def);
                     if (subResult.success) {
@@ -153,8 +156,11 @@ export class AbilitySystem {
         }
 
         // 2. Process Status Effects (Only if the attack didn't miss)
-        if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
-            for (const statusDef of def.statusEffects) {
+        // The wielder's enchanted weapons (items/enchantments.js) add their status chances to a damaging hit on an enemy: to the ability's own chance
+        // of the same status (one roll), or as a roll of their own.
+        const statusList = this._withEnchantmentStatuses(Array.isArray(def.statusEffects) ? def.statusEffects : [], source, target, dealtDamage && attackHit);
+        if (attackHit && statusList.length) {
+            for (const statusDef of statusList) {
                 if (statusDef.battleOnly && ctx.context === 'overworld') continue;   // e.g. the smoke bomb's evasion: only a fight has turns to spend it in
                 const roll = rng();
                 const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
@@ -195,6 +201,24 @@ export class AbilitySystem {
             }
         }
         return result;
+    }
+
+    /* The ability's statuses with the source's enchantment bonuses folded in (only on a damaging hit, only on someone of the other side). */
+    static _withEnchantmentStatuses(list, source, target, damaged) {
+        if (!damaged || !source || !target) return list;
+        if (!source.team || !target.team || source.team === target.team) return list;
+        const bonuses = enchantmentStatuses(source);
+        if (!bonuses.length) return list;
+        const out = list.map(s => ({ ...s }));
+        for (const b of bonuses) {
+            const same = out.find(s => s.id === b.status);
+            if (same) {
+                const own = same.chance !== undefined ? same.chance : 1.0;
+                same.chance = Math.max(own, Math.min(STATUS_CHANCE_CAP, Math.round((own + b.chance) * 1000) / 1000));   // the cap holds the bonuses back, never the ability's own chance
+            }
+            else out.push({ id: b.status, chance: b.chance, duration: b.duration });
+        }
+        return out;
     }
 
     /**

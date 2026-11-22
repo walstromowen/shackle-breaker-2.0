@@ -220,6 +220,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     CARPENTERS_BENCH: { sheet: 'objCarpentersBench', spriteX: 7, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'carpenters_bench', title: "Carpenter's Bench" } },
     STONE_BANKER: { sheet: 'objStoneBanker', spriteX: 9, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'stone_banker', title: 'Stone Banker' } },
     TAILORS_BENCH: { sheet: 'objTailorsBench', spriteX: 8, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'tailors_bench', title: "Tailor's Bench" } },
+    // the Enchanter's Table (items/enchantments.js): weapons are enchanted here, each for one Insight. Placeholder art (tools/art/enchantersTable.py).
+    ENCHANTERS_TABLE: { sheet: 'objEnchantersTable', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'enchanters_table', title: "Enchanter's Table" }, light: { hasLight: true, radius: 2, color: '170, 120, 255', maxAlpha: 0.35, flickerSpeed: 0.05, flickerAmp: 0.1 } },
 
     // --- NPCS ---
     /* People and animals standing in the world. They are map objects (placed by a biome's mapObjects rules like a tree, see PLAINS / DESERT / SNOWY_MOUNTAINS), but they have no
@@ -245,9 +247,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // the Amputators (story/encounters/story/amputators.js): Osric among the stones of the first small graveyard the player came upon in act 1, and Surgeon
     // Garrick where Osric sends you (WorldManager._storyObjects puts them there); coming within 2 tiles of Garrick starts the fight
     OSRIC_NPC: { ...npcBody('AMPUTATOR_OSRIC'), interaction: { type: 'ENCOUNTER', id: 'amputator_osric' } },
-    // an Arc Knight waiting on the footpath before the Hooded Stranger's workshop door, facing it (story/encounters/story/arcKnight.js, WorldManager
-    // arcKnightObjects): the player meets him on walking out (onArrival: his zone fires even on someone already in it when the world opens)
-    ARC_KNIGHT_NPC: { ...npcBody('ARC_KNIGHT', 'UP'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 2, onArrival: true } },
+    // an Arc Knight standing in the gate of the Hooded Stranger's yard, facing the house (story/encounters/story/arcKnight.js, WorldManager
+    // arcKnightObjects): the only way out. Coming within a tile of him is the meeting (the door is further off than that: walking out is not)
+    ARC_KNIGHT_NPC: { ...npcBody('ARC_KNIGHT', 'UP'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },
+    ARC_KNIGHT_NPC_LEFT: { ...npcBody('ARC_KNIGHT', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },     // a gate in the east fence
+    ARC_KNIGHT_NPC_RIGHT: { ...npcBody('ARC_KNIGHT', 'RIGHT'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },   // a gate in the west fence
     // act 2: Arc Knights on patrol, rare, out in the plains (biomeDefinitions.js, minAct 2): they walk with a purpose, and coming within 3 tiles of
     // one is the fight (story/encounters/story/arcKnight.js arcKnightPatrol)
     ARC_KNIGHT_PATROL: { ...npcBody('ARC_KNIGHT', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'arc_knight_patrol', triggerRadius: 3 },

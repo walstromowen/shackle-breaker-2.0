@@ -321,9 +321,9 @@ export class TurnManager {
             ? primaryTarget
             : resolvedTargets[0];
         let targetName = leadTarget ? leadTarget.name : "the field";
-        // quiet (a trait's ability at the start of a fight, battleQueue): no line for it, nor for what it does; its animation plays
-        if (quiet) this.state.message = "";
-        else this.state.message = messageTemplate
+        // quiet (a trait's ability at the start of a fight, battleQueue): the ability's own line is said ("The hawk takes to the air!"), but not the trait's
+        // announcement nor every effect it has (its status icons show those)
+        this.state.message = messageTemplate
             .replace(/{user}/g, actor.name)
             .replace(/{ability}/g, action.name)
             .replace(/{target}/g, targetName);

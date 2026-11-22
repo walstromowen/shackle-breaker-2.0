@@ -29,13 +29,22 @@ test('an Arc Knight: a boss of his own, his art, his scene and fight, voiced, an
     assert.deepEqual(size(asset(k.spritePortrait)), [2048, 1024], 'the battle sheet');
     assert.deepEqual(size(asset(k.spriteOverworld)), [512, 768], 'the overworld sheet');
     assert.equal(M.ARC_KNIGHT_NPC.interaction.id, 'arc_knight');
-    assert.ok(M.ARC_KNIGHT_NPC.interaction.onArrival, 'he is met on walking out (his zone fires on arrival)');
-    assert.equal(M.ARC_KNIGHT_NPC.character.facing, 'UP', 'facing the door');
+    for (const [id, facing] of [['ARC_KNIGHT_NPC', 'UP'], ['ARC_KNIGHT_NPC_LEFT', 'LEFT'], ['ARC_KNIGHT_NPC_RIGHT', 'RIGHT']]) {
+        assert.equal(M[id].interaction.id, 'arc_knight');
+        assert.equal(M[id].interaction.triggerRadius, 1, 'coming near him is the meeting');
+        assert.ok(!M[id].interaction.onArrival, 'not the moment you walk out of the door');
+        assert.equal(M[id].character.facing, facing, 'facing into the yard');
+    }
+    // his words: the King's thrall, cursed; the addicts are nothing to him, the King wants the player dead
+    const said = Object.values(encounterDefinitions.arc_knight.stages).map(st => st.text).join(' ');
+    assert.match(said, /The mad are nothing to me/);
+    assert.match(said, /knelt, and the King put his fire in me, and his voice with it/);
+    assert.match(said, /He wants it gone from the world/);
     const enc = encounterDefinitions.arc_knight;
     const fight = results(enc.stages.ak_4.decisions[0]).find(r => r.type === 'START_BATTLE');
     assert.equal(fight.payload.enemies[0].id, 'ARC_KNIGHT');
     assert.equal(fight.payload.afterVictory.encounterId, 'arc_knight_fallen');
-    const rest = results(encounterDefinitions.arc_knight_fallen.stages.fallen.decisions[0]);
+    const rest = results(encounterDefinitions.arc_knight_fallen.stages.fallen_2.decisions[0]);
     assert.ok(rest.some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'arc_knight_slain'));
     assert.ok(isWorldFlag('arc_knight_roused') && isWorldFlag('arc_knight_slain'), 'the world\'s story');
     assert.ok(VOICED.arc_knight && VOICED.arc_knight_fallen, 'voiced');
@@ -44,19 +53,32 @@ test('an Arc Knight: a boss of his own, his art, his scene and fight, voiced, an
     assert.ok(handIn.some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'arc_knight_roused'), 'handing in Sparks of the Mad rouses him');
 });
 
-test('once roused he waits on the footpath before the Stranger\'s door, the second row below it (the player comes out on the first), until put down', () => {
+test('once roused he stands in the gate of the Stranger\'s yard, the only way out (the fence mended round him), until put down', () => {
     gameState.milestones = []; gameState.quests = { active: {}, completed: [], trackedIds: [] };
-    Object.assign(gameState.world, { changes: {}, isInterior: false, strangerHome: '40_12', amputatorGraveyard: null, amputatorQuarry: null, nikoliCampfire: null });
+    Object.assign(gameState.world, { changes: {}, terrainOverrides: {}, levelPaths: {}, isInterior: false, strangerHome: '40_12', amputatorGraveyard: null, amputatorQuarry: null, nikoliCampfire: null });
     const wm = Object.create(WorldManager.prototype);
-    const knight = () => [...WorldManager.prototype._storyObjects.call(wm)].filter(([, id]) => id === 'ARC_KNIGHT_NPC').map(([k]) => k);
+    const objs = () => [...WorldManager.prototype._storyObjects.call(wm)];
+    const knight = () => objs().filter(([, id]) => /^ARC_KNIGHT_NPC/.test(id)).map(([k, id]) => `${k} ${id}`);
     assert.deepEqual(knight(), [], 'not before the hand-in');
     gameState.quests.completed = ['shackled3'];
-    assert.deepEqual(knight(), ['40,14'], 'an older save that handed it in: he is there');
+    assert.deepEqual(knight(), ['40,15 ARC_KNIGHT_NPC'], 'an older save that handed it in: he is there, in the south gate (three rows below the door)');
     gameState.quests.completed = [];
     gameState.world.changes['story:arc_knight_roused'] = true;
-    assert.deepEqual(knight(), ['40,14']);
+    assert.deepEqual(knight(), ['40,15 ARC_KNIGHT_NPC']);
+    // a yard whose gate is in the west fence (the footpath runs west along the row below the door)
+    gameState.world.terrainOverrides['38,13'] = 1;
+    assert.deepEqual(knight(), ['37,13 ARC_KNIGHT_NPC_RIGHT'], 'in the west gate, facing in');
+    delete gameState.world.terrainOverrides['38,13'];
+    gameState.world.terrainOverrides['42,13'] = 1;
+    assert.deepEqual(knight(), ['43,13 ARC_KNIGHT_NPC_LEFT'], 'in the east gate, facing in');
+    delete gameState.world.terrainOverrides['42,13'];
+    // a fence piece the years knocked out is mended while he waits; his own cell is not
+    gameState.world.changes['39,9'] = null; gameState.world.changes['37,11'] = null; gameState.world.changes['40,15'] = null;
+    const mended = Object.fromEntries(objs().filter(([, id]) => /FENCE/.test(id)));
+    assert.deepEqual(mended, { '39,9': 'WOODEN_FENCE_H', '37,11': 'WOODEN_FENCE_V' });
     gameState.world.changes['story:arc_knight_slain'] = true;
     assert.deepEqual(knight(), [], 'gone once put down');
+    assert.deepEqual(objs().filter(([, id]) => /FENCE/.test(id)), [], 'and the fence left as it was');
 });
 
 test('act 2: Arc Knights on patrol, rare, in the plains; the patrol is the fight, with the hunt\'s music and only one thing to do', async () => {

@@ -1,4 +1,5 @@
 import { ItemDefinitions } from './itemDefinitions.js';
+import { ENCHANTMENTS, convertAttack, enchantmentOf } from './enchantments.js';
 
 export class ItemModel {
     constructor(defId, instanceState = {}) {
@@ -18,6 +19,9 @@ export class ItemModel {
 
         // --- NEW: Track instance level (defaults to 1) ---
         this.level = instanceState.level || 1;
+
+        // A weapon's enchantment (items/enchantments.js): { id, share? }, made at the Enchanter's Table. It belongs to this one weapon.
+        this.enchantment = (instanceState.enchantment && ENCHANTMENTS[instanceState.enchantment.id]) ? { ...instanceState.enchantment } : null;
     }
 
     // --- STACKING SETTINGS ---
@@ -59,7 +63,12 @@ export class ItemModel {
     get usable() { return !!this.definition.usable; }
 
     // --- DYNAMIC STATS (Updated for scaling) ---
-    get attack() { 
+    // the attack at this level, with an enchantment's conversion on top (part of the physical attack turned into an element's)
+    get attack() {
+        return convertAttack(this._levelAttack(), enchantmentOf(this));
+    }
+
+    _levelAttack() {
         const baseAttack = this.definition.attack || {};
         const growth = this.definition.statGrowth?.attack || {};
         
@@ -140,7 +149,8 @@ export class ItemModel {
             defId: this.defId,
             instanceId: this.instanceId,
             qty: this.qty,
-            level: this.level // IMPORTANT: Saves the item's level!
+            level: this.level, // IMPORTANT: Saves the item's level!
+            ...(this.enchantment ? { enchantment: { ...this.enchantment } } : {})
         };
     }
 }

@@ -69,8 +69,8 @@ export function queuePreBattleTraits(state) {
                     const [ability] = AbilityFactory.createAbilities([abilityId]);
 
                     if (ability && startTrigger.quiet) {
-                        // a quiet trigger (traitDefinitions: quiet): no words at all, the trait's or the ability's or its effects': only the ability's
-                        // animation plays, and the status icons tell the rest. A fight's opening is not held up by four lines of it.
+                        // a quiet trigger (traitDefinitions: quiet): no announcement of the trait and no line for each of its effects, only the ability's
+                        // own message and its animation; the status icons tell the rest. A fight's opening is not held up by four lines of it.
                         state.turnQueue.push({
                             type: TURN_TYPES.EXECUTE_ACTION,
                             ignoreCost: true,
