@@ -5,6 +5,7 @@ import { gameState } from '../core/gameState.js';
 import { events } from '../core/eventBus.js';
 import { ACT_DEFINITIONS } from './actDefinitions.js';
 import { isWorldFlag, hasWorldFlag, setWorldFlag } from './worldStory.js';
+import { maxRank } from '../abilities/insights.js';
 
 const ACT_NUMBERS = Object.keys(ACT_DEFINITIONS).map(Number).sort((a, b) => a - b);
 
@@ -126,6 +127,20 @@ export const ActSystem = {
         const up = (this.getActDefinition(state).enemies || {})[enemyId];
         if (!up) return null;
         return { abilities: [...(up.abilities || [])], traits: [...(up.traits || [])] };
+    },
+
+    /**
+     * The act's enemyInsightRanks on a freshly made enemy: every Insight it knows (its definition's `insights`, abilities/insights.js) a rank or two deeper,
+     * up to the Insight's highest, so it casts the spells of that rank too. Bosses as well: the acts teach everyone. Returns the ranks added.
+     */
+    scaleEnemyInsights(entity, state = gameState) {
+        const add = this.getActDefinition(state).enemyInsightRanks || 0;
+        const st = entity && entity.state;
+        if (!add || !st || !st.insights) return 0;
+        const out = {};
+        for (const [el, rank] of Object.entries(st.insights)) out[el] = Math.min(maxRank(el), rank + add);
+        st.insights = out;
+        return add;
     },
 
     /** Does this ambush by day come from the night table (the act's nightByDay chance)? `roll` is a number in [0, 1). */

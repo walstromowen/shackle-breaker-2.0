@@ -1670,17 +1670,16 @@ export const AbilityDefinitions = {
     "shmindolyns_draught": {
         id: "shmindolyns_draught",
         name: "Shmindolyn's Draught",
-        description: "Eases the drinker's corruption by 25.",
+        description: "The drinker forgets the Insight they learned last (one rank of it), and the corruption it cost them eases.",
         context: "overworld",                       // never offered in a battle
         range: "self",
         tags: ["utility", "item"],
         targeting: { scope: "self", select: "auto" },
         accuracy: 1.0,
         effects: [{
-            type: "cleanse_corruption",              // AbilitySystem._world_cleanse_corruption
-            amount: 25,
-            message: "Warmth spreads through {target}, and the darkness in them recedes ({before} to {after}).",
-            nothingToCleanse: "{target} carries no corruption to ease.",
+            type: "forget_insight",                  // AbilitySystem._world_forget_insight
+            message: "Warmth spreads through {target}, and the {element} they learned last slips away like a dream on waking ({before} to {after} corruption).",
+            nothingToForget: "{target} has learned no Insight to forget.",
             shackledMessage: "The draught cannot reach {target} through the iron."
         }]
     },
@@ -1749,3 +1748,21 @@ export const AbilityDefinitions = {
         }]
     },
 };
+
+// Reading an Insight (itemDefinitions: insight_of_fire ...), from the character's page outside a fight: the reader's rank in its element rises by one
+// (AbilitySystem._world_learn_insight, abilities/insights.js). One per element, so the item's useAbility alone says which. With the rank already at its
+// most, or the reader's attributes short of what the next rank asks, nothing happens and the Insight is kept.
+const INSIGHT_READING = { fire: 'Fire', water: 'Water', earth: 'Earth', lightning: 'Lightning', ice: 'Ice', wind: 'Wind', arcane: 'Arcane', light: 'Light', dark: 'Darkness' };
+for (const [element, name] of Object.entries(INSIGHT_READING)) {
+    AbilityDefinitions[`read_insight_${element}`] = {
+        id: `read_insight_${element}`,
+        name: `Read the Insight of ${name}`,
+        description: `Learn of ${name.toLowerCase()}: the first teaches its first spell, each one after deepens the understanding. Each costs corruption.`,
+        context: "overworld",                       // never offered in a battle
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{ type: "learn_insight", element }]
+    };
+}

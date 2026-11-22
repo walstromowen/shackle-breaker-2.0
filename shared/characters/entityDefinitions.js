@@ -162,7 +162,9 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 20, maxStamina: 20, maxInsight: 20,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 2, pierce: 2, blunt: 1 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_arcane" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        insights: { arcane: 1 },        // Insight ranks (abilities/insights.js), deeper each act (actDefinitions enemyInsightRanks)
+        insightAttack: false,           // its baseAttack already counts its magic
         currencyReward: { min: 5, max: 15 },
         lootTableId: "magic_addict_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES],
@@ -519,7 +521,9 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { fire: 0.4, light: 0.2, earth: 0.5, lightning: 0.5 },
             baseAttack: { blunt: 1, fire: 4, arcane: 2, light: 1 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_fire" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        insights: { fire: 1 },
+        insightAttack: false,
         currencyReward: { min: 6, max: 16 },
         lootTableId: "scorched_vagrant_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "flamethrower"],
@@ -570,7 +574,9 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { ice: 0.2, water: 0.2, dark: 0.3, wind: 0.2, earth: 0.5, lightning: 0.5 },
             baseAttack: { blunt: 1, ice: 3, dark: 4, wind: 2 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        insights: { dark: 1 },
+        insightAttack: false,
         currencyReward: { min: 10, max: 25 },
         lootTableId: "miragewright_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "flamethrower", "fireball"],
@@ -708,7 +714,9 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { pierce: 0.2, ice: 0.15, dark: 0.5, arcane: 0.15, light: -0.3, fire: -0.15 },
             baseAttack: { blunt: 1, dark: 4, light: 3 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness", head: "tattered_hood" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, head: "tattered_hood" },
+        insights: { dark: 1 },
+        insightAttack: false,
         currencyReward: { min: 8, max: 20 },
         lootTableId: "ancient_cultist_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "spite", "healing_rain"],

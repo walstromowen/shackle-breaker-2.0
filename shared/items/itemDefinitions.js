@@ -484,233 +484,207 @@ export const ItemDefinitions = {
     }
   },
 
-  // --- INSIGHT WEAPONS ---
-  // Upgrading an insight weapon costs ONE MORE copy of the same insight per level (2, 3, 4 and 5), plus currency.
+  // --- INSIGHTS ---
+  // Consumables: reading one raises the reader's rank in its element by one (AbilitySystem's `learn_insight`, abilities/insights.js). `insight` holds what
+  // the ranks give: `spells` by rank (1: what the first one teaches), `attack` at rank 1 and `attackGrowth` for each rank above it, and the attributes
+  // each rank asks for (`requirements` at rank 1, `requirementGrowth` for each rank above it). They were held weapons once (the icons are still on the
+  // weapons sheet).
   "insight_of_fire": {
     id: "insight_of_fire",
     name: "Insight of Fire",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a firey truth.",
+    type: "consumable",
+    description: "An insight into a firey truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 0, row: 1 },
-    attack: { fire: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["fireball"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { fire: 3 }
-    },
-    abilityUnlocks: {
-      3: ["meteor_shower"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_fire": 1 } },
-      3: { currency: 150, materials: { "insight_of_fire": 1 } },
-      4: { currency: 300, materials: { "insight_of_fire": 1 } },
-      5: { currency: 500, materials: { "insight_of_fire": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_fire",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "fire",
+      maxRank: 5,
+      attack: { fire: 5 },
+      attackGrowth: { fire: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["fireball"], 3: ["meteor_shower"] }
     }
   },
   "insight_of_water": {
     id: "insight_of_water",
     name: "Insight of Water",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a watery truth.",
+    type: "consumable",
+    description: "An insight into a watery truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 1, row: 1 },
-    attack: { water: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["water_blast"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { water: 3 }
-    },
-    abilityUnlocks: { 2: ["waterfall"], 3: ["tidal_wave"], 4: ["mending_tide"] },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_water": 1 } },
-      3: { currency: 150, materials: { "insight_of_water": 1 } },
-      4: { currency: 300, materials: { "insight_of_water": 1 } },
-      5: { currency: 500, materials: { "insight_of_water": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_water",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "water",
+      maxRank: 5,
+      attack: { water: 5 },
+      attackGrowth: { water: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["water_blast"], 2: ["waterfall"], 3: ["tidal_wave"], 4: ["mending_tide"] }
     }
   },
   "insight_of_earth": {
     id: "insight_of_earth",
     name: "Insight of Earth",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into an earthy truth.",
+    type: "consumable",
+    description: "An insight into an earthy truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 2, row: 1 },
-    attack: { earth: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["vine_lash"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { earth: 3 }
-    },
-    abilityUnlocks: {
-      2: ["boulder_throw"],
-      3: ["earthquake"],
-      4: ["acid_pool"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_earth": 1 } },
-      3: { currency: 150, materials: { "insight_of_earth": 1 } },
-      4: { currency: 300, materials: { "insight_of_earth": 1 } },
-      5: { currency: 500, materials: { "insight_of_earth": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_earth",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "earth",
+      maxRank: 5,
+      attack: { earth: 5 },
+      attackGrowth: { earth: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["vine_lash"], 2: ["boulder_throw"], 3: ["earthquake"], 4: ["acid_pool"] }
     }
   },
   "insight_of_lightning": {
     id: "insight_of_lightning",
     name: "Insight of Lightning",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into an electrifying truth.",
+    type: "consumable",
+    description: "An insight into an electrifying truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 3, row: 1 },
-    attack: { lightning: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["shock"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { lightning: 3 }
-    },
-    abilityUnlocks: { 2: ["overload"], 3: ["chain_lightning"], 4: ["lightning_strike"] },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_lightning": 1 } },
-      3: { currency: 150, materials: { "insight_of_lightning": 1 } },
-      4: { currency: 300, materials: { "insight_of_lightning": 1 } },
-      5: { currency: 500, materials: { "insight_of_lightning": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_lightning",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "lightning",
+      maxRank: 5,
+      attack: { lightning: 5 },
+      attackGrowth: { lightning: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["shock"], 2: ["overload"], 3: ["chain_lightning"], 4: ["lightning_strike"] }
     }
   },
   "insight_of_ice": {
     id: "insight_of_ice",
     name: "Insight of Ice",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a frozen truth.",
+    type: "consumable",
+    description: "An insight into a frozen truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 4, row: 1 },
-    attack: { ice: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["ice_shard"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { ice: 3 }
-    },
-    abilityUnlocks: { 2: ["frigid_gale"], 3: ["glacial_spike"], 4: ["frost_ward"] },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_ice": 1 } },
-      3: { currency: 150, materials: { "insight_of_ice": 1 } },
-      4: { currency: 300, materials: { "insight_of_ice": 1 } },
-      5: { currency: 500, materials: { "insight_of_ice": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_ice",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "ice",
+      maxRank: 5,
+      attack: { ice: 5 },
+      attackGrowth: { ice: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["ice_shard"], 2: ["frigid_gale"], 3: ["glacial_spike"], 4: ["frost_ward"] }
     }
   },
   "insight_of_wind": {
     id: "insight_of_wind",
     name: "Insight of Wind",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a booming truth.",
+    type: "consumable",
+    description: "An insight into a booming truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 5, row: 1 },
-    attack: { wind: 5},
-    requirements: { attunement: 9, intelligence: 7 },
-    requirementGrowth: { attunement: 2, intelligence: 2 },
-    grantedAbilities: ["gust"],
-    abilityUnlocks: { 2: ["downwind"], 3: ["tempest"] },
-    maxLevel: 5,
-    statGrowth: {
-      attack: { wind: 3 }
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_wind": 1 } },
-      3: { currency: 150, materials: { "insight_of_wind": 1 } },
-      4: { currency: 300, materials: { "insight_of_wind": 1 } },
-      5: { currency: 500, materials: { "insight_of_wind": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_wind",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "wind",
+      maxRank: 5,
+      attack: { wind: 5 },
+      attackGrowth: { wind: 3 },
+      requirements: { attunement: 9, intelligence: 7 },
+      requirementGrowth: { attunement: 2, intelligence: 2 },
+      spells: { 1: ["gust"], 2: ["downwind"], 3: ["tempest"] }
     }
   },
   "insight_of_arcane": {
     id: "insight_of_arcane",
     name: "Insight of Arcane",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into an arcane truth.",
+    type: "consumable",
+    description: "An insight into an arcane truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 6, row: 1 },
-    attack: { arcane: 5},
-    requirements: { intelligence: 10, attunement: 7 },
-    requirementGrowth: { intelligence: 2, attunement: 2 },
-    grantedAbilities: ["arcane_dart"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { arcane: 3 }
-    },
-    abilityUnlocks: {
-      2: ["magic_missile"],
-      3: ["arcane_blast"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_arcane": 1 } },
-      3: { currency: 150, materials: { "insight_of_arcane": 1 } },
-      4: { currency: 300, materials: { "insight_of_arcane": 1 } },
-      5: { currency: 500, materials: { "insight_of_arcane": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_arcane",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "arcane",
+      maxRank: 5,
+      attack: { arcane: 5 },
+      attackGrowth: { arcane: 3 },
+      requirements: { intelligence: 10, attunement: 7 },
+      requirementGrowth: { intelligence: 2, attunement: 2 },
+      spells: { 1: ["arcane_dart"], 2: ["magic_missile"], 3: ["arcane_blast"] }
     }
   },
   "insight_of_light": {
     id: "insight_of_light",
     name: "Insight of Light",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a luminous truth.",
+    type: "consumable",
+    description: "An insight into a luminous truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 7, row: 1 },
-    attack: { light: 5},
-    requirements: { intelligence: 10, attunement: 7 },
-    requirementGrowth: { intelligence: 2, attunement: 2 },
-    grantedAbilities: ["spite"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { light: 3 }
-    },
-    abilityUnlocks: {
-      2: ["purify"],
-      3: ["healing_rain"]
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_light": 1 } },
-      3: { currency: 150, materials: { "insight_of_light": 1 } },
-      4: { currency: 300, materials: { "insight_of_light": 1 } },
-      5: { currency: 500, materials: { "insight_of_light": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_light",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "light",
+      maxRank: 5,
+      attack: { light: 5 },
+      attackGrowth: { light: 3 },
+      requirements: { intelligence: 10, attunement: 7 },
+      requirementGrowth: { intelligence: 2, attunement: 2 },
+      spells: { 1: ["spite"], 2: ["purify"], 3: ["healing_rain"] }
     }
   },
   "insight_of_darkness": {
     id: "insight_of_darkness",
     name: "Insight of Darkness",
-    slot: "oneHand",
-    type: "weapon",
-    description: "An insight into a shadowy truth.",
+    type: "consumable",
+    description: "An insight into a shadowy truth. Read it to learn of it: the first teaches its first spell, and each one after deepens your understanding (rank 2 to 5), teaching more and strengthening the magic. Each costs some of your soul.",
     value: 100,
     icon: { col: 8, row: 1 },
-    attack: { dark: 5},
-    requirements: { intelligence: 10, attunement: 7 },
-    requirementGrowth: { intelligence: 2, attunement: 2 },
-    grantedAbilities: ["spirit_reap"],
-    maxLevel: 5,
-    statGrowth: {
-      attack: { dark: 3 }
-    },
-    upgradeCosts: {
-      2: { currency: 50, materials: { "insight_of_darkness": 1 } },
-      3: { currency: 150, materials: { "insight_of_darkness": 1 } },
-      4: { currency: 300, materials: { "insight_of_darkness": 1 } },
-      5: { currency: 500, materials: { "insight_of_darkness": 1 } }
+    iconSheet: "weapons",            // its art is on the weapons sheet, from when it was held
+    useAbility: "read_insight_dark",
+    usability: ["overworld"],
+    stackable: true,
+    maxStack: 10,
+    insight: {
+      element: "dark",
+      maxRank: 5,
+      attack: { dark: 5 },
+      attackGrowth: { dark: 3 },
+      requirements: { intelligence: 10, attunement: 7 },
+      requirementGrowth: { intelligence: 2, attunement: 2 },
+      spells: { 1: ["spirit_reap"] }
     }
   },
 
@@ -1707,14 +1681,15 @@ export const ItemDefinitions = {
     icon: { col: 11, row: 1 },   // a sealed bottle of strange ale (its own cell: it used to borrow the invigorating tonic's jar)
     stackable: true
   },
-  // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: it eases the corruption of the character it is used on
-  // (by 25). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js). Used from the character's page, outside a fight; on someone with no
-  // corruption, or someone shackled, it does nothing and is kept. (Bad traits are forgotten with Kurtus's Brew now.)
+  // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: the drinker forgets the Insight rank they learned
+  // last, and the corruption it cost them eases (AbilitySystem._world_forget_insight). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js).
+  // Used from the character's page, outside a fight; on someone who has learned nothing, or someone shackled, it does nothing and is kept. (Traits are
+  // forgotten with Kurtus's Brew: the one gained last.)
   "shmindolyns_draught": {
     id: "shmindolyns_draught",
     name: "Shmindolyn's Draught",
     type: "consumable",
-    description: "A frothing draught brewed to the recipe of Shmindolyn, a healer of legend: it tastes of honey and woodsmoke. Eases the corruption of the one who drinks it by 25. It cannot reach someone already shackled.",
+    description: "A frothing draught brewed to the recipe of Shmindolyn, a healer of legend: it tastes of honey and woodsmoke. The drinker forgets the Insight they learned last, and the corruption it cost them eases. It cannot reach someone already shackled.",
     value: 300,
     icon: { col: 10, row: 1 },   // a foaming tankard
     useAbility: "shmindolyns_draught",

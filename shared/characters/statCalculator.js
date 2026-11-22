@@ -2,6 +2,7 @@ import { TRAIT_DEFINITIONS } from '../abilities/traitDefinitions.js';
 import { DAMAGE_TYPES, CORRUPTION, MAGIC_DAMAGE_TYPES, DEFENSE_PER_SCALING_POINT, ENEMY_DAMAGE_SCALING, scalingFor } from '../core/constants.js'; 
 import { ActSystem } from '../story/actSystem.js'; 
 import { requirementsOf, unmetRequirements, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../items/weaponRequirements.js'; 
+import { insightAttack } from '../abilities/insights.js';
 
 // BALANCE KNOB: scales the HP that Vigor grants, for EVERYONE (party, enemies, bosses and already-saved characters).
 // Saved characters keep their own copy of statMultipliers.hpPerVigor, so lowering it in the entity templates would not
@@ -187,6 +188,9 @@ export class StatCalculator {
         }; 
         
         Object.values(equipment).forEach(item => { if (item) applyFlat(getEffectiveStats(item)); }); 
+        // what the character knows of magic (abilities/insights.js): each element's rank adds its attack, as the held Insight did at that level
+        const insightAtk = insightAttack(character);
+        if (Object.keys(insightAtk).length) applyFlat({ attack: insightAtk });
         const currentHp = character.hp ?? character.state?.stats?.hp ?? breakdown.resources.base.hp; 
         const currentMaxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp; 
         

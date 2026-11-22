@@ -118,7 +118,7 @@ test('a carriage visited again and again: no stage only informs and sends the pa
     assert.ok(all(chest.stages.found_key).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'opened_chest'));
 });
 
-test('the Shmindolyn\'s Draught: found in the carriage, it eases corruption by 25, and is kept when there is none to ease or the drinker is shackled', async () => {
+test('the Shmindolyn\'s Draught: found in the carriage, it takes back the Insight learned last and the corruption it cost; kept when there is none, or on the shackled', async () => {
     const { CorruptionSystem } = await import('../../shared/characters/corruptionSystem.js');
     const item = I.shmindolyns_draught;
     assert.equal(item.type, 'consumable');
@@ -128,17 +128,22 @@ test('the Shmindolyn\'s Draught: found in the carriage, it eases corruption by 2
     assert.ok(all(E.stages.strongbox_open).some(r => r.type === 'GIVE_ITEM' && r.payload.itemId === 'shmindolyns_draught'), 'always in the strongbox');
     assert.ok(L.ruined_carriage_valuables.items.some(i => i.id === 'shmindolyns_draught'), 'and among the merchant\'s goods');
 
-    const hero = quiet(() => EntityFactory.create('HUMANOID', { name: 'Aldric', traits: ['quick', 'frail'] }));
-    CorruptionSystem.change(hero, 40);
+    const hero = quiet(() => EntityFactory.create('HUMANOID', { name: 'Aldric', traits: ['quick', 'frail'], attributes: { intelligence: 14, attunement: 14 } }));
+    const read = (el) => quiet(() => AbilitySystem.execute(`read_insight_${el}`, hero, hero, { context: 'overworld' }));
     const drink = () => quiet(() => AbilitySystem.execute('shmindolyns_draught', hero, hero, { context: 'overworld' }));
-    let r = drink();
-    assert.ok(r.success);
-    assert.equal(CorruptionSystem.valueOf(hero), 15, '40 - 25');
-    assert.deepEqual([...hero.traits], ['quick', 'frail'], 'traits are no longer its business');
-    drink();
+    assert.equal(drink().success, false, 'nothing learned: the draught is not spent');
+    read('fire'); read('wind'); read('wind');
+    assert.deepEqual(hero.state.insights, { fire: 1, wind: 2 });
+    const before = CorruptionSystem.valueOf(hero);
+    assert.ok(drink().success);
+    assert.deepEqual(hero.state.insights, { fire: 1, wind: 1 }, 'the last one learned: wind, rank 2');
+    assert.equal(CorruptionSystem.valueOf(hero), before - 6, 'and rank 2\'s corruption back');
+    assert.ok(!hero.abilities.some(a => a.id === 'downwind'), 'its spell is forgotten with it');
+    drink(); drink();
+    assert.deepEqual(hero.state.insights, {});
     assert.equal(CorruptionSystem.valueOf(hero), 0);
-    r = drink();
-    assert.equal(r.success, false, 'nothing left to ease: the draught is not spent');
+    assert.deepEqual([...hero.traits], ['quick', 'frail'], 'traits are not its business');
+    read('fire');
     CorruptionSystem.shackle(hero);
     assert.equal(drink().success, false, 'it cannot reach the shackled');
 });

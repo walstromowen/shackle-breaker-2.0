@@ -17,18 +17,17 @@ test('the arcane vortex plays behind Arcane Blast, and no longer behind Arcane D
 
 test('the Insights of Wind, Water, Ice and Lightning: new spells as each is raised, every one with its animation, a free icon cell and real effects', () => {
     const want = {
-        insight_of_wind: { granted: ['gust'], unlocks: { 2: ['downwind'], 3: ['tempest'] } },
-        insight_of_water: { granted: ['water_blast'], unlocks: { 2: ['waterfall'], 3: ['tidal_wave'], 4: ['mending_tide'] } },
-        insight_of_ice: { granted: ['ice_shard'], unlocks: { 2: ['frigid_gale'], 3: ['glacial_spike'], 4: ['frost_ward'] } },
-        insight_of_lightning: { granted: ['shock'], unlocks: { 2: ['overload'], 3: ['chain_lightning'], 4: ['lightning_strike'] } }
+        insight_of_wind: { 1: ['gust'], 2: ['downwind'], 3: ['tempest'] },
+        insight_of_water: { 1: ['water_blast'], 2: ['waterfall'], 3: ['tidal_wave'], 4: ['mending_tide'] },
+        insight_of_ice: { 1: ['ice_shard'], 2: ['frigid_gale'], 3: ['glacial_spike'], 4: ['frost_ward'] },
+        insight_of_lightning: { 1: ['shock'], 2: ['overload'], 3: ['chain_lightning'], 4: ['lightning_strike'] }
     };
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
     const used = new Map();
     for (const a of Object.values(A)) if (a.icon) { const k = `${a.icon.col},${a.icon.row}`; used.set(k, [...(used.get(k) || []), a.id]); }
     for (const [item, w] of Object.entries(want)) {
-        assert.deepEqual(I[item].grantedAbilities, w.granted, `${item} gives`);
-        assert.deepEqual(I[item].abilityUnlocks, w.unlocks, `${item} unlocks`);
-        assert.ok(Math.max(...Object.keys(w.unlocks).map(Number)) <= I[item].maxLevel, `${item}: reachable`);
+        assert.deepEqual(I[item].insight.spells, w, `${item} teaches`);
+        assert.ok(Math.max(...Object.keys(w).map(Number)) <= I[item].insight.maxRank, `${item}: reachable`);
     }
     const fresh = ['gust', 'downwind', 'tempest', 'tidal_wave', 'mending_tide', 'glacial_spike', 'frost_ward', 'chain_lightning', 'lightning_strike'];
     for (const id of fresh) {
@@ -61,5 +60,5 @@ test('the Insights of Wind, Water, Ice and Lightning: new spells as each is rais
     assert.equal(A.downwind.name, 'Downwind');
     assert.equal(A.lightning_strike.name, 'Lightning Strike');
     assert.ok(!A.tailwind && !A.thunderbolt, 'the old names are gone');
-    assert.ok(!I.insight_of_wind.grantedAbilities.includes('strike'), 'wind is no longer a plain Strike');
+    assert.ok(!I.insight_of_wind.insight.spells[1].includes('strike'), 'wind is no longer a plain Strike');
 });

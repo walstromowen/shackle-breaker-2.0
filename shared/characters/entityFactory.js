@@ -75,6 +75,9 @@ export class EntityFactory {
             config.baseStats = { ...config.baseStats, ...finalOverrides.baseStats };
         }
 
+        // Insight ranks (abilities/insights.js): what a character knows of magic from the start
+        if (finalOverrides.insights) config.insights = { ...(config.insights || {}), ...finalOverrides.insights };
+
         if (finalOverrides.equipment) {
             config.equipment = { ...config.equipment, ...finalOverrides.equipment };
         }

@@ -42,7 +42,8 @@ export const CREATION_DATA = {
             id: "SCHOLAR", label: "Scholar",
             desc: "Almost overnight, the scholars and philosophers of the Altus Kingdom abandoned their studies to research magic. Some saw magic as a science, others as life itself.",
             attributes: { vigor: 8, strength: 7, dexterity: 9, intelligence: 14, attunement: 12 }, // Sum: 50
-            equipment: { mainHand: "insight_of_arcane", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+            insights: { arcane: 1 },   // starts knowing the Insight of Arcane (abilities/insights.js), at no cost
+            equipment: { head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "WARRIOR", label: "Warrior",
@@ -60,7 +61,8 @@ export const CREATION_DATA = {
             id: "HERMIT", label: "Hermit",
             desc: "Most of those who studied magic wished to stay as close to the artifact as possible. However, for better or for worse, a handful chose to study it in solitude.",
             attributes: { vigor: 10, strength: 7, dexterity: 9, intelligence: 9, attunement: 15 }, // Sum: 50. Attuned to the elements (its Insight of Earth hits with attunement), where the Scholar reasons
-            equipment: { mainHand: "insight_of_earth", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+            insights: { earth: 1 },
+            equipment: { head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "FARMER", label: "Farmer",
@@ -293,6 +295,7 @@ export class CharacterCreatorLogic {
             name: this.state.name,
             attributes: { ...bg.attributes },
             equipment: bg.equipment,
+            insights: { ...(bg.insights || {}) },
             spritePortrait: app.spritePortrait,
             spriteOverworld: app.spriteOverworld,
             tags: [origin.tag],
@@ -375,6 +378,7 @@ export class CharacterCreatorLogic {
                         name: companionName,
                         attributes: { ...bg.attributes },
                         equipment: { ...bg.equipment },
+                        insights: { ...(bg.insights || {}) },
                         spritePortrait: app.spritePortrait,
                         spriteOverworld: app.spriteOverworld,
                         tags: [origin.tag],

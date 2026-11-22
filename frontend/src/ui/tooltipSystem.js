@@ -5,6 +5,7 @@ import { ItemDefinitions } from '../../../shared/items/itemDefinitions.js';
 import { AbilityDefinitions } from '../../../shared/abilities/abilityDefinitions.js';
 import { requirementsOf, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../../../shared/items/weaponRequirements.js';
 import { StatCalculator } from '../../../shared/characters/statCalculator.js';
+import { rankOf, maxRank, requirementsForRank } from '../../../shared/abilities/insights.js';
 
 export class TooltipSystem {
   constructor(ui, loader = null) {
@@ -261,7 +262,14 @@ export class TooltipSystem {
    * they fall short of is red, and a last line says what that costs. [] for an item without requirements.
    */
   _requirementLines(item, member) {
-    const reqs = requirementsOf(item);
+    // an Insight (abilities/insights.js): what the NEXT rank asks of this character (rank 1 with no one to read it)
+    const insight = (ItemDefinitions[item.defId] || item.definition || {}).insight || null;
+    let rank = 0;
+    if (insight) {
+      rank = (member ? rankOf(member, insight.element) : 0) + 1;
+      if (rank > maxRank(insight.element)) return [{ text: 'Fully learned', color: UITheme.colors.textMuted }, { type: 'spacer' }];
+    }
+    const reqs = insight ? requirementsForRank(insight.element, rank) : requirementsOf(item);
     const keys = Object.keys(reqs);
     if (keys.length === 0) return [];
 
@@ -275,9 +283,9 @@ export class TooltipSystem {
       return { label: abbr, val: reqs[attr], color: met ? UITheme.colors.textMain : UITheme.colors.failure, met };
     });
 
-    const lines = [{ text: 'Requires', color: UITheme.colors.textMuted }];
+    const lines = [{ text: insight ? `Rank ${rank} requires` : 'Requires', color: UITheme.colors.textMuted }];
     this._chunkArray(items, 2).forEach(pair => lines.push({ type: 'row', items: pair }));
-    if (items.some(i => !i.met)) {
+    if (items.some(i => !i.met) && !insight) {
       const pct = Math.round((1 - UNMET_REQUIREMENT_DAMAGE_SCALE) * 100);
       lines.push({ text: `Requirements not met: ${pct}% less damage`, color: UITheme.colors.failure });
     }
@@ -441,7 +449,9 @@ export class TooltipSystem {
 
     // 3. Data Gathering (Abilities)
     const abilityLines = [];
-    const rawAbilities = item.grantedAbilities || def.grantedAbilities || item.abilities || def.abilities || (def.useAbility ? [def.useAbility] : null);
+    // an Insight (abilities/insights.js) lists the spells its ranks teach, not the reading of it
+    const insightSpells = def.insight ? Object.keys(def.insight.spells || {}).sort((a, b) => a - b).flatMap(r => def.insight.spells[r]) : null;
+    const rawAbilities = insightSpells || item.grantedAbilities || def.grantedAbilities || item.abilities || def.abilities || (def.useAbility ? [def.useAbility] : null);
 
     if (rawAbilities && rawAbilities.length > 0) {
       rawAbilities.forEach(ab => {

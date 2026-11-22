@@ -1,6 +1,7 @@
 import { StatCalculator } from './statCalculator.js';
 import { isImmuneToStatus } from '../abilities/statusImmunity.js';
 import { AbilityFactory } from '../abilities/abilityFactory.js';
+import { insightSpells } from '../abilities/insights.js';
 
 export class EntityModel {
     constructor(config) {
@@ -160,6 +161,15 @@ export class EntityModel {
     // =========================================================
     get abilities() {
         const activeList = [...(this._learnedAbilities || [])];
+        // the spells of the character's Insight ranks (abilities/insights.js)
+        const spells = insightSpells(this);
+        if (spells.length) {
+            AbilityFactory.createAbilities(spells).forEach(move => {
+                if (!move || activeList.find(a => a.id === move.id)) return;
+                move.source = 'insight';
+                activeList.push(move);
+            });
+        }
         if (this.state.equipment) {
             Object.values(this.state.equipment).forEach(item => {
                 if (item && item.grantedAbilities) {
