@@ -35,17 +35,19 @@ test('an Arc Knight: a boss of his own, his art, his scene and fight, voiced, an
         assert.ok(!M[id].interaction.onArrival, 'not the moment you walk out of the door');
         assert.equal(M[id].character.facing, facing, 'facing into the yard');
     }
-    // his words: the King's thrall, cursed; the addicts are nothing to him, the King wants the player dead
-    const said = Object.values(encounterDefinitions.arc_knight.stages).map(st => st.text).join(' ');
-    assert.match(said, /The mad are nothing to me/);
-    assert.match(said, /knelt, and the King put his fire in me, and his voice with it/);
-    assert.match(said, /He wants it gone from the world/);
+    // his words: few, and only his errand (the narrator tells what he does, not what he thinks)
+    const enc0 = encounterDefinitions.arc_knight;
+    const before = ['ak_meet', 'ak_4'].map(id => enc0.stages[id].text);
+    assert.deepEqual(Object.keys(enc0.stages).filter(id => id.startsWith('ak_')), ['ak_meet', 'ak_4'], 'two stages, then the fight');
+    const quoted = before.join(' ').match(/"[^"]+"/g).join(' ');
+    assert.ok(quoted.split(/\s+/).length <= 12, `brief: ${quoted}`);
+    assert.match(quoted, /You die here/);
     const enc = encounterDefinitions.arc_knight;
     const fight = results(enc.stages.ak_4.decisions[0]).find(r => r.type === 'START_BATTLE');
     assert.equal(fight.payload.enemies[0].id, 'ARC_KNIGHT');
     assert.equal(fight.payload.afterVictory.encounterId, 'arc_knight_fallen');
     assert.equal(enc.stages.ak_4.bgm, fight.payload.bgm, 'the battle music starts as he turns hostile, before you draw, and carries into the fight');
-    assert.ok(!['ak_meet', 'ak_2', 'ak_3', 'ak_kneel'].some(id => enc.stages[id].bgm), 'not before');
+    assert.ok(!enc.stages.ak_meet.bgm, 'not before');
     const rest = results(encounterDefinitions.arc_knight_fallen.stages.fallen_2.decisions[0]);
     assert.ok(rest.some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'arc_knight_slain'));
     assert.ok(isWorldFlag('arc_knight_roused') && isWorldFlag('arc_knight_slain'), 'the world\'s story');
