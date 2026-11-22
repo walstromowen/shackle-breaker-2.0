@@ -3,6 +3,7 @@ import { QuestFactory } from './questFactory.js';
 import { InventorySystem } from '../items/inventorySystem.js';
 import { ExperienceSystem } from '../characters/experienceSystem.js';
 import { PartyManager } from '../characters/partyManager.js';
+import { ActSystem } from './actSystem.js';
 
 // How many quests the HUD tracker shows at once (the journal's Track button keeps to the same limit)
 export const MAX_TRACKED_QUESTS = 3;
@@ -39,6 +40,10 @@ export const QuestModel = {
                             this.updateProgress(state, questId, obj.id, currentAmount);
                         }
                     } 
+                    // a milestone the story grants (a stone dug up: `{ type: 'milestone', targetId }`): done at once if it already has been
+                    else if (obj.type === 'milestone') {
+                        if (ActSystem.hasMilestone(obj.targetId)) this.updateProgress(state, questId, obj.id, obj.amount || 1);
+                    }
                     // Retroactive check for party_level (allows auto-complete if already high enough level)
                     else if (obj.type === 'party_level') {
                         const qualifyingMembersCount = state.party.members.filter(
@@ -57,6 +62,16 @@ export const QuestModel = {
             return true;
         }
         return false;
+    },
+
+    /** A milestone was granted: every active quest waiting on it (objective type 'milestone') is that much further on. */
+    noteMilestone(state, milestoneId) {
+        for (const questId of Object.keys((state.quests && state.quests.active) || {})) {
+            const def = QuestDefinitions[questId];
+            for (const obj of (def && def.objectives) || []) {
+                if (obj.type === 'milestone' && obj.targetId === milestoneId) this.updateProgress(state, questId, obj.id, obj.amount || 1);
+            }
+        }
     },
 
     updateProgress(state, questId, objectiveId, amountToAdd = 1) {
@@ -142,4 +157,4 @@ export const QuestModel = {
         
         return true;
     }
-};
+};

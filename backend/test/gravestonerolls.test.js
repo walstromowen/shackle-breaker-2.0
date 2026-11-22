@@ -14,6 +14,8 @@ test('nothing comes out of the grave without a roll: every way in is a skill che
     const ds = g.stages.approach.decisions;
     for (const d of ds) {
         if (d.type === 'skill_check' || d.type === 'switch_character') continue;
+        // (the Hooded Stranger's own grave, offered only there: his stone, no loot; its own test is stranger_stone.test.js)
+        if ((d.conditions || []).some(c => c.type === 'at_story_place')) continue;
         assert.deepEqual(results(d).map(r => r.type), ['END_ENCOUNTER'], `"${d.text}" may only leave`);
     }
     const checks = ds.filter(d => d.type === 'skill_check');
@@ -49,7 +51,7 @@ test('the careful dig (attunement): a success never wakes the dead but can find 
 
 test('a short grave: no listening stages, no digging deeper', () => {
     for (const gone of ['dig', 'listen_bundle', 'listen_bones', 'listen_spirit', 'listen_hollow', 'listen_coffin', 'deeper_find', 'deeper_nothing']) assert.ok(!g.stages[gone], `${gone} is gone`);
-    assert.ok(Object.keys(g.stages).length <= 12);
+    assert.ok(Object.keys(g.stages).length <= 13, 'twelve, and the Stranger\'s grave');
     assert.equal(g.stages.buried_things.decisions.length, 1);
 });
 

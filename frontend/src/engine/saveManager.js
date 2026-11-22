@@ -343,6 +343,7 @@ export const SaveManager = {
                 strangerSnowHome: world.strangerSnowHome || null,       // act 3: the snowy house Mentoras and Codey go to (story/heroes.js)
                 amputatorGraveyard: world.amputatorGraveyard || null,   // Senior Surgeon Osric's seat among the graves, "col,row" (WorldManager)
                 amputatorQuarry: world.amputatorQuarry || null,         // where Surgeon Garrick is (WorldManager.pickAmputatorQuarry)
+                strangerGrave: world.strangerGrave || null,             // where the Stranger buried his stone (WorldManager.noticeStrangerGrave)
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
                 castlesBuilt: clone(world.castlesBuilt || {}),   // the castles whose objects are written into the world (StructureSpawner._buildCastle)
@@ -473,6 +474,7 @@ export const SaveManager = {
             strangerSnowHome: data.world.strangerSnowHome || null,
             amputatorGraveyard: data.world.amputatorGraveyard || null,
             amputatorQuarry: data.world.amputatorQuarry || null,
+            strangerGrave: data.world.strangerGrave || null,
             discoveredChunks: data.world.discoveredChunks || [],
             // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
             structureChunks: data.world.structureChunks,

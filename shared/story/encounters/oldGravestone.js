@@ -21,11 +21,16 @@
                            a failure and they drag you back into the fight
           spirit_rises  -> [ATT 14] speak to it: a success lets it rest (one roll of the grave goods, less corruption); a failure, the fight.
                            Or fight it at once.
+   The grave the Hooded Stranger sent you to (STRANGER_GRAVE, his quest shackled7) is an Old Gravestone too, with one more choice: dig where he said
+   (his_stone: his stone, the Fallen Meteorite). There, the two digs above are not offered.
    Whatever comes out of the ground, the grave is open: the object is destroyed on the button that hands out the loot or starts the fight. Leaving it be,
    leaving the coffin sealed, or a careful dig that only filled your head with noise keeps the stone standing for another try. */
 import { toStage } from './stageKit.js';
 
 const HUMANOID = { type: "has_tag", tag: "HUMANOID" };
+// the grave the Hooded Stranger buried his stone under (world.strangerGrave): only there, and only while his quest asks for it
+const HIS_GRAVE = { type: "at_story_place", key: "strangerGrave", questActive: "shackled7", lacksMilestone: "stranger_stone_dug" };
+const NOT_HIS_GRAVE = { type: "not_at_story_place", key: "strangerGrave" };
 const fight = (tableId) => [{
     weight: 100,
     results: [
@@ -53,13 +58,19 @@ export const oldGravestone = {
             image: { col: 0, row: 0 },
             text: "A gravestone leans in the long grass, its name worn smooth by the weather. Few graves are tended any more. The earth in front of it has sunk, as though something beneath had settled, or shifted.",
             decisions: [
+                // the grave the Hooded Stranger sent you to (his quest shackled7, world.strangerGrave): dig where he said, and his stone is there
+                {
+                    text: "[The Stranger's Grave] Dig where he told you.",
+                    conditions: [HIS_GRAVE],
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "his_stone" } }] }]
+                },
                 {
                     text: "[STR] Dig it up.",
                     type: "skill_check",
                     attribute: "strength",
                     threshold: 12,
                     corruption: 2,   // a grave robbed: corruption goes up
-                    conditions: [HUMANOID],
+                    conditions: [HUMANOID, NOT_HIS_GRAVE],
                     successOutcomes: digOutcomes(DIG_SUCCESS),
                     failureOutcomes: digOutcomes(DIG_FAILURE)
                 },
@@ -69,7 +80,7 @@ export const oldGravestone = {
                     attribute: "attunement",
                     threshold: 13,
                     corruption: 2,
-                    conditions: [HUMANOID],
+                    conditions: [HUMANOID, NOT_HIS_GRAVE],
                     successOutcomes: digOutcomes(CAREFUL_DIG),
                     failureOutcomes: [
                         { weight: 50, results: [{ type: "MODIFY_VITALS", payload: { insight: -25, isPercentageOfCurrent: true, damageType: "true" } }, { type: "ADVANCE_STAGE", payload: { stageId: "listen_failed" } }] },
@@ -85,6 +96,24 @@ export const oldGravestone = {
                     text: "Leave the dead in peace.",
                     customActionText: "You rest a hand on the cold stone for a moment, then walk on.",
                     outcomes: END_IT
+                }
+            ]
+        },
+
+        his_stone: {
+            displayText: "The Stranger's Grave",
+            image: { col: 1, row: 0 },
+            text: "The earth gives easily, as if it had been waiting. A forearm down, your hands find a bundle wrapped in an old soldier's cloak. Inside lies a stone the size of a fist, faintly aglow, and warm as a living hand.",
+            decisions: [
+                {
+                    text: "Take the stone.",
+                    customActionText: "You wrap it again and put it away. The grave you leave as you found it.",
+                    outcomes: [{ weight: 100, results: [
+                        { type: "GIVE_ITEM", payload: { itemId: "meteorite", qty: 1 } },
+                        { type: "GRANT_MILESTONE", payload: { id: "stranger_stone_dug" } },
+                        { type: "CLEAR_STORY_PLACE", payload: { key: "strangerGrave" } },
+                        { type: "END_ENCOUNTER", payload: null }
+                    ] }]
                 }
             ]
         },

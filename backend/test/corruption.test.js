@@ -414,13 +414,14 @@ test('every enemy of the shackled faction is born at 100% corruption, as a stat 
     assert.equal(CorruptionSystem.cleanseNatural(plain), false);
 });
 
-test('the act 2 story tells the dark truth: Darius was worn away by his own magic, and every spell drains the one who casts it', () => {
+test('the act 2 story hints at the dark truth through Darius, and never explains it', () => {
     const enc = encounterDefinitions.act_two;
     assert.equal(enc.title, 'A Dark Truth');
     const all = Object.values(enc.stages).map(s => s.text).join(' ');
     assert.match(all, /Darius/, 'it is his story');
-    assert.match(all, /own magic/i, 'his own magic did it');
-    assert.match(all, /every spell/i, 'every spell has a price');
+    assert.match(enc.stages.truth.text, /"It was never the stone[^"]*It always counts\."/, 'the truth only as his last words');
+    assert.doesNotMatch(all, /magic|every spell|price|cost/i, 'the narrator explains nothing');
+    assert.match(enc.stages.iron.text, /shackles are warm/, 'the player feels it in their own iron');
     for (const [id, s] of Object.entries(enc.stages)) assert.doesNotMatch(s.text, /corruption/i, `${id}: told as a story, the word is left to the screens`);
     const quest = QuestDefinitions.act2_red_moon;
     assert.equal(quest.name, 'A Dark Truth', 'the quest is not called the Red Moon');

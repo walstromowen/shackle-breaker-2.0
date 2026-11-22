@@ -1,13 +1,14 @@
 /* A Dark Truth: the turning point of the game. It plays straight after Darius the Groveler is defeated (the START_BATTLE of the altar's last Darius stage carries
  * `afterVictory: { encounterId: "act_two" }`, see SceneManager), and its last choice grants the milestone 'act2'.
  *
- * Where the game says what the curse is. The altar's last light shows Darius's life: the king's young mage, set to keep the fallen stone's light
- * burning with his spells, paying for every one with a piece of himself, until only the kneeling was left. Then the player feels the same price in
- * their own iron: magic is the curse, and every spell drains the one who casts it (corruption, which the screens show from act 2 on:
- * characters/corruptionSystem.js). The moon turns red, and the quest that follows is "A Dark Truth" (questDefinitions.js, act2_red_moon).
+ * Where the curse is hinted at, never explained. The altar's last light shows Darius's life: the king's young adviser kneeling at the fallen stone
+ * night after night, losing small things he does not notice, until only the kneeling was left. His last words (truth) are all the telling there is:
+ * it was never the stone, it was what he gave it, and it counts. Then the player's shackles are warm. What that means is left to the player and to the
+ * screens (corruption, shown from act 2 on: characters/corruptionSystem.js). The moon turns red, and the quest that follows is "A Dark Truth"
+ * (questDefinitions.js, act2_red_moon).
  * From then on the world is in act 2 (story/actDefinitions.js): every night is a blood moon, the spawn tables hold their act 2 entries and enemies are stronger.
  *
- * Voiced (shared/story/voiceLines.js): the narrator, and Darius's own words in the vision (long_dark).
+ * Voiced (shared/story/voiceLines.js): the narrator, and Darius's own words (long_dark in the vision, truth as he dies).
  * Pictures are borrowed from the altar's sheet; the stage fields are explained at the top of story/encounters/story/prologue.js.
  */
 import { toStage, next } from '../stageKit.js';
@@ -41,13 +42,13 @@ export const actTwo = {
         the_mage: {
             displayText: "The King's Mage",
             image: { sheet: "encounter_mysterious_altar", col: 0, row: 1 },
-            text: "A young man in a clean blue robe kneels before the fallen stone. A governor, one of the king's advisers, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep this stone safe until I return.",
+            text: "A young man in a clean blue robe kneels before the fallen stone, steady hands and a quick smile. Darius. The king rests a hand on his shoulder. Keep it safe until I return.",
             decisions: next("first_winter")
         },
         first_winter: {
             displayText: "The First Winter",
             image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },   // the altar's green glow
-            text: "Every night Darius pours a spell into the stone, and every night the light answers him. It is beautiful. He does not notice what it takes. A name he once knew. The taste of bread. The sound of his mother's voice.",
+            text: "Every night he kneels, and every night the light answers him. It is beautiful. A name he once knew slips away. Then the taste of bread. Then his mother's voice. He does not notice.",
             decisions: next("long_dark")
         },
         long_dark: {
@@ -55,30 +56,30 @@ export const actTwo = {
             image: { sheet: "encounter_mysterious_altar", col: 2, row: 1 },   // the altar's red glow
             sfx: "whispers",
             sfxVolume: 0.6,
-            text: "Years pass. The king does not come back. Then one night the stone is gone. Darius sends every soldier he has to find it, and kneels, and casts into the empty hollow. \"Not yet, my king, not yet. I am still here. Heh... heh.\"",
+            text: "Years pass. The king does not come back. One night the stone is gone, and still he kneels before the empty hollow. \"Not yet, my king, not yet. I am still here. Heh... heh.\"",
             decisions: next("groveler")
         },
         groveler: {
             displayText: "The Groveler",
             image: { sheet: "encounter_mysterious_altar", col: 3, row: 1 },   // Darius risen at the altar
             effect: "jolt",
-            text: "The robe rots. His back bends until it will not straighten. The quick smile becomes a grin he cannot stop. Spell by spell the man runs out, until all that is left is the kneeling, and the light, and the waiting.",
+            text: "The robe rots. His back bends until it will not straighten. The quick smile becomes a grin he cannot stop, until all that is left is the kneeling, and the waiting.",
             decisions: next("truth")
         },
-        // ---- what it means ----
+        // ---- what it means: only what Darius says, and the iron ----
         truth: {
             displayText: "A Dark Truth",
             image: { sheet: "encounter_darius_defeated", col: 0, row: 0 },
             bgm: "none",
             sfx: "heartbeat",
-            text: "The light gutters out, and you understand. The stone did not curse him. Neither did the war, or the king. His own magic did. Every spell is paid for with a piece of the one who casts it, and the price is never named. The ones who could work a spell went mad first because they cast the most.",
+            text: "The light gutters out. Behind you, Darius draws one more breath. \"It was never the stone. It was what I gave it, a little every night. Mind what you give, chained one. It always counts.\"",
             decisions: next("iron")
         },
         iron: {
             displayText: "Warm Iron",
             effect: "shake",
             sfx: "whispers",
-            text: "Your shackles are warm. They have never been warm. You think of every spell you have cast, and you feel what each one cost you, counted in the iron. Cast enough, and there will be nothing left of you either. Far above, through a mile of stone, many voices begin to laugh at once.",
+            text: "Your shackles are warm. They have never been warm before. Far above, through a mile of stone, many voices begin to laugh at once.",
             decisions: next("moon")
         },
         moon: {

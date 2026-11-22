@@ -9,7 +9,7 @@ import { STRANGER_CHAIN } from '../../shared/story/encounters/story/hoodedStrang
 // the steps after "find him", in the order the Hooded Stranger hands them out
 const chain = () => STRANGER_CHAIN.slice(1);
 
-test('the chain: level 4, madmen, magic addicts, the old soldiers, then Darius at level 15 (the end of act 1)', () => {
+test('the chain: level 4, madmen, magic addicts, the Stranger\'s stone, then Darius at level 15 (the end of act 1)', () => {
     assert.deepEqual(chain(), ['shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8']);
     for (const cut of ['shackled4', 'shackled5', 'shackled6']) assert.equal(Q[cut], undefined, `${cut} is gone`);
     const targets = chain().flatMap(id => Q[id].objectives.filter(o => o.type === 'kill_enemy').map(o => o.targetId));
@@ -17,13 +17,15 @@ test('the chain: level 4, madmen, magic addicts, the old soldiers, then Darius a
     const level = (id) => Q[id].objectives.find(o => o.type === 'party_level').targetLevel;
     assert.deepEqual(chain().map(level), [4, 7, 10, 13, 15]);
     assert.ok(Q.shackled8.objectives.some(o => o.targetId === 'DARIUS_THE_GROVELER'));
-    assert.ok(Q.shackled7.rewards.items.some(i => i.id === 'meteorite'), 'the legionaries still give up the meteorite');
+    assert.ok(!Q.shackled7.rewards.items.some(i => i.id === 'meteorite'), 'the stone is not a reward: it is dug up');
+    assert.ok(Q.shackled7.objectives.some(o => o.type === 'milestone' && o.targetId === 'stranger_stone_dug'), 'digging it up is the step');
+    assert.deepEqual(Q.shackled7.objectives.filter(o => o.type === 'kill_enemy').map(o => [o.targetId, o.amount]), [['LEGIONARY', 1]], 'one legionary, no watchmen');
 });
 
-test('a save on a cut step picks up from the legionaries', () => {
+test('a save on a cut step picks up from the Stranger\'s stone (shackled7)', () => {
     const state = { party: { members: [] }, inventory: [], quests: { active: { shackled5: { id: 'shackled5', progress: { obj_kill_miragewright: 0 } } }, completed: ['shackled1', 'shackled2', 'shackled3', 'shackled4'], trackedIds: ['shackled5'] } };
     retireQuests(state);
-    assert.ok(state.quests.active.shackled7, 'on the legionaries now');
+    assert.ok(state.quests.active.shackled7, 'on the stone now');
     assert.equal(state.quests.active.shackled5, undefined);
     assert.ok(!state.quests.completed.includes('shackled4'));
     assert.ok(state.quests.trackedIds.includes('shackled7') && !state.quests.trackedIds.includes('shackled5'));

@@ -196,6 +196,9 @@ export const MAP_OBJECTS_DEFINITIONS = {
     FALLEN_SOLDIER_14: { sheet: 'objFallenSoldier14', width: 2, height: 2, isSolid: true, isGround: false, hitbox: BODY_HITBOX },
     FALLEN_SOLDIER_15: { sheet: 'objFallenSoldier15', width: 2, height: 2, isSolid: true, isGround: false, hitbox: BODY_HITBOX },
     OLD_GRAVESTONE: { ...GRAVESTONE, interaction: { type: 'ENCOUNTER', id: 'old_gravestone', isRepeatable: false } },
+    // the old gravestone the Hooded Stranger buried his stone under (world.strangerGrave, WorldManager.noticeStrangerGrave): an Old Gravestone to look at, and
+    // its encounter has one more choice here, to dig where he said (story/encounters/oldGravestone.js). Only on the map of a player whose quest it is.
+    STRANGER_GRAVE: { ...GRAVESTONE, interaction: { type: 'ENCOUNTER', id: 'old_gravestone', isRepeatable: true } },
     /* PLAYER_GRAVE: where a multiplayer party fell, holding its bag and coin until its owner digs it up (world/graves.js). The gravestone's shape,
        cursed: violet-black stone with glowing cracks, a breathing aura and wisps rising off it (4 frames), and a faint violet light at night.
        The world map and the minimap mark it. */

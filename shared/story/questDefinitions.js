@@ -53,21 +53,22 @@ export const QuestDefinitions = {
             ]
         }
     },
+    // Given once the Arc Knight at his gate is dead: he trusts you now. His stone lies under an old gravestone he pinned on your map
+    // (world.strangerGrave, WorldManager.noticeStrangerGrave); digging it up there (story/encounters/oldGravestone.js) grants stranger_stone_dug.
     "shackled7": {
         id: "shackled7",
-        name: "The Old Colors",
+        name: "What the Dead Keep",
         turnIn: "HOODED_STRANGER",
-        description: "Those who still wear the old colors are searching for a stone their master lost. Legionaries and watchmen still march the plains as if the war never ended, and some of them carry stones from the sky. Take one.",
+        description: "The hooded man has kept something from you: a stone from the sky. He buried it under an old gravestone, out where nobody walks, and marked the place on your map. One legionary in the old colors has been nosing about that grave: put him down. Then dig it up, and bring it back to him.",
         objectives: [
-            { id: "obj_reach_level_9", type: "party_level", targetLevel: 13, amount: 1 },
-            { id: "obj_kill_legionaries", type: "kill_enemy", targetId: "LEGIONARY", amount: 3 },
-            { id: "obj_kill_watchmen", type: "kill_enemy", targetId: "WATCHMAN", amount: 2 }
+            { id: "obj_reach_level_9", type: "party_level", targetLevel: 13, amount: 1 },   // the chain's pace: Darius waits for level 15
+            { id: "obj_kill_legionary", type: "kill_enemy", targetId: "LEGIONARY", amount: 1 },   // the one hunting for it: the chain's only legionary, and no watchmen
+            { id: "obj_dig_stone", type: "milestone", targetId: "stranger_stone_dug", amount: 1, description: "Dig up his stone at the marked grave" }
         ],
         rewards: {
             exp: 850,
             currency: 350,
             items: [
-                { id: "meteorite", amount: 1 },
                 { id: "torch", amount: 3 },
                 { id: "interior_map", amount: 1 }
             ] }
@@ -76,7 +77,7 @@ export const QuestDefinitions = {
         id: "shackled8",
         name: "The Groveler",
         turnIn: "HOODED_STRANGER",
-        description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. The answer to what happened waits down there. Descend when you are strong.",
+        description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. Take the stone he trusted you with down to it. Descend when you are strong.",
         objectives: [
             { id: "obj_reach_level_10", type: "party_level", targetLevel: 15, amount: 1 },   // Darius is met around level 15: the end of act 1
             { id: "obj_kill_darius", type: "kill_enemy", targetId: "DARIUS_THE_GROVELER", amount: 1 }

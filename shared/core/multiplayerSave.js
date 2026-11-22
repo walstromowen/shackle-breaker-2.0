@@ -41,6 +41,7 @@ export function worldPart(data) {
             strangerSnowHome: w.strangerSnowHome || null,
             amputatorGraveyard: w.amputatorGraveyard || null,
             amputatorQuarry: w.amputatorQuarry || null,
+            strangerGrave: w.strangerGrave || null,
         },
     });
 }

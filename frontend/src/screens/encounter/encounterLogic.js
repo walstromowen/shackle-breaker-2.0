@@ -23,7 +23,7 @@ import { UI_SFX } from '../../ui/uiSfx.js';
 import { QuestDefinitions } from '../../../../shared/story/questDefinitions.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
 import { Covenants, COVENANTS } from '../../../../shared/story/covenants.js';
-import { addMarker, getMarkers } from '../../../../shared/world/mapMarkers.js';
+import { addMarker, getMarkers, removeMarker } from '../../../../shared/world/mapMarkers.js';
 
 /* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
    same roll (the leader's, sent with each choice: the one who started it) and the same seed, so every screen reaches the same outcome. Who a
@@ -109,6 +109,16 @@ export class EncounterLogic {
                     return !(Array.isArray(gameState.quests?.completed) && gameState.quests.completed.includes(cond.id));
                 case "lacks_milestone":
                     return !ActSystem.hasMilestone(cond.id);
+                // the place a story picked in the world (world[cond.key], "col,row": the Stranger's grave) is where this encounter's object stands;
+                // questActive / lacksMilestone narrow it to while the story asks for it
+                case "at_story_place":
+                case "not_at_story_place": {
+                    const [c, r] = String((gameState.world || {})[cond.key] || '').split(',').map(Number);
+                    let here = Number.isFinite(c) && Number.isFinite(r) && context.col === c && context.row === r;
+                    if (here && cond.questActive) here = !!(gameState.quests?.active && gameState.quests.active[cond.questActive]);
+                    if (here && cond.lacksMilestone) here = !ActSystem.hasMilestone(cond.lacksMilestone);
+                    return cond.type === 'at_story_place' ? here : !here;
+                }
                 case "has_tag":
                 case "has_trait": {
                     const activeCharacter = EncounterLogic.rollerEntity();
@@ -315,6 +325,7 @@ export class EncounterLogic {
                 case "GRANT_MILESTONE":
                     // A turning point of the game (story/actDefinitions.js): granting it moves the world into its next act
                     if (payload.id) ActSystem.grantMilestone(payload.id);
+                    if (payload.id) QuestModel.noteMilestone(gameState, payload.id);   // a quest waiting on it (objective type 'milestone')
                     break;
                 case "SET_CONTEXT_FLAG":
                     if (!model.context) model.context = {};
@@ -356,6 +367,14 @@ export class EncounterLogic {
                 // swearing to a covenant (story/covenants.js): this player's own oath, breaking any other
                 // the oath is the active character's own (each party member can be in a different covenant); on another player's character,
                 // their browser applies it
+                // the story is done with a place it picked (world[key]: the Stranger's grave, dug): this player's pin on it comes off the map, and the
+                // story objects are brought up to date (the grave goes back to being nobody's)
+                case "CLEAR_STORY_PLACE": {
+                    const [c, r] = String((gameState.world || {})[payload.key] || '').split(',').map(Number);
+                    for (const m of [...getMarkers()]) if (m.col === c && m.row === r && !m.map) removeMarker(m.id);
+                    if (worldManager && worldManager.refreshStoryObjects) worldManager.refreshStoryObjects();
+                    break;
+                }
                 case "JOIN_COVENANT": {
                     const who = EncounterLogic.activeMember();
                     if (who && payload.covenantId && Covenants.join(payload.covenantId, who)) generalMessages.push(`${who.name} joined the covenant: ${Covenants.label(who)}`);

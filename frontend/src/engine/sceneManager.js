@@ -289,6 +289,8 @@ export class SceneManager {
         if (sceneName === 'overworld') this._showDolosSign();
         // story characters on the map follow the player's story: after meeting Nikoli the cats are gone and he turns to face you (WorldManager)
         if (sceneName === 'overworld' && this.worldManager && this.worldManager.refreshStoryObjects) this.worldManager.refreshStoryObjects();
+        // the Stranger's grave (his quest shackled7): picked and pinned on the map the first time the player is back outside with it
+        if (sceneName === 'overworld' && this.worldManager && this.worldManager.noticeStrangerGrave) this.worldManager.noticeStrangerGrave();
 
         const targetBGM = this.resolveTargetBGM(sceneName, sceneContext);
         if (targetBGM !== null) {

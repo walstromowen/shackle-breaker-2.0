@@ -19,6 +19,7 @@ export { worldSync } from '../core/worldSync.js';   // (it lives in core so the 
 import { worldSync } from '../core/worldSync.js';
 import { ActSystem } from '../story/actSystem.js';
 import { CASTLE_SITES } from './castleSites.js';
+import { addMarker, getMarkers } from './mapMarkers.js';
 const reportChange = (key, value) => { if (worldSync.onLocalChange) worldSync.onLocalChange(key, value); };
 
 const MASK_DIRECTIONS = [
@@ -75,6 +76,16 @@ function arcKnightObjects(out) {
     const mend = (c, r, id) => { if (!(c === gate.col && r === gate.row) && changes[`${c},${r}`] === null) out.set(`${c},${r}`, id); };
     for (let c = dc - 2; c <= dc + 2; c++) { mend(c, dr - 3, 'WOODEN_FENCE_H'); mend(c, dr + 3, 'WOODEN_FENCE_H'); }
     for (let r = dr - 2; r <= dr + 2; r++) { mend(dc - 3, r, 'WOODEN_FENCE_V'); mend(dc + 3, r, 'WOODEN_FENCE_V'); }
+}
+
+/* The Hooded Stranger's stone (quest shackled7, story/encounters/story/hoodedStranger.js): he buried it under an old gravestone, out where nobody walks
+   (world.strangerGrave, picked once: WorldManager.noticeStrangerGrave). The grave stands there on the map of a player who has the quest, until the stone
+   is dug up (milestone stranger_stone_dug). */
+function strangerGraveObjects(out) {
+    const q = gameState.quests || {};
+    if (!(q.active && q.active.shackled7) || storyHas('stranger_stone_dug')) return;
+    const [c, r] = String(gameState.world.strangerGrave || '').split(',').map(Number);
+    if (Number.isFinite(c) && Number.isFinite(r)) out.set(`${c},${r}`, 'STRANGER_GRAVE');
 }
 
 /* Wanderers: map objects whose definition has `wander` (the madmen, the act 2 Arc Knights on patrol) walk about their home cell, never leaving its
@@ -350,6 +361,7 @@ export class WorldManager {
         if (w.isInterior) return out;
         amputatorObjects(out);
         arcKnightObjects(out);
+        strangerGraveObjects(out);
         if (!w.nikoliCampfire) return out;
         // the story's flags belong to the world (story/worldStory.js): everyone in it sees the same scene
         const ms = { includes: (id) => storyHas(id) };
@@ -575,6 +587,57 @@ export class WorldManager {
         const pick = pool[Math.floor(this.pseudoRandom(seat[0] * 7 + 911, seat[1] * 13 + 377) * pool.length) % pool.length];
         InteriorFactory.claimHome('amputatorQuarry', `${pick[0]},${pick[1]}`);
         return parse(w.amputatorQuarry) || pick;
+    }
+    /** The grave the Hooded Stranger buried his stone under (world.strangerGrave, the world's, picked once): asked on every return to the overworld
+     *  while a player has his quest (shackled7). A free cell of open country, away from every village and road (no structure wrote there), 18 to 32
+     *  cells from his workshop door and reachable from it on foot. Puts a gold pin on this player's map. [col, row], or null. */
+    noticeStrangerGrave() {
+        const w = gameState.world;
+        const q = gameState.quests || {};
+        if (w.isInterior || !(q.active && q.active.shackled7) || storyHas('stranger_stone_dug')) return null;
+        const parse = (s) => { const [c, r] = String(s || '').split(/[_,]/).map(Number); return Number.isFinite(c) && Number.isFinite(r) ? [c, r] : null; };
+        let at = parse(w.strangerGrave);
+        if (!at) {
+            const door = parse(w.strangerHome);
+            if (!door) return null;
+            const start = [door[0], door[1] + 1];
+            const seen = new Map([[`${start[0]},${start[1]}`, 0]]), queue = [start], cands = [];
+            const D = [[0, -1, 'UP'], [0, 1, 'DOWN'], [-1, 0, 'LEFT'], [1, 0, 'RIGHT']];
+            const wild = (c, r) => (w.changes || {})[`${c},${r}`] === undefined && !this.getObjectAt(c, r) && !this._storyObjectAt(c, r);
+            for (let i = 0; i < queue.length && i < 30000; i++) {
+                const [c, r] = queue[i], d = seen.get(`${c},${r}`);
+                const far = Math.hypot(c - door[0], r - door[1]);
+                if (far >= 18 && far <= 32 && wild(c, r) && !(this.terrain && this.terrain.castles && this.terrain.castles.levelAt(c, r) >= 0)) cands.push([c, r]);
+                if (d >= 80) continue;
+                for (const [dc, dr, dir] of D) {
+                    const nc = c + dc, nr = r + dr, k = `${nc},${nr}`;
+                    if (seen.has(k) || Math.hypot(nc - door[0], nr - door[1]) > 34) continue;
+                    if (!this.canMove(c, r, nc, nr, dir)) continue;
+                    seen.set(k, d + 1); queue.push([nc, nr]);
+                }
+            }
+            // somewhere the grave can be walked up to from a side
+            let pool = cands.filter(([c, r]) => D.some(([dc, dr]) => seen.has(`${c + dc},${r + dr}`) && !this.getObjectAt(c + dc, r + dr)));
+            // the yard shut in (something standing in its gate): any open spot in the ring with open ground beside it, so the quest never stalls
+            if (!pool.length) {
+                for (let r = door[1] - 32; r <= door[1] + 32; r++) for (let c = door[0] - 32; c <= door[0] + 32; c++) {
+                    const far = Math.hypot(c - door[0], r - door[1]);
+                    if (far < 18 || far > 32 || !wild(c, r) || (this.terrain && this.terrain.castles && this.terrain.castles.levelAt(c, r) >= 0)) continue;
+                    const back = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
+                    if (D.some(([dc, dr, dir]) => this.canMove(c + dc, r + dr, c, r, back[dir]))) pool.push([c, r]);
+                }
+            }
+            if (!pool.length) return null;
+            const pick = pool[Math.floor(this.pseudoRandom(door[0] * 11 + 431, door[1] * 17 + 59) * pool.length) % pool.length];
+            InteriorFactory.claimHome('strangerGrave', `${pick[0]},${pick[1]}`);
+            at = parse(w.strangerGrave) || pick;
+        }
+        if (!getMarkers().some(m => m.col === at[0] && m.row === at[1] && !m.map)) {
+            const m = addMarker(at[0], at[1], { color: 'gold' });
+            if (m) m.label = 'An old grave';
+        }
+        this.refreshStoryObjects();
+        return at;
     }
     _storyObjectAt(col, row) {
         return this._storyObjects().get(`${col},${row}`) || null;

@@ -18,9 +18,15 @@
    story/encounters/story/codey.js); the hand-in is the reunion; after_codey .. after_codey_3 afterwards.
    Every conversation is three to five stages. He does not know what causes the curse: he notices things (the clever ones went first) and shrugs.
    The chain, in order: shackled_stranger, shackled1, shackled2, shackled3, shackled7, shackled8 (questDefinitions.js; every step has turnIn: "HOODED_STRANGER").
+   He has the stone (the Fallen Meteorite) and the player is never sent to find one: handing in shackled3 rouses the King's Arc Knight at his gate
+   (knight_at_gate), and until he is dead he only says so (knight_waits). Then he trusts the player (trust_shackled7) and gives shackled7: his stone,
+   buried under an old gravestone he marks on the map (world.strangerGrave; the grave's own choice, story/encounters/oldGravestone.js). Handed in, he
+   lets it stay with them and tells how he came by it (Darius lost it; he found it). At first he is a man who has accepted his own madness to come,
+   with a dry, morbid humour about it.
    What he lets slip, visit by visit: the shackles count you; the brightest stone (the artifact) came before the war and the king called it a gift, the rest kept falling all through the war;
    the ones who could work a spell went strange first (he does not know why, and would rather not); the king gave one of the stones to Darius, a
-   governor and one of his advisers, to keep until he came back, and Darius lost it (his soldiers in the old colors search for it still); the red moon.
+   governor and one of his advisers, to keep until he came back, and Darius lost it (his soldiers in the old colors search for it still) and he
+   found it; the red moon.
    He is Cornelius Mentoras, once commander of the royal guard (docs/story.md): never said, and nothing he says may give it away before the story does. (Act 2, story/encounters/story/actTwo.js, shows the rest.)
    His grief (his son, docs/story.md) is never spoken of. Once only, when Codey comes back alive, it slips out: "One of you did."
 
@@ -48,6 +54,8 @@ function opening() {
     for (const id of CHAIN.slice(1)) {
         if (done(id)) continue;
         if (active(id)) return QuestModel.checkCompletion(gameState, id) ? `turnin_${id}` : `waiting_${id}`;
+        // his stone is only for someone who has faced the King's knight at his gate (story/encounters/story/arcKnight.js)
+        if (id === 'shackled7' && !hasMilestone('arc_knight_slain')) return 'knight_waits';
         return `offer_${id}`;
     }
     if (!hasMilestone('act2')) return 'after_darius';
@@ -108,7 +116,7 @@ export const hoodedStranger = {
         // ---- the first meeting: he takes the player for one more doomed man, and is sorry for it ----
         meet: stage("A hooded man leans against the workbench. He looks at your wrists before he looks at your face, and something in his own face closes. \"Another one.\"",
             next("meet_2")),
-        meet_2: stage("\"Those shackles have no lock. They were never meant to come off. I have watched many wear them. I tried to help some. It ended the same way, every time.\"",
+        meet_2: stage("\"Those shackles have no lock. Neither do mine. We all end up laughing in the grass, sooner or later. ...I would prefer later. The grass is damp.\"",
             next("meet_3")),
         meet_3: stage("\"I am sorry. I was not good enough for them. I do not think I would be for you.\"",
             next("meet_4")),
@@ -129,7 +137,7 @@ export const hoodedStranger = {
         ...waiting('shackled1',
             "\"You came back. ...Not yet. Not like this.\"",
             "\"The last one who stood where you are stood there only once.\"",
-            "\"Stay alive. That is all I ask.\""),
+            "\"Stay alive. I will go mad before you do, I expect. I have had a head start. ...Do try to make it quick, when it comes. For me, I mean.\""),
         turnin_shackled1: turnIn("shackled1", "He looks at your wrists, then at your face. Longer, this time. \"...You are still yourself. Most are not, by now.\"", "lore_shackled1"),
         lore_shackled1: stage("\"I was wrong about you. ...I am glad of it. Good enough.\"", next("lore_shackled1_2")),
         lore_shackled1_2: stage("\"The iron is not there to hold you. It counts you. Everyone in chains is being kept for something.\"", next("lore_shackled1_3")),
@@ -164,23 +172,30 @@ export const hoodedStranger = {
             ] }]
         }]),
         lore_shackled3: stage("\"Every one of them could work a spell. Those who never could laugh later. Or not at all.\"", next("lore_shackled3_2")),
-        lore_shackled3_2: stage("\"I do not know why. Perhaps I never will. I have given up on the weather entirely.\"", next("give_shackled7_pre")),
+        lore_shackled3_2: stage("\"I do not know why. Perhaps I never will. I have given up on the weather entirely.\"", next("knight_at_gate")),
+        knight_at_gate: stage("He glances at the door, and is quiet a moment. \"Someone is standing at my gate. One of the King's. ...He is not here for me. Go out the way you came. I will be here, if you come back.\"", [leave("Leave.")]),
 
-        // ---- shackled7: the old soldiers, and the meteorite ----
-        ...offer('shackled7', 'give_shackled7_pre'),
-        give_shackled7_pre: stage("\"Soldiers in the old colours still search for a stone. Legionaries, watchmen. They march as if the war never ended. Nobody told them.\"", next("give_shackled7")),
-        give_shackled7: give("shackled7", "\"Take one from them. ...If you find one who knows the war is over, bring him back. I have questions. So do the voices.\""),
+        // ---- shackled7: his stone, once you have killed the King's knight at his gate ----
+        knight_waits: stage("\"He is still out there. The gate is the only way out. ...I always meant to build another.\"", next("knight_waits_2")),
+        knight_waits_2: stage("\"I know what he is. I will not say how. He feels nothing now, and fears less.\"", next("knight_waits_3")),
+        knight_waits_3: stage("\"Go when you are ready. If you are not ready, go anyway. That is how most of us managed.\"", [leave("Leave.")]),
+        ...offer('shackled7', 'trust_shackled7'),
+        trust_shackled7: stage("\"You killed one of the King's own. I watched from the doorway. I did not help. ...I am not proud of it. I am not often proud of anything.\"", next("give_shackled7")),
+        give_shackled7: stage("\"I have kept something from you. A stone from the sky. I buried it under an old grave, out where nobody walks, and marked it on your map. Dig it up. Bring it to me. ...The dead will not mind. I asked.\"", [{
+            text: "\"I'll bring it back.\"",
+            outcomes: [{ weight: 100, results: [{ type: "START_QUEST", payload: { questId: "shackled7" } }, { type: "END_ENCOUNTER", payload: null }] }]
+        }]),
         ...waiting('shackled7',
-            "\"Three legionaries. Two watchmen.\"",
-            "\"They still salute each other.\"",
-            "\"Bring back a stone. And try not to die. I would have to find someone else to talk to, and the anvil has started sulking.\""),
-        turnin_shackled7: turnIn("shackled7", "\"You found one. Do not hold it long. It should not be warm.\"", "lore_shackled7"),
-        lore_shackled7: stage("\"A governor named Darius had the king's ear. The king gave him one of the stones to keep until he returned.\"", next("lore_shackled7_2")),
-        lore_shackled7_2: stage("\"Darius lost it. His soldiers still search. He waits in the dark for a king who is not coming.\"", next("give_shackled8")),
+            "\"The grave. The stone.\"",
+            "\"A legionary has been nosing round that grave. One of the old colors. Put him in it, if you like. It is a grave, after all.\"",
+            "\"Dig. Then come back. I have not decided yet what I will do if you do not.\""),
+        turnin_shackled7: turnIn("shackled7", "He weighs the stone in his palm, then folds your fingers back around it. \"Keep it. It is lighter in your hands than it ever was in mine.\"", "lore_shackled7"),
+        lore_shackled7: stage("\"A governor named Darius had the king's ear. The king gave him that stone to keep until he returned.\"", next("lore_shackled7_2")),
+        lore_shackled7_2: stage("\"Darius lost it. ...I found it. I have kept it buried ever since, waiting for someone I trusted to give it back to him.\"", next("give_shackled8")),
 
         // ---- shackled8: Darius ----
         ...offer('shackled8'),
-        give_shackled8: give("shackled8", "\"There is an altar of dark stone deep in the caves, above a hollow the size of a fallen star. He kneels there still. Show him your stone. He will not take it well. ...I suppose it serves him right.\""),
+        give_shackled8: give("shackled8", "\"There is an altar of dark stone deep in the caves, above a hollow the size of a fallen star. He kneels there still. Show him the stone. He will not take it well. ...I suppose it serves him right.\""),
         ...waiting('shackled8',
             "\"The altar. The Groveler. The stone.\"",
             "\"Go when you are strong.\"",

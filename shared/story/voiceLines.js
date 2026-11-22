@@ -18,7 +18,7 @@ export const VOICED = {
     prologue: [[/^mad_|^road_ask$/, 'MADMAN']],   // the madman chained ahead of you; the rest is the narrator
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
-    act_two: [[/^long_dark$/, 'DARIUS']],
+    act_two: [[/^long_dark$|^truth$/, 'DARIUS']],
     nikoli: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],   // act 3: _m1 / _m2 stages are Mentoras, _j1 / _j2 Jaeger
     nikoli_after_battle: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],   // the same stages as nikoli: the same clips
     brothers_won: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
@@ -50,7 +50,7 @@ export const SPEAKERS = {
     prologue: [[/^mad_|^road_ask$/, 'MADMAN']],
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
-    act_two: [[/^long_dark$/, 'DARIUS']],     // his own words, in the vision of his life
+    act_two: [[/^long_dark$|^truth$/, 'DARIUS']],     // his own words: in the vision of his life, and as he dies
     nikoli: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
     nikoli_after_battle: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
     brothers_won: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],

@@ -71,7 +71,3 @@ test('a second bomb does nothing while more than half is left, and the overworld
     assert.ok(check > ctl.indexOf('START_ENCOUNTER'), 'but after story encounters, which are not random battles');
 });
 
-test('the Shackled quest asks for 3 legionaries, not 4', () => {
-    const o = QuestDefinitions.shackled7.objectives.find(x => x.targetId === 'LEGIONARY');
-    assert.equal(o.amount, 3);
-});
