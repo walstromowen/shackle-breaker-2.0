@@ -1,5 +1,6 @@
-/* Weather. `animationId` is the battle animation that plays when the weather acts in a fight (see battleAnimationDefinitions.js: weatherRain,
-   weatherFog, weatherSandstorm, weatherBlizzard). It plays on everyone in the battle. Clear skies have none. */
+/* Weather. `animationId` is the battle animation that plays when the weather announces itself at the start of a fight (see battleAnimationDefinitions.js:
+   weatherRain, weatherFog, weatherSandstorm, weatherBlizzard). It plays on everyone in the battle. Clear skies have none. After it, the weather stays for
+   the whole fight: its look (frontend/src/screens/battle/battleWeather.js, by id) and `battleAmbience`, the sound looped under the fight (audioEffect if none). */
 export const WeatherDefinitions = {
     CLEAR: {
         id: 'clear',
@@ -49,6 +50,7 @@ export const WeatherDefinitions = {
         visualEffect: 'particle_sand',
         audioEffect: 'weatherFog',
         durationRange: [10,20],
+        battleAmbience: 'battlefieldWind',   // the wind howling over the field
         appliedStatusId: 'slowed',   // like the blizzard: everyone in the fight is slowed while it blows
         battleMessage: "A blinding sandstorm whips up around you!" // ✅ NEW
     },
@@ -61,8 +63,9 @@ export const WeatherDefinitions = {
         animationId: 'weatherBlizzard',
         visualEffect: 'particle_blizzard',
         audioEffect: 'weatherFog',
+        battleAmbience: 'snowWind',
         durationRange: [6, 14],
         appliedStatusId: 'slowed',
         battleMessage: "A howling blizzard sweeps across the battlefield!"
     }
-};
+};

@@ -256,7 +256,12 @@ export class SceneManager {
         // <-- ADDED 'workshop' to keep whatever background ambience is currently playing
         if (['party', 'character_summary', 'level_up', 'shop', 'workshop', 'saves', 'settings', 'trade'].includes(targetScene)) return null;
 
-        if (['battle', 'encounter', 'character-creator', 'title', 'boot', 'multiplayer'].includes(targetScene)) return 'none';
+        // a fight keeps its weather's sound for as long as it lasts (WeatherDefinitions battleAmbience; battleWeather.js draws the rest)
+        if (targetScene === 'battle') {
+            const w = this.battleController && this.battleController.state && this.battleController.state.weather;
+            return (w && w.id !== 'clear' && (w.battleAmbience || w.audioEffect)) || 'none';
+        }
+        if (['encounter', 'character-creator', 'title', 'boot', 'multiplayer'].includes(targetScene)) return 'none';
 
         if (gameState.world && gameState.world.currentWeather) {
             return gameState.world.currentWeather.audioEffect || 'none';

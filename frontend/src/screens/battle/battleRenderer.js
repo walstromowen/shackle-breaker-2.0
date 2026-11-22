@@ -8,6 +8,7 @@ import { BattleDebuggerRenderer } from './battleDebuggerRenderer.js';
 import { debugOverlay } from '../../ui/debugOverlay.js';
 import { ParticleSystem } from '../../ui/particles/particleSystem.js';
 import { drawSmoke } from '../../ui/particles/smoke.js';
+import { BattleWeather } from './battleWeather.js';
 
 export class BattleRenderer {
     constructor(ctx, config, loader) {
@@ -18,6 +19,7 @@ export class BattleRenderer {
 
         // --- SUBCOMPONENTS ---
         this.vfxRenderer = new ParticleSystem(ctx, loader);
+        this.weather = new BattleWeather(ctx, loader);   // the fight's weather for as long as it lasts (battleWeather.js)
         this.combatantRenderer = new BattleCombatantRenderer(ctx, config, loader, this.ui, this.vfxRenderer);
         this.hudRenderer = new BattleHUDRenderer(ctx, config, loader, this.ui, this.combatantRenderer);
         this.debugRenderer = new BattleDebuggerRenderer(ctx, config);
@@ -170,7 +172,11 @@ export class BattleRenderer {
         const bgOffsetY = 0;
 
         if (baseBgImg) {
+            // the weather dims or tints the backdrop for the whole fight (battleWeather.js)
+            const weatherFilter = this.weather.backgroundFilter(state);
+            if (weatherFilter !== 'none') { this.ctx.save(); this.ctx.filter = weatherFilter; }
             this.ctx.drawImage(baseBgImg, bgOffsetX, bgOffsetY, CANVAS_WIDTH, CANVAS_HEIGHT);
+            if (weatherFilter !== 'none') this.ctx.restore();
         } else {
             this.ctx.fillStyle = UITheme.colors.background;
             this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -212,10 +218,14 @@ export class BattleRenderer {
 
         // Smoke drifts along the ground and through the sky, behind the fighters
         drawSmoke(this.ctx, Date.now() / 1000, CANVAS_WIDTH, CANVAS_HEIGHT, 0.8, true);
+        this.weather.drawBehind(state, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // 2. Draw Entities
         this.combatantRenderer.drawGroup(state.activeEnemies, false, state, hitboxes);
         this.combatantRenderer.drawGroup(state.activeParty, true, state, hitboxes);
+
+        // the weather falling and blowing across the field, in front of the fighters
+        this.weather.updateAndDrawFront(state, this.dt, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // 3. Draw VFX
         this.vfxRenderer.render();

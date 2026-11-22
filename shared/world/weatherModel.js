@@ -7,6 +7,7 @@ export class WeatherModel {
         
         // Audio
         this.audioEffect = definition.audioEffect || 'none'; 
+        this.battleAmbience = definition.battleAmbience || null;   // the sound under a fight in it (else audioEffect): battleWeather.js, SceneManager
         
         // Pull battle-specific properties from the definition
         this.animationId = definition.animationId || null; 
@@ -51,4 +52,4 @@ export class WeatherModel {
     isFinished() {
         return this.timeRemaining <= 0;
     }
-}
+}
