@@ -44,6 +44,8 @@ test('an Arc Knight: a boss of his own, his art, his scene and fight, voiced, an
     const fight = results(enc.stages.ak_4.decisions[0]).find(r => r.type === 'START_BATTLE');
     assert.equal(fight.payload.enemies[0].id, 'ARC_KNIGHT');
     assert.equal(fight.payload.afterVictory.encounterId, 'arc_knight_fallen');
+    assert.equal(enc.stages.ak_4.bgm, fight.payload.bgm, 'the battle music starts as he turns hostile, before you draw, and carries into the fight');
+    assert.ok(!['ak_meet', 'ak_2', 'ak_3', 'ak_kneel'].some(id => enc.stages[id].bgm), 'not before');
     const rest = results(encounterDefinitions.arc_knight_fallen.stages.fallen_2.decisions[0]);
     assert.ok(rest.some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'arc_knight_slain'));
     assert.ok(isWorldFlag('arc_knight_roused') && isWorldFlag('arc_knight_slain'), 'the world\'s story');

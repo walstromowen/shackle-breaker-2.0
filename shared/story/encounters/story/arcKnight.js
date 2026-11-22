@@ -39,7 +39,9 @@ const STAGES = {
                 bgm: "apexPredatorBgm",   // a mini boss: a hunt's music, not the plains'
                 afterVictory: { encounterId: "arc_knight_fallen" }
             } }] }]
-        }, { text: "Back away.", customActionText: "You step back. He does not follow, and he does not move from the gate. There is no other way out.", outcomes: end() }]),
+        }, { text: "Back away.", customActionText: "You step back. He does not follow, and he does not move from the gate. There is no other way out.", outcomes: end() }],
+        // he turns hostile here: the fight's music starts with his words, before the choice, and carries on into the battle unbroken (the same track)
+        { bgm: "apexPredatorBgm" }),
     // after the fight
     fallen: stage("The knight drops to one knee. The fire on his blade gutters and goes out, and something leaves the helm with it: the far voice behind his own. \"Cold. I had forgotten cold.\"",
         next("fallen_2"), { bgm: "none" }),
