@@ -16,7 +16,8 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 1, maxSize: 3 }
                 },
                 members: [
-                    { id: 'WOLF', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
+                    { id: 'WOLF', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
+                    { id: 'BEAR', weight: 30, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }   // about 1 in 4 of the plains' beasts by day
                 ]
             },
             {
@@ -280,7 +281,8 @@ export const SpawnTableDefinitions = {
             },
             members: [
                 { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } },   // as common as the Dune Maw in the desert
+                { id: 'BEAR', weight: 40, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }   // the mountain bears: about 1 in 5 of its beasts
             ]
         }, {
             // the trappers of the peaks hunt the roads: about half of the mountain's ambushes
@@ -314,7 +316,8 @@ export const SpawnTableDefinitions = {
             },
             members: [
                 { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } },   // as common as the Dune Maw in the desert
+                { id: 'BEAR', weight: 40, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }   // the mountain bears: about 1 in 5 of its beasts
             ]
         }, {
             // the trappers work by night too, half of the mountain's ambushes
@@ -449,7 +452,8 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } },   // as common as the Dune Maw in the desert
+                { id: 'BEAR', weight: 40, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }   // the mountain bears: about 1 in 5 of its beasts
                 ]
             },
             {

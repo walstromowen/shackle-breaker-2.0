@@ -1,3 +1,4 @@
+import { StatusEffectDefinitions, statusLevelShare } from '../abilities/statusEffectDefinitions.js';
 import { fightsNaturally, naturalAttackBonus, naturalDefenseBonus } from '../battle/enemyArms.js';
 import { TRAIT_DEFINITIONS } from '../abilities/traitDefinitions.js'; 
 import { DAMAGE_TYPES, CORRUPTION, MAGIC_DAMAGE_TYPES, DEFENSE_PER_SCALING_POINT, ENEMY_DAMAGE_SCALING, scalingFor } from '../core/constants.js'; 
@@ -237,7 +238,9 @@ export class StatCalculator {
             if (!status.modifiers || !Array.isArray(status.modifiers)) return; 
             status.modifiers.forEach(mod => { 
                 const stacks = status.stacks || 1; 
-                const totalValue = mod.value * stacks; 
+                // a buff or debuff (leveled) gives 20% / 35% / 50% at levels 1-3; anything else adds its value once per stack
+                const def = status.def || StatusEffectDefinitions[status.id];
+                const totalValue = def && def.leveled ? mod.value * statusLevelShare(def, stacks) : mod.value * stacks; 
                 if (mod.type === 'percent') { percentModifiers.push({ target: mod.target, value: totalValue }); } 
                 else { flatModifiers.push({ target: mod.target, value: totalValue }); } 
             }); 

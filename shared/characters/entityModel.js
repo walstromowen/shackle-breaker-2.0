@@ -240,6 +240,8 @@ export class EntityModel {
         const existingEffect = this.state.statusEffects.find(e => e.id === activeEffect.id);
         if (existingEffect) {
             existingEffect.charges = activeEffect.charges;
+            // a buff or debuff put on at a higher level than it has (statusEffectDefinitions.js STATUS_LEVELS) rises to it; it never drops a level this way
+            if (existingEffect.def && existingEffect.def.leveled && (activeEffect.stacks || 1) > (existingEffect.stacks || 1)) existingEffect.stacks = activeEffect.stacks;
         } else {
             this.state.statusEffects.push(activeEffect);
         }

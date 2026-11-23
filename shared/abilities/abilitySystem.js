@@ -179,14 +179,18 @@ export class AbilitySystem {
                             if (!result.success) result.message = ((result.message || '') + ' ' + why).trim();
                             continue;
                         }
-                        existingStatus.addStack();
+                        // a buff or debuff (leveled: 20% / 35% / 50%) goes up a level, or to the ability's own level if that is higher; anything else stacks
+                        const leveled = !!(existingStatus.def && existingStatus.def.leveled);
+                        if (leveled) existingStatus.raiseLevel(statusDef.level || 1); else existingStatus.addStack();
                         result.success = true;
                         result.addedTags.push(statusDef.id);
-                        const stackText = existingStatus.stacks === existingStatus.maxStacks ? '(Max Stacks)' : `(x${existingStatus.stacks})`;
+                        const stackText = leveled
+                            ? (existingStatus.stacks === existingStatus.maxStacks ? `(Level ${existingStatus.stacks}, the highest)` : `(Level ${existingStatus.stacks})`)
+                            : (existingStatus.stacks === existingStatus.maxStacks ? '(Max Stacks)' : `(x${existingStatus.stacks})`);
                         const template = statusDef.stackMessage || "{target}'s {status} grew stronger {stackText}";
                         result.message += " " + this._parseMessage(template, source, target, def, { status: existingStatus.name, stackText: stackText });
                     } else {
-                        const activeEffect = StatusEffectFactory.createEffect(statusDef.id, statusDef.duration, source);
+                        const activeEffect = StatusEffectFactory.createEffect(statusDef.id, statusDef.duration, source, statusDef.level);
                         if (activeEffect) {
                             target.applyStatusEffect(activeEffect);
                             result.success = true;

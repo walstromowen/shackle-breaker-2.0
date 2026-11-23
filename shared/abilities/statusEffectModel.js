@@ -68,6 +68,17 @@ export class StatusEffectModel {
         this.charges = this.def.defaultCharges;
     }
 
+    /* A buff or debuff's level (1-3: 20%, 35%, 50%; statusEffectDefinitions.js STATUS_LEVELS) is its stack count. */
+    get level() { return this.stacks; }
+
+    /* Put on again: one level up, or straight to `level` if that is higher (capped at the top level), and its time starts over. Returns true if it rose. */
+    raiseLevel(level = 1) {
+        const before = this.stacks;
+        this.stacks = Math.min(this.maxStacks, Math.max(this.stacks + 1, level || 1));
+        this.charges = this.def.defaultCharges;
+        return this.stacks > before;
+    }
+
     consumeCharge() {
         // NEW: Only consume charges if the status isn't infinite
         if (!this.isInfinite) {

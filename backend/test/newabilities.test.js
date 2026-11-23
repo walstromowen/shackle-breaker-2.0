@@ -52,11 +52,13 @@ test('each has its own icon cell, an animation of its own, and is taught by a we
 
 const fighter = () => { const c = new CombatantModel(EntityFactory.create('HUMANOID', { level: 5, levelEdge: false }), 'party'); return c; };
 
-test('Vulnerable halves physical defense', () => {
-    const c = fighter();
-    const before = { ...c.stats.defense };
-    c.applyStatusEffect(StatusEffectFactory.createEffect('vulnerable', 2, c));
-    for (const t of ['slash', 'blunt', 'pierce']) assert.ok(c.stats.defense[t] <= Math.ceil(before[t] / 2), `${t}: ${before[t]} -> ${c.stats.defense[t]}`);
+test('Vulnerable lowers physical defense by 20% at level 1, 50% at level 3', () => {
+    for (const [level, share] of [[1, 0.2], [3, 0.5]]) {
+        const c = fighter();
+        const before = { ...c.stats.defense };
+        c.applyStatusEffect(StatusEffectFactory.createEffect('vulnerable', 2, c, level));
+        for (const t of ['slash', 'blunt', 'pierce']) assert.ok(Math.abs(c.stats.defense[t] - before[t] * (1 - share)) <= 1, `level ${level} ${t}: ${before[t]} -> ${c.stats.defense[t]}`);
+    }
 });
 
 test('Guard Break shatters a Fortified guard and hits far harder than a blow the guard would take', () => {

@@ -18,7 +18,8 @@ test('slowed only lowers speed', () => {
     assert.equal(s.modifiers.length, 1);
     assert.equal(s.modifiers[0].target, 'speed');
     assert.equal(s.modifiers[0].type, 'percent');
-    assert.ok(s.modifiers[0].value < 0 && s.modifiers[0].value > -1);
+    assert.equal(s.modifiers[0].value, -1, 'a debuff: its direction, times its level\'s share (20% / 35% / 50%)');
+    assert.equal(s.leveled, true);
 });
 
 test('the blizzard puts slowed on everyone', () => {

@@ -7,7 +7,7 @@
 // being targeted) works as before.
 import { UITheme } from './UITheme.js';
 import { CanvasUI } from './canvasUI.js';
-import { StatusEffectDefinitions } from '../../../shared/abilities/statusEffectDefinitions.js';
+import { StatusEffectDefinitions, statusDescription } from '../../../shared/abilities/statusEffectDefinitions.js';
 
 const W = 560, PAD = 24, GAP = 10, LINE_H = 34;
 const tracked = [];
@@ -16,13 +16,14 @@ const tracked = [];
 export function statusInfo(effect) {
     const def = (effect && StatusEffectDefinitions[effect.id]) || effect?.def || {};
     const name = effect?.name || def.name || 'Status';
-    const text = def.description || 'An effect on this character.';
+    const text = statusDescription(def, effect?.stacks || 1) || 'An effect on this character.';   // a buff or debuff's {pct} at its level
     const lines = [];
     const charges = effect?.charges;
     if (effect?.isInfinite || charges === -1) lines.push(def.id === 'trap_set' ? 'Waits until it springs' : 'No time limit');
     else if (Number.isFinite(charges) && charges >= 99) lines.push('Lasts the whole fight');
     else if (Number.isFinite(charges) && charges > 0) lines.push(`${charges} turn${charges === 1 ? '' : 's'} left`);
-    if ((def.maxStacks || 1) > 1) lines.push(`Stacks: ${effect?.stacks || 1} of ${def.maxStacks}`);
+    if (def.leveled) lines.push(`Level ${effect?.stacks || 1} of ${def.maxStacks}`);
+    else if ((def.maxStacks || 1) > 1) lines.push(`Stacks: ${effect?.stacks || 1} of ${def.maxStacks}`);
     return { name, text, lines };
 }
 

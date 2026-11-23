@@ -198,3 +198,24 @@ test('the art waiting to be painted: blank Bear sheets the game loads, the skele
     const renderer = fs.readFileSync(new URL('frontend/src/screens/battle/battleCombatantRenderer.js', root), 'utf8');
     assert.match(renderer, /_rowsHaveArt\(img, 4, frameSize\)/, 'a familiar faces away on the party side once its back view is painted');
 });
+
+test('bears roam the plains by day and the snowy mountains at every hour, and leave a pelt behind', async () => {
+    const { SpawnTableDefinitions: T } = await import('../../shared/battle/spawnTableDefinitions.js');
+    const { SpawnTableFactory } = await import('../../shared/battle/spawnTableFactory.js');
+    const { LootTableDefinitions: L } = await import('../../shared/items/lootTableDefinitions.js');
+    const { ItemDefinitions: I } = await import('../../shared/items/itemDefinitions.js');
+    const { ENTITY_DEFINITIONS: E } = await import('../../shared/characters/entityDefinitions.js');
+    for (const id of ['plains_battles_day', 'snowy_mountains_battles_day', 'snowy_mountains_battles_night', 'snowy_mountains_battles_blood_moon']) {
+        const wild = T[id].pools.find(p => p.members.some(m => m.id === 'BEAR'));
+        assert.ok(wild && wild.factionId !== 'shackled', `${id}: bears are among its beasts`);
+        seedRandom(7);
+        let bears = 0;
+        for (let i = 0; i < 400; i++) bears += SpawnTableFactory.generateBattle(id, 'normal').enemies.filter(e => e.id === 'BEAR').length;
+        unseedRandom();
+        assert.ok(bears > 10, `${id}: a bear turns up now and then (${bears} in 400 fights)`);
+    }
+    const drops = L[E.BEAR.lootTableId];
+    assert.ok(drops, 'the Bear has a loot table');
+    for (const d of drops.items) assert.ok(I[d.id], `${d.id} is a real item`);
+    assert.ok(drops.items.some(d => d.id === 'fur'));
+});

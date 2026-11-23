@@ -984,6 +984,17 @@ export const LootTableDefinitions = {
     // ------------------------------------------
     // SNOW AND CAVE CREATURES
     // ------------------------------------------
+    // Bears: a heavy pelt, hide and bones; now and then one has eaten something that was not only earth (Bear Form is Insight of Earth's).
+    "bear_drops": {
+        type: "independent",
+        items: [
+            { id: "fur", dropRate: 0.70, min: 1, max: 3 },
+            { id: "leather", dropRate: 0.40, min: 1, max: 2 },
+            { id: "bone", dropRate: 0.30, min: 1, max: 2 },
+            { id: "healing_herb", dropRate: 0.08 },
+            { id: "insight_of_earth", dropRate: 0.03 }
+        ]
+    },
     "snow_leopard_drops": {
         type: "independent",
         items: [

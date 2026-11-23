@@ -1,3 +1,20 @@
+/* Buffs and debuffs (`leveled: true`) come in three levels: 20%, 35% and 50% (STATUS_LEVELS). A modifier's `value` is then its direction (+1 / -1), times
+   the level's share (StatCalculator), and `{pct}` in the description is the share at the holder's level (statusDescription). The weather puts on level 1;
+   an ability puts on its effect's `level` (1 if it names none), and putting it on again raises it a level, up to 3 (AbilitySystem). */
+export const STATUS_LEVELS = [0.20, 0.35, 0.50];
+
+/** The share (0.2 / 0.35 / 0.5) a leveled status gives at a level (its stacks), or 1 for a status that has no levels. */
+export function statusLevelShare(def, level = 1) {
+    if (!def || !def.leveled) return 1;
+    return STATUS_LEVELS[Math.max(1, Math.min(STATUS_LEVELS.length, level || 1)) - 1];
+}
+
+/** A status's description, with `{pct}` filled in for the level it is at. */
+export function statusDescription(def, level = 1) {
+    const text = (def && def.description) || '';
+    return text.replace(/\{pct\}/g, `${Math.round(statusLevelShare(def, level) * 100)}%`);
+}
+
 export const StatusEffectDefinitions = {
     poison: {
         id: 'poison',
@@ -94,40 +111,40 @@ export const StatusEffectDefinitions = {
     wet: {
         id: 'wet',
         name: 'Wet',
-        description: "Soaked: takes 50% more lightning damage and 50% less fire damage.",
+        description: "Soaked: takes {pct} more lightning damage and {pct} less fire damage.",
         icon: { col: 5, row: 0 },
         defaultCharges: 99,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'flat', target: 'resistance.lightning', value: -0.5 },
-            { type: 'flat', target: 'resistance.fire', value: 0.5 }
+            { type: 'flat', target: 'resistance.lightning', value: -1 },
+            { type: 'flat', target: 'resistance.fire', value: 1 }
         ]
     },
-    /* The blizzard's status (weatherDefinitions.js BLIZZARD.appliedStatusId): put on everyone when a fight starts in one, like wet for rain. It does one thing:
-       30% less speed (a percent modifier adds value * the stat, so -0.3 is 30% off). No effect on the turn, no message. Icon (3, 1) of the status sheet. */
+    /* The blizzard's and sandstorm's status (weatherDefinitions.js appliedStatusId): put on everyone, at level 1, when a fight starts in one. It does one thing:
+       less speed (a percent modifier adds value * share * the stat). No effect on the turn, no message. */
     slowed: {
         id: 'slowed',
         name: 'Slowed',
-        description: "30% less speed, so its turns come later.",
+        description: "{pct} less speed, so its turns come later.",
         icon: { col: 3, row: 2 },
         defaultCharges: 99,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'speed', value: -0.3 }
+            { type: 'percent', target: 'speed', value: -1 }
         ]
     },
     fortified: {
         id: 'fortified',
         name: 'Fortified',
-        description: "Braced behind armor: slash, blunt and pierce hits barely hurt it. Up to 3 stacks.",
+        description: "Braced behind armor: takes {pct} less slash, blunt and pierce damage.",
         icon: { col: 0, row: 1 },
         defaultCharges: 3,
-        maxStacks: 3,
+        leveled: true, maxStacks: 3,
         persistAfterCombat: false,
         modifiers: [
-            { type: 'flat', target: 'resistance.slash', value: 1.5 },
-            { type: 'flat', target: 'resistance.blunt', value: 1.5 },
-            { type: 'flat', target: 'resistance.pierce', value: 1.5 }
+            { type: 'flat', target: 'resistance.slash', value: 1 },
+            { type: 'flat', target: 'resistance.blunt', value: 1 },
+            { type: 'flat', target: 'resistance.pierce', value: 1 }
         ]
     },
     burn: {
@@ -197,28 +214,28 @@ export const StatusEffectDefinitions = {
     enlightened: {
         id: 'enlightened',
         name: 'Enlightened',
-        description: "Dark, light and arcane attacks are 150% stronger.",
+        description: "Dark, light and arcane attacks are {pct} stronger.",
         animationId: "enlightened",
         icon: { col: 0, row: 2 },
         defaultCharges: 3,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'attack.dark', value: 1.5 },
-            { type: 'percent', target: 'attack.light', value: 1.5 },
-            { type: 'percent', target: 'attack.arcane', value: 1.5 }
+            { type: 'percent', target: 'attack.dark', value: 1 },
+            { type: 'percent', target: 'attack.light', value: 1 },
+            { type: 'percent', target: 'attack.arcane', value: 1 }
         ]
     },
     dimmed: {
         id: 'dimmed',
         name: 'Dimmed',
-        description: "Dark, light and arcane attacks are 50% weaker.",
+        description: "Dark, light and arcane attacks are {pct} weaker.",
         icon: { col: 1, row: 2 },
         defaultCharges: 3,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'attack.dark', value: -0.5 },
-            { type: 'percent', target: 'attack.light', value: -0.5 },
-            { type: 'percent', target: 'attack.arcane', value: -0.5 }
+            { type: 'percent', target: 'attack.dark', value: -1 },
+            { type: 'percent', target: 'attack.light', value: -1 },
+            { type: 'percent', target: 'attack.arcane', value: -1 }
         ]
     },
     /* Blessed (the Bless ability): heals 6% of max HP at the end of each of the holder's turns, for 5 turns. */
@@ -237,59 +254,59 @@ export const StatusEffectDefinitions = {
     enraged: {
         id: 'enraged',
         name: 'Enraged',
-        description: "Slash, blunt and pierce attacks are 50% stronger.",
+        description: "Slash, blunt and pierce attacks are {pct} stronger.",
         icon: { col: 1, row: 1 },
         defaultCharges: 3,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'attack.slash', value: 0.5 },
-            { type: 'percent', target: 'attack.blunt', value: 0.5 },
-            { type: 'percent', target: 'attack.pierce', value: 0.5 }
+            { type: 'percent', target: 'attack.slash', value: 1 },
+            { type: 'percent', target: 'attack.blunt', value: 1 },
+            { type: 'percent', target: 'attack.pierce', value: 1 }
         ]
     },
     weakened: {
         id: 'weakened',
         name: 'Weakened',
-        description: "Slash, blunt and pierce attacks are 50% weaker.",
+        description: "Slash, blunt and pierce attacks are {pct} weaker.",
         icon: { col: 1, row: 2 },
         defaultCharges: 3,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'attack.slash', value: -0.5 },
-            { type: 'percent', target: 'attack.blunt', value: -0.5 },
-            { type: 'percent', target: 'attack.pierce', value: -0.5 }
+            { type: 'percent', target: 'attack.slash', value: -1 },
+            { type: 'percent', target: 'attack.blunt', value: -1 },
+            { type: 'percent', target: 'attack.pierce', value: -1 }
         ]
     },
     attuned: {
         id: 'attuned',
         name: 'Attuned',
-        description: "Fire, ice, lightning, earth, water and wind attacks are 150% stronger.",
+        description: "Fire, ice, lightning, earth, water and wind attacks are {pct} stronger.",
         icon: { col: 6, row: 2 },
         defaultCharges: 3,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'attack.fire', value: 1.5 },
-            { type: 'percent', target: 'attack.ice', value: 1.5 },
-            { type: 'percent', target: 'attack.lightning', value: 1.5 },
-            { type: 'percent', target: 'attack.earth', value: 1.5 },
-            { type: 'percent', target: 'attack.water', value: 1.5 },
-            { type: 'percent', target: 'attack.wind', value: 1.5 }
+            { type: 'percent', target: 'attack.fire', value: 1 },
+            { type: 'percent', target: 'attack.ice', value: 1 },
+            { type: 'percent', target: 'attack.lightning', value: 1 },
+            { type: 'percent', target: 'attack.earth', value: 1 },
+            { type: 'percent', target: 'attack.water', value: 1 },
+            { type: 'percent', target: 'attack.wind', value: 1 }
         ]
     },
     suppressed: {
         id: 'suppressed',
         name: 'Suppressed',
-        description: "Fire, ice, lightning, earth, water and wind attacks are 50% weaker.",
+        description: "Fire, ice, lightning, earth, water and wind attacks are {pct} weaker.",
         icon: { col: 7, row: 2 },
         defaultCharges: 3,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'attack.fire', value: -0.5 },
-            { type: 'percent', target: 'attack.ice', value: -0.5 },
-            { type: 'percent', target: 'attack.lightning', value: -0.5 },
-            { type: 'percent', target: 'attack.earth', value: -0.5 },
-            { type: 'percent', target: 'attack.water', value: -0.5 },
-            { type: 'percent', target: 'attack.wind', value: -0.5 }
+            { type: 'percent', target: 'attack.fire', value: -1 },
+            { type: 'percent', target: 'attack.ice', value: -1 },
+            { type: 'percent', target: 'attack.lightning', value: -1 },
+            { type: 'percent', target: 'attack.earth', value: -1 },
+            { type: 'percent', target: 'attack.water', value: -1 },
+            { type: 'percent', target: 'attack.wind', value: -1 }
         ]
     },
     // Given by Recuperate (leather armor): 5 turns of recovery, at the end of each of the holder's turns they regain stamina equal to their stamina recovery (on top of the usual end-of-round recovery).
@@ -342,28 +359,28 @@ export const StatusEffectDefinitions = {
     evasive: {
         id: 'evasive',
         name: 'Evasive',
-        description: "50% more evasion: much harder to hit.",
+        description: "{pct} more evasion: harder to hit.",
         animationId: "evasive",
-        icon: { col: 2, row: 1 }, 
+        icon: { col: 2, row: 1 },
         defaultCharges: 3,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'evasion', value: 0.5 }
+            { type: 'percent', target: 'evasion', value: 1 }
         ]
     },
-    // Left open after an all-out attack (Leaping Slash): physical defense is halved for a short while.
+    // Left open after an all-out attack (Leaping Slash): physical defense is lowered for a short while.
     vulnerable: {
         id: 'vulnerable',
         name: 'Vulnerable',
-        description: "Left open: its slash, blunt and pierce defense is halved.",
+        description: "Left open: its slash, blunt and pierce defense is {pct} lower.",
         animationId: "vulnerable",
         icon: { col: 8, row: 2 },
         defaultCharges: 2,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'defense.slash', value: -0.5 },
-            { type: 'percent', target: 'defense.blunt', value: -0.5 },
-            { type: 'percent', target: 'defense.pierce', value: -0.5 }
+            { type: 'percent', target: 'defense.slash', value: -1 },
+            { type: 'percent', target: 'defense.blunt', value: -1 },
+            { type: 'percent', target: 'defense.pierce', value: -1 }
         ]
     },
     // The Dry Kraken's head, a tentacle cut away (battleQueue.queueDeath, a dying enemy's `weakens`): 8% off every resistance it has, for each
@@ -382,13 +399,13 @@ export const StatusEffectDefinitions = {
     exposed: {
         id: 'exposed',
         name: 'Exposed',
-        description: "50% less evasion: easier to hit.",
+        description: "{pct} less evasion: easier to hit.",
         animationId: "exposed",
-        icon: { col: 2, row: 2 }, 
+        icon: { col: 2, row: 2 },
         defaultCharges: 3,
-        maxStacks: 1,
+        leveled: true, maxStacks: 3,
         modifiers: [
-            { type: 'percent', target: 'evasion', value: -0.5 } 
+            { type: 'percent', target: 'evasion', value: -1 }
         ]
     },
     

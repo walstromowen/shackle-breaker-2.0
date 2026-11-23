@@ -319,7 +319,7 @@ export const AbilityDefinitions = {
     "rally": {
         id: "rally",
         name: "Rally",
-        description: "A rousing battle cry that raises the physical attack power of all allies.",
+        description: "A rousing battle cry that raises the physical attack power of all allies by 20% for 3 turns; again, and it rises a level (35%, then 50%).",
         range: "self",
         tags: ["support", "sound", "buff"],
         battleMessage: "{user} lets out a fierce {ability}, boosting the party's strength!",
@@ -335,7 +335,7 @@ export const AbilityDefinitions = {
     "mass_fear": {
         id: "mass_fear",
         name: "Mass Fear",
-        description: "A dread that falls on every enemy at once, weakening each of their slash, blunt and pierce attacks by half for 3 turns.",
+        description: "A dread that falls on every enemy at once, weakening each of their slash, blunt and pierce attacks by 20% for 3 turns (more if they are already weakened).",
         range: "ranged",
         tags: ["support", "sound", "debuff", "fear", "aoe"],
         battleMessage: "{user} turns its gaze on them all. Dread takes hold!",
@@ -350,7 +350,7 @@ export const AbilityDefinitions = {
     "intimidate": {
         id: "intimidate",
         name: "Intimidate",
-        description: "A terrifying display that lowers a single target's attack power by 20% for 3 turns. Stacks up to 3 times, and using it again resets the turns.",
+        description: "A terrifying display that lowers a single target's attack power by 20% for 3 turns. Using it again raises it a level (35%, then 50%) and resets the turns.",
         range: "ranged",
         tags: ["support", "sound", "debuff", "fear"],
         battleMessage: "{user} glares intensely to {ability} {target}!",
@@ -365,7 +365,7 @@ export const AbilityDefinitions = {
     "howl": {
         id: "howl",
         name: "Howl",
-        description: "A primal howl that awakens a target's fighting spirit, raising their attack power by 20% for 3 turns. Stacks up to 3 times, and using it again resets the turns.",
+        description: "A primal howl that awakens a target's fighting spirit, raising their attack power by 20% for 3 turns. Using it again raises it a level (35%, then 50%) and resets the turns.",
         range: "ranged",
         tags: ["support", "sound", "buff", "beast"],
         battleMessage: "{user} lets out a ferocious {ability}, boosting {target}'s strength!",
@@ -380,7 +380,7 @@ export const AbilityDefinitions = {
     "hide": {
         id: "hide",
         name: "Hide",
-        description: "The user melts into the shadows, raising their evasion by 20% for 3 turns. Stacks up to 3 times, and using it again resets the turns.",
+        description: "The user melts into the shadows, raising their evasion by 20% for 3 turns. Using it again raises it a level (35%, then 50%) and resets the turns.",
         range: "self",
         tags: ["utility", "stealth", "buff"],
         battleMessage: "{user} uses a smoke trick to {ability} in the shadows!",
@@ -734,7 +734,7 @@ export const AbilityDefinitions = {
     "frost_ward": {
         id: "frost_ward",
         name: "Frost Ward",
-        description: "Sheathe an ally in a skin of ice for 3 turns: slash, blunt and pierce hits barely hurt them.",
+        description: "Sheathe an ally in a skin of ice for 3 turns: they take 20% less slash, blunt and pierce damage, more if cast again.",
         range: "ranged",
         tags: ["magical", "support", "buff", "ice"],
         battleMessage: "{user} sheathes {target} in a {ability}!",
@@ -1522,7 +1522,7 @@ export const AbilityDefinitions = {
     "bolster": {
         id: "bolster",
         name: "Bolster",
-        description: "Hardens your defenses, raising resistance to physical attacks by 20%. Stacks up to 3 times, and using it again resets the turns.",
+        description: "Hardens your defenses, raising resistance to physical attacks by 20%. Using it again raises it a level (35%, then 50%) and resets the turns.",
         range: "self",
         tags: ["physical", "support", "buff", "tactical"],
         battleMessage: "{user} bolsters their physical defenses!",

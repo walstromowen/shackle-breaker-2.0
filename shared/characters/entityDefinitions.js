@@ -804,6 +804,7 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 8, slash: 8, pierce: 6 }
         },
         abilities: [...BEAST_TEMPLATE.abilities, 'claw', 'pounce'],
+        lootTableId: "bear_drops",
         tags: [...BEAST_TEMPLATE.tags, "URSINE"]
     },
 

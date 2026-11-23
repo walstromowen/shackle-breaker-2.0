@@ -32,6 +32,9 @@ test('Storm Front: Solar Beam is gone; a surer Arcane Blast of wind whose waitin
 
 test('in a fight: the first turn gathers (no damage, paid, in the eye), the next looses it at the same target with no menu and no second cost', () => {
     seedRandom(7);
+    // the wolf's making (traits, its natural moves) rolls Math.random, not the seeded dice: pinned too, or now and then it is born to dodge the storm
+    const realRandom = Math.random;
+    let r = 12345; Math.random = () => ((r = (r * 1103515245 + 12345) >>> 0) / 4294967296);
     try {
         quiet(() => {
             const mage = EntityFactory.create('HUMANOID', { name: 'Mage', level: 10, abilities: ['storm_front'] });
@@ -64,7 +67,7 @@ test('in a fight: the first turn gathers (no damage, paid, in the eye), the next
             assert.ok(caster.insight >= insightMid, 'nothing more to pay');
             assert.equal(bc.state.phase, PHASE.SELECT_ACTION, 'and then a free choice again');
         });
-    } finally { unseedRandom(); }
+    } finally { unseedRandom(); Math.random = realRandom; }
 });
 
 test('an enemy gathers and looses it too (the AI queues nothing else for it meanwhile)', () => {

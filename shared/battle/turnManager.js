@@ -243,7 +243,7 @@ export class TurnManager {
                 if (rng() > (sd.chance ?? 1)) continue;
                 const existing = (actor.statusEffects || []).find(st => st.id === sd.id);
                 if (existing) { existing.addStack && existing.addStack(); continue; }
-                const effect = StatusEffectFactory.createEffect(sd.id, sd.duration, actor);
+                const effect = StatusEffectFactory.createEffect(sd.id, sd.duration, actor, sd.level);
                 if (!effect) continue;
                 actor.applyStatusEffect(effect);
                 registerStatusApplication(this.state, effect, actor, actor);
