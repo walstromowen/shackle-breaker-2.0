@@ -9,7 +9,7 @@
    How it goes (world flags osric_met, garrick_slain; quest amputators_trial; the oath, each character's own: story/covenants.js):
      meet .. meet_5        he sees the iron on your wrists ("Looking for a key, are we?": the one sure way to free a wrist is the saw), says what
                            the Amputators are. Ask about them (lore), or what he wants (task).
-     task .. task_2        Surgeon Garrick has begun to hear the chain sing. He cannot do it himself. "I'll find him" starts the quest and marks
+     task .. task_2        Surgeon Garrick is going shackled (mad: docs/story.md, the shackled), and has begun to hear the chain sing. He cannot do it himself. "I'll find him" starts the quest and marks
                            Garrick's spot on your map (AMPUTATOR_QUARRY); "Not now" leaves the offer open (again).
      waiting               Garrick still lives.
      return .. offer       Garrick is dead: the quest is handed in, and Osric offers the oath. Take it (joined: the Amputator's Saw) or not yet (not_yet:
@@ -113,7 +113,7 @@ const STAGES = {
         next("meet_2")),
     meet_2: stage("\"Ah. Another soul on the old road. Mind the graves, friend. The dead here have suffered enough of us.\"",
         next("meet_3")),
-    meet_3: stage("His eyes drop to your wrists, and stay there. \"And there it is: the iron, still shut tight. No rot in your eyes yet. Lucky, or only early.\"",
+    meet_3: stage("His eyes drop to your wrists, and stay there. \"And there it is: the iron, still shut tight. No madness in your eyes yet. Lucky, or only early.\"",
         next("meet_key")),
     meet_key: stage("\"Looking for a key, are we? Heh heh... You'll not find one. But there's one sure way to free a wrist of any shackle, friend.\" He turns the saw so its teeth catch the light.",
         next("meet_4")),
@@ -136,7 +136,7 @@ const STAGES = {
         next("task_1")),
     task_1: stage("\"Steady hands, once. Best of us. Lately he talks to his scars, and saws at nothing in the night. And he laughs.\"",
         next("task_2")),
-    task_2: stage("\"He wears no iron, mind you. Not yet. But the rot needn't wear iron to get in.\" He turns the saw over in his lap.",
+    task_2: stage("\"He was never chained, mind you. Never wore the iron. But since Altus fell, a man needn't be chained to go shackled.\" He turns the saw over in his lap.",
         next("task_3")),
     task_3: stage("\"I can't do it. Old friends, you understand. Put him to rest, before he puts that saw to someone who never asked for it.\"",
         [takeTask, notNow]),
@@ -192,7 +192,7 @@ const gStage = (text, decisions, extra = {}) => ({ displayText: "Surgeon Garrick
 const GARRICK_STAGES = {
     g_meet: gStage("A thin man crouches in the grass with his back to you, sawing. Not at wood. At his own forearm, slow and patient, just above a ring of old scars. He is humming. The humming turns into a laugh.",
         next("g_2"), { sfx: "whispers", sfxVolume: 0.35 }),
-    g_2: gStage("\"Osric sent you. Hah! Doctor Osric, Doctor Osric. Thinks I'm going the way of the iron.\"",
+    g_2: gStage("\"Osric sent you. Hah! Doctor Osric, Doctor Osric. Thinks I'm going shackled.\"",
         next("g_2b")),
     g_2b: gStage("\"But listen. Listen! Can you hear it? The chain sings when you cut it. Every link, a little song.\"",
         next("g_3")),

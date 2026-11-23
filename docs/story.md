@@ -24,6 +24,13 @@ fall, when the player breaks out of the king's chain line. This page is a living
   - *Likely link, to confirm:* the "great catastrophe from a time long past" the Namuh know of is the fall of Infernus.
   - *Open question:* how the artifact came back to the surface (the meteor shower) after Infernus fell with it.
 - **The Shackle Breakers**: runaways from the king's prisons, bound in magical chains. Rumoured to be a myth. The player is one.
+- **The shackled, and the curse**: the curse of this world is **madness**, and the word for it is **"shackled"**. Before the fall, those who
+  showed signs of madness were put in shackles (the king's chain lines); so a man who has gone fully mad is said to be **shackled**, chains or no
+  chains. Those bound in the **unbreakable chains** are thought **doomed to go mad**: it is only a matter of time. **After the fall of Altus
+  everyone began to go mad**, even those who were never bound, and so became "shackled" too. Say it this way in the game: going mad is "going
+  shackled" (not "the rot", not "the way of the iron"). Iron on a wrist means a chain, not the madness itself.
+  - **SECRET: the cause.** Nobody knew it at the time: the madness came from the **study of insight**, the magic the artifact brought. Never let a
+    character state it as fact in the early acts (they may fear magic, or mock its users, but not know why the mad go mad).
 - **The Royal Guard and the Arc Knights**: the old **royal guard** of Altus, commanded by Mentoras, used no magic. In the year leading up to the fall
   the king came to rely on his new **Arc Knights** instead: knights who infused their weapons and armour with the artifact's magic (the fire in
   their blades and plate). The old guard was phased out. The Arc Knights are the guard of the corrupted king now, the **enforcers of his will** in
