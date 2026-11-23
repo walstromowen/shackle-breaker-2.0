@@ -246,7 +246,7 @@ const COMMANDS = {
 
     corruption: {
         usage: '/corruption <amount> [member|all]',
-        summary: 'Raise (or with a minus, lower) corruption. Before act 2 it stops at 49: use /milestone act2 first to go further.',
+        summary: 'Raise (or with a minus, lower) corruption. Before act 3 it stops at 49: use /milestone darius_slain first to go further.',
         run(args) {
             const amount = toInt(args[0]);
             if (amount === null || amount === 0) return [fail('Usage: /corruption <amount> [member|all]')];
@@ -258,7 +258,7 @@ const COMMANDS = {
                 lines.push(ok(`${m.name}: corruption ${change.before}% -> ${change.after}%.`));
                 change.messages.forEach(text => lines.push(info(text)));
             }
-            if (!CorruptionSystem.isRevealed() && amount > 0) lines.push(info(`Act 1: corruption cannot pass ${CorruptionSystem.ceiling()}% yet (/milestone act2).`));
+            if (!CorruptionSystem.isRevealed() && amount > 0) lines.push(info(`Before act 3: corruption cannot pass ${CorruptionSystem.ceiling()}% yet (/milestone darius_slain).`));
             return lines;
         },
         complete: (i, typed) => (i === 1 ? starting(['all', ...memberNames()], typed) : []),
@@ -266,7 +266,7 @@ const COMMANDS = {
 
     milestone: {
         usage: '/milestone [id]',
-        summary: 'Grant a story milestone (act2 starts act 2). With no id, show the ones reached.',
+        summary: 'Grant a story milestone (arc_knight_slain starts act 2, darius_slain act 3, kraken_slain act 4). With no id, show the ones reached.',
         run(args) {
             if (!args[0]) {
                 const reached = ActSystem.getMilestones();
@@ -291,7 +291,7 @@ const COMMANDS = {
             if (id === 'shackled_betrayal') {
                 // the same context BiomeModel.getEncounter gives it: who the shackled member is
                 const betrayer = CorruptionSystem.pickBetrayer();
-                if (!betrayer) return [fail('The Shackling needs a shackled member and someone else still standing (/corruption 100 after /milestone act2).')];
+                if (!betrayer) return [fail('The Shackling needs a shackled member and someone else still standing (/corruption 100 after /milestone darius_slain).')];
                 context = { betrayerIndex: members().indexOf(betrayer), betrayerName: betrayer.name };
             }
             if (host.lockWorld) host.lockWorld();

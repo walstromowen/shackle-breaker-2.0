@@ -9,7 +9,7 @@
 //                               catacombs where the player first met him. Won, Mentoras is freed (pursuer_done) and goes back; he never blames the player.
 //   brothers   both             Jaeger followed his brother: in the snowy house the player and Nikoli fight him (brothers_done), then the three heroes.
 //
-// When: act 3 begins when the Dry Kraken dies (act3). Mentoras waits in the desert until Codey is brought back (codey3 handed in); after that, between
+// When: act 4 begins when the Dry Kraken dies (kraken_slain). Mentoras waits in the desert until Codey is brought back (codey3 handed in); after that, between
 // visits, he and Codey are in the first snowy-mountain crafting house the player walks into (world.strangerSnowHome), the desert workshop left empty
 // but for a mark scratched into its anvil. Nobody ever vanishes in front of the player: they are simply somewhere else the next time.
 import { ActSystem } from './actSystem.js';
@@ -18,7 +18,7 @@ import { ActSystem } from './actSystem.js';
 export const has = (id) => ActSystem.hasMilestone(id);
 
 /** Codey is back with Mentoras (the reunion handed in, by anyone in this world): from now on they are in the snowy house. */
-export const movedNorth = () => has('act3') && has('codey_back');
+export const movedNorth = () => has('kraken_slain') && has('codey_back');
 
 /** 'ashes' | 'friends' | 'pursuer' | 'brothers': what the player's answers to the two brothers have made of it. */
 export function heroesOutcome() {

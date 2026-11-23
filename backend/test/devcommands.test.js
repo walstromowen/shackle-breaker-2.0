@@ -106,8 +106,8 @@ test('/gold, /heal and /corruption use the game\'s own rules', () => {
     // act 1: corruption stops short of the first tier (CorruptionSystem), and the console says so
     let r = run('/corruption 80');
     assert.equal(CorruptionSystem.valueOf(hero), CorruptionSystem.ceiling());
-    assert.match(text(r), /Act 1/);
-    assert.match(text(run('/milestone act2')), /granted: now act 2/);
+    assert.match(text(r), /Before act 3/);
+    assert.match(text(run('/milestone darius_slain')), /granted: now act 3/);
     run('/corruption 80 friend');
     assert.equal(CorruptionSystem.valueOf(friend), 80);
     r = run('/corruption 20 friend');
@@ -123,10 +123,12 @@ test('/milestone grants through ActSystem and shows the ones reached', () => {
     freshParty('Hero');
     assert.match(text(run('/milestone')), /Act 1\. Milestones reached: none/);
     assert.equal(ActSystem.getAct(), 1);
-    run('/milestone act2');
-    assert.equal(ActSystem.getAct(), 2);
-    assert.match(text(run('/milestone act2')), /already/);
-    assert.match(text(run('/milestone')), /Act 2\. Milestones reached: act2/);
+    run('/milestone arc_knight_slain');
+    assert.equal(ActSystem.getAct(), 2, 'the first Arc Knight: act 2');
+    run('/milestone darius_slain');
+    assert.equal(ActSystem.getAct(), 3);
+    assert.match(text(run('/milestone darius_slain')), /already/);
+    assert.match(text(run('/milestone')), /Act 3\. Milestones reached: arc_knight_slain, darius_slain/);
     assert.match(text(run('/milestone custom_flag')), /not an act milestone/);
 });
 
@@ -155,7 +157,7 @@ test('/encounter and /battle emit what the overworld emits, lock the world first
         // the Shackling: refused with nobody shackled, started with the betrayer in its context otherwise
         r = run('/encounter shackled_betrayal', host);
         assert.deepEqual(kinds(r), ['error']);
-        run('/milestone act2'); run('/corruption 100 friend');
+        run('/milestone darius_slain'); run('/corruption 100 friend');
         r = run('/encounter shackled_betrayal', host);
         assert.equal(r.closeConsole, true);
         assert.deepEqual(heard[2][1].context, { betrayerIndex: 1, betrayerName: 'Friend' });

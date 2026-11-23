@@ -17,21 +17,43 @@ import * as abilityData from '../../shared/abilities/abilityDefinitions.js';
 
 const ABILITIES = Object.values(abilityData).find(v => v && typeof v === 'object' && v.strike);
 const act1 = () => ({ milestones: [] });
-const act2 = () => ({ milestones: ['act2'] });
+const act2 = () => ({ milestones: ['darius_slain'] });   // the blood moon world: act III since act II moved to the first Arc Knight
 
 test('the act comes from the milestones, and an old save (no list) is act 1', () => {
     assert.equal(ActSystem.getAct(act1()), 1);
     assert.equal(ActSystem.getAct({}), 1);
-    assert.equal(ActSystem.getAct(act2()), 2);
+    assert.equal(ActSystem.getAct(act2()), 3);
     assert.equal(ActSystem.getAct({ milestones: ['something_else'] }), 1);
+});
+
+test('the acts: II when the first Arc Knight dies (Dolos wakes, a little harder, no blood moon), III at Darius (the blood moon), IV at the Kraken', () => {
+    const at = (...ms) => ActSystem.getAct({ milestones: ms });
+    assert.equal(at('arc_knight_slain'), 2);
+    assert.equal(at('arc_knight_slain', 'darius_slain'), 3);
+    assert.equal(at('arc_knight_slain', 'darius_slain', 'kraken_slain'), 4);
+    const two = ACT_DEFINITIONS[2];
+    assert.equal(two.milestone, 'arc_knight_slain');
+    assert.ok(!two.bloodMoon, 'no blood moon before Darius');
+    assert.equal(ActSystem.isBloodMoon(23, { milestones: ['arc_knight_slain'] }), false);
+    assert.equal(ActSystem.isBloodMoon(23, { milestones: ['darius_slain'] }), true);
+    assert.equal(ActSystem.getEnemyLevelOffset({ milestones: ['arc_knight_slain'] }), 1, 'a little harder');
+    assert.equal(ACT_DEFINITIONS[2].enemyInsightRanks, 1);
+    // Darius and the Kraken grant them
+    const grants = (enc) => JSON.stringify(encounterDefinitions[enc]).match(/"GRANT_MILESTONE","payload":\{"id":"([a-z_]+)"/g) || [];
+    assert.ok(grants('act_two').some(g => g.includes('darius_slain')));
+    assert.ok(grants('codey_freed').some(g => g.includes('kraken_slain')));
+    // a save from before: Darius recorded as 'act2', the Kraken as 'act3'
+    assert.equal(at('act2'), 3, 'an old act 2 save (Darius beaten) is the blood moon act');
+    assert.equal(at('act2', 'act3'), 4);
+    assert.equal(ActSystem.hasMilestone('darius_slain', { milestones: ['act2'], world: { changes: {} } }), true);
 });
 
 test('a milestone is granted once', () => {
     const state = act1();
-    assert.equal(ActSystem.grantMilestone('act2', state), true);
-    assert.equal(ActSystem.grantMilestone('act2', state), false);
-    assert.deepEqual(state.milestones, ['act2']);
-    assert.equal(ActSystem.getAct(state), 2);
+    assert.equal(ActSystem.grantMilestone('darius_slain', state), true);
+    assert.equal(ActSystem.grantMilestone('darius_slain', state), false);
+    assert.deepEqual(state.milestones, ['darius_slain']);
+    assert.equal(ActSystem.getAct(state), 3);
 });
 
 test('every night of act 2 is a blood moon, no night of act 1 is, and no day ever is', () => {
@@ -76,7 +98,7 @@ test('a player who beat Darius but never saw A Dark Truth owes it (it plays on t
     assert.equal(ActSystem.owesDarkTruth(finished), true);
     assert.equal(ActSystem.catchUp(finished), true, 'loading notices it');
     assert.equal(ActSystem.getAct(finished), 1, 'not moved into act 2 behind the player\'s back: the encounter does it');
-    finished.milestones.push('act2');
+    finished.milestones.push('darius_slain');
     assert.equal(ActSystem.owesDarkTruth(finished), false, 'seen: nothing owed');
     const waiting = { milestones: [], quests: { completed: [], active: { shackled8: { progress: { obj_kill_darius: 1 } } } } };
     assert.equal(ActSystem.owesDarkTruth(waiting), true);
@@ -111,7 +133,7 @@ test('the clock is red on a night of act 2 and black on a night of act 1', () =>
         gameState.world.time = 23 * 60;
         gameState.milestones = [];
         const plain = time.getCurrentColorData();
-        gameState.milestones = ['act2'];
+        gameState.milestones = ['darius_slain'];
         const blood = time.getCurrentColorData();
         assert.ok(plain.r < 30 && plain.b >= plain.r, 'the night of act 1 stays the cold near-black');
         assert.ok(blood.a > 0.9 && blood.r < 50 && blood.r > blood.g * 3 && blood.r > blood.b * 3, 'the night of act 2 is black with only a trace of crimson in it');
@@ -130,7 +152,7 @@ test('act 2 spawns: only in act 2, and no table is ever empty', () => {
     const saved = gameState.milestones;
     try {
         const plainsDayMembers = new Set(SpawnTableDefinitions.plains_battles_day.pools.flatMap(p => p.members.filter(m => !m.minAct).map(m => m.id)));
-        const act2Only = new Set(SpawnTableDefinitions.plains_battles_day.pools.flatMap(p => p.members.filter(m => m.minAct === 2).map(m => m.id)));
+        const act2Only = new Set(SpawnTableDefinitions.plains_battles_day.pools.flatMap(p => p.members.filter(m => m.minAct === 3).map(m => m.id)));
         assert.ok(act2Only.size > 0, 'the plains day table has act 2 members');
 
         gameState.milestones = [];
@@ -139,7 +161,7 @@ test('act 2 spawns: only in act 2, and no table is ever empty', () => {
             for (const e of battle.enemies) assert.ok(!act2Only.has(e.id) || plainsDayMembers.has(e.id), `act 1 spawned the act 2 enemy ${e.id}`);
         }
 
-        gameState.milestones = ['act2'];
+        gameState.milestones = ['darius_slain'];
         let sawAct2 = false;
         for (let i = 0; i < 600 && !sawAct2; i++) {
             const battle = SpawnTableFactory.generateBattle('plains_battles_day', 'hard');
@@ -149,7 +171,7 @@ test('act 2 spawns: only in act 2, and no table is ever empty', () => {
 
         for (const [id, table] of Object.entries(SpawnTableDefinitions)) {
             if (table.type !== 'faction_pool') continue;
-            for (const milestones of [[], ['act2']]) {
+            for (const milestones of [[], ['darius_slain']]) {
                 gameState.milestones = milestones;
                 for (let i = 0; i < 20; i++) assert.ok(SpawnTableFactory.generateBattle(id, 'normal').hasEnemies(), `${id} came up empty in act ${milestones.length + 1}`);
             }
@@ -182,7 +204,7 @@ test('Darius leads to the encounter that starts act 2, and that encounter grants
     for (const stage of Object.values(actTwo.stages)) {
         for (const d of stage.decisions) for (const o of d.outcomes || []) for (const r of o.results) if (r.type === 'GRANT_MILESTONE') granted.push(r.payload.id);
     }
-    assert.deepEqual(granted, [ACT_DEFINITIONS[2].milestone]);
+    assert.deepEqual(granted, [ACT_DEFINITIONS[3].milestone]);
 });
 
 test('every encounter an act asks for exists, with all its stages wired up', () => {
@@ -212,7 +234,7 @@ test('a biome ambush uses the table of the hour: night in act 1, the blood moon 
         for (const id of sample(23)) assert.ok(night.has(id), `act 1, night: ${id} is not on the night table`);
         assert.ok(!sample(12).has('SKELETAL_WARRIOR'), 'act 1 day never has the act 2 skeletons');
 
-        gameState.milestones = ['act2'];
+        gameState.milestones = ['darius_slain'];
         const bloodSeen = sample(23);
         for (const id of bloodSeen) assert.ok(blood.has(id), `act 2, night: ${id} is not on the blood moon table`);
         assert.ok(bloodSeen.has('ANCIENT_CULTIST'), 'the cultists come out on a blood moon night');
@@ -251,7 +273,7 @@ test('an encounter pool marked minAct 2 is only offered in act 2, at the hours i
         gameState.milestones = [];
         assert.ok(!sample(22).has('late_game_night'));
         assert.ok(sample(22).has('always_there'));
-        gameState.milestones = ['act2'];
+        gameState.milestones = ['darius_slain'];
         assert.ok(sample(22).has('late_game_night'));
         assert.ok(sample(19).has('late_game_night'));
         assert.ok(!sample(12).has('late_game_night'));
@@ -276,7 +298,7 @@ test('act 2 makes every enemy possibly stronger: one more trait, better gear (ne
     const { ItemFactory } = await import('../../shared/items/itemFactory.js');
     const { ItemDefinitions } = await import('../../shared/items/itemDefinitions.js');
     const makeItem = (id, level) => ItemFactory.createItem(id, { level: Math.min(ItemDefinitions[id].maxLevel || 1, level) });
-    const b = ACT_DEFINITIONS[2].enemyBoosts;
+    const b = ACT_DEFINITIONS[3].enemyBoosts;
     for (const t of b.traits) assert.ok(TRAIT_DEFINITIONS[t], `${t} is a trait`);
     const always = () => 0;   // every roll a success
     assert.deepEqual(ActSystem.boostEnemy(EntityFactory.create('LEGIONARY', 10), { rand: always, makeItem }, { milestones: [] }), { trait: null, gear: 0 }, 'act 1: as made');
@@ -290,7 +312,7 @@ test('act 2 makes every enemy possibly stronger: one more trait, better gear (ne
 });
 
 test('act 2: by day the night\'s enemies are sometimes abroad (nightByDay), in act 1 never', () => {
-    assert.ok(ACT_DEFINITIONS[2].nightByDay > 0 && ACT_DEFINITIONS[2].nightByDay < 1);
+    assert.ok(ACT_DEFINITIONS[3].nightByDay > 0 && ACT_DEFINITIONS[3].nightByDay < 1);
     assert.equal(ActSystem.nightEnemiesByDay(0, { milestones: [] }), false);
     assert.equal(ActSystem.nightEnemiesByDay(0, act2()), true);
     assert.equal(ActSystem.nightEnemiesByDay(0.99, act2()), false);

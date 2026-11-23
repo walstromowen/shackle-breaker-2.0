@@ -6,6 +6,8 @@ import { EntityModel } from './entityModel.js';
 import { ExperienceSystem } from './experienceSystem.js';
 import { ENEMY_DAMAGE_SCALING, DAMAGE_SCALING, scalingFor } from '../core/constants.js';
 import { ItemDefinitions } from '../items/itemDefinitions.js';
+import { ItemFactory } from '../items/itemFactory.js';
+import { unforgeWeapons } from '../battle/enemyArms.js';
 
 // BALANCE KNOB: base max HP an enemy gets per level above 1 on top of (or, below 0, taken from) the +2 per level that every level-up gives
 // (ExperienceSystem.applyLevelUpStats). 0 = an enemy grows like a player does (it was -1 while enemies outgrew fully upgraded weapons; with the attack
@@ -83,6 +85,10 @@ export class EntityFactory {
         }
 
         if (!config.equipment) config.equipment = {};
+        // `armedWith` (battle/enemyArms.js): made carrying one of these weapons, picked at random, unless it was handed one
+        if (Array.isArray(config.armedWith) && config.armedWith.length && !config.equipment.mainHand) {
+            config.equipment.mainHand = config.armedWith[Math.floor(Math.random() * config.armedWith.length) % config.armedWith.length];
+        }
         if (!config.traits) config.traits = [];
 
         if (finalOverrides.traits && Array.isArray(finalOverrides.traits)) {
@@ -202,9 +208,13 @@ export class EntityFactory {
         return best ? best.attr : null;
     }
 
-    // Call this when an enemy joins the party: removes the enemy-only level HP bonus so an ally is exactly as tough as a player-built
-    // character of the same level. Safe to call on any entity (does nothing if it has no bonus) and safe to call twice.
+    // Call this when an enemy joins the party (every way of recruiting does): removes the enemy-only level HP bonus so an ally is exactly as tough as
+    // a player-built character of the same level, and puts back the weapon it was made with if its level forged it up (battle/enemyArms.js: a
+    // recruited madman keeps his scythe, not a free upgrade of it). A beast's natural weapons are worked out from its level, so there is nothing
+    // to undo for them. Safe to call on any entity (does nothing if it has no bonus) and safe to call twice.
     static removeLevelEdge(entity) {
+        if (entity && entity.state) entity.state.recruited = true;   // in the party now: a natural package adds its armour's worth (characters/naturalPackages.js)
+        unforgeWeapons(entity, (id, level) => ItemDefinitions[id] ? ItemFactory.createItem(id, { level }) : null);
         const edge = entity?.state?.levelEdgeHp || 0;
         const edgeAttr = entity?.state?.levelEdgeAttr;
         if (edgeAttr && edgeAttr.amount > 0 && entity.state.attributes) {

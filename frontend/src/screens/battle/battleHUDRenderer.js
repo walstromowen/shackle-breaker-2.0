@@ -1,3 +1,5 @@
+import { familiarOf } from '../../../../shared/battle/summons.js';
+import { familiarCard } from './summonCards.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { TargetingResolver } from '../../../../shared/battle/targetingResolver.js';
 import { AbilityPreview } from '../../ui/abilityPreview.js';
@@ -28,6 +30,7 @@ export class BattleHUDRenderer {
       PARTY_MARGIN: 24
     };
     this.displayStats = new WeakMap();
+    this._famMemo = new WeakMap();   // the familiars' cards (summonCards.js)
     this.BAR_LERP_SPEED = 5.0;
     this.dt = 0;
     this.bannerAlpha = 0.0;
@@ -198,6 +201,11 @@ export class BattleHUDRenderer {
         });
       }
 
+      // a familiar's card (battle/summons.js) sits under this one, or over it while it is what just happened (summonCards.js)
+      const fam = familiarOf(member);
+      const famCard = fam ? familiarCard(this._famMemo, fam, performance.now(), state.activeAnimation, this.dt) : null;
+      if (fam && !famCard.onTop) this._drawFamiliarCard(fam, currentX, y, W, H, famCard.progress, true);
+
       this.ctx.save();
       const isAlreadySelected = state.selectedTargets?.includes(member);
       if (!isValidTarget && !isAlreadySelected && state.phase === 'SELECT_TARGET') {
@@ -211,7 +219,14 @@ export class BattleHUDRenderer {
         const flags = this.ui.flags(targetId, isValidTarget ? state.hoveredElement?.id : null, { selected: !!isAlreadySelected });
         this.ui.drawStateBox(currentX, y, W, H, flags);
       }
+      this._drawPartyCardBody(member, currentX, y, W, spacingY);
+      this.ctx.restore();
+      if (fam && famCard.onTop) this._drawFamiliarCard(fam, currentX, y, W, H, famCard.progress, true);
+    });
+  }
 
+  /* The inside of a party card: the name, the status strip, the three bars. */
+  _drawPartyCardBody(member, currentX, y, W, spacingY) {
       this.ctx.font = UITheme.fonts.small;
       this.ctx.fillStyle = UITheme.colors.textMain;
       this.ctx.textAlign = 'left';
@@ -247,9 +262,31 @@ export class BattleHUDRenderer {
       currentY += spacingY;
       this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayIns, member.maxInsight || 10, UITheme.colors.ins, UITheme.colors.insDim);
       this.drawBarText(displayIns, member.maxInsight, barX, currentY);
+  }
 
+  /* A familiar's card, stacked with its caster's: under it, greyed out and pulled back, with its edge showing below and toward the field; or, while
+     it is the thing that just happened, slid out over it in full colour (`progress` 0..1, summonCards.js). It cannot be picked as a target. */
+  _drawFamiliarCard(fam, x, y, W, H, progress, isParty) {
+      const out = Math.sin(Math.min(1, progress) * Math.PI / 2);
+      const dx = (isParty ? 1 : -1) * (14 + 26 * out), dy = 14 + 8 * out;
+      this.ctx.save();
+      // under its caster's card only its edge shows: the caster's card is a little see-through, so the part behind it is not drawn at all
+      if (progress <= 0.5) {
+        this.ctx.beginPath();
+        this.ctx.rect(0, 0, this.config.CANVAS_WIDTH, this.config.CANVAS_HEIGHT);
+        this.ctx.rect(x, y, W, H);
+        this.ctx.clip('evenodd');
+      }
+      this.ctx.globalAlpha = 0.55 + 0.45 * out;
+      this.ctx.filter = `grayscale(${Math.round((1 - out) * 100)}%) brightness(${Math.round(70 + 30 * out)}%)`;
+      if (isParty) {
+        this.drawDarkPanel(x + dx, y + dy, W, H);
+        this._drawPartyCardBody(fam, x + dx, y + dy, W, 18);
+      } else {
+        this.drawDarkPanel(x + dx, y + dy, this.HUD.CARD_W, H);
+        this._drawEnemyCardBody(fam, x + dx, y + dy);
+      }
       this.ctx.restore();
-    });
   }
 
   drawEnemyCards(enemies, state, hitboxes = []) {
@@ -290,6 +327,10 @@ export class BattleHUDRenderer {
         });
       }
 
+      const fam = familiarOf(enemy);
+      const famCard = fam ? familiarCard(this._famMemo, fam, performance.now(), state.activeAnimation, this.dt) : null;
+      if (fam && !famCard.onTop) this._drawFamiliarCard(fam, currentX, y, this.HUD.CARD_W, ENEMY_CARD_H, famCard.progress, false);
+
       this.ctx.save();
       const isAlreadySelected = state.selectedTargets?.includes(enemy);
       if (!isValidTarget && !isAlreadySelected && state.phase === 'SELECT_TARGET') {
@@ -302,7 +343,14 @@ export class BattleHUDRenderer {
         const flags = this.ui.flags(targetId, isValidTarget ? state.hoveredElement?.id : null, { selected: !!isAlreadySelected });
         this.ui.drawStateBox(currentX, y, this.HUD.CARD_W, ENEMY_CARD_H, flags);
       }
+      this._drawEnemyCardBody(enemy, currentX, y);
+      this.ctx.restore();
+      if (fam && famCard.onTop) this._drawFamiliarCard(fam, currentX, y, this.HUD.CARD_W, ENEMY_CARD_H, famCard.progress, false);
+    });
+  }
 
+  /* The inside of an enemy card: the name, the status strip, the health bar. */
+  _drawEnemyCardBody(enemy, currentX, y) {
       this.ctx.font = UITheme.fonts.bodyItalic;
       this.ctx.fillStyle = UITheme.colors.textMain;
       this.ctx.textAlign = 'right';
@@ -318,8 +366,6 @@ export class BattleHUDRenderer {
       const barY = y + 48;
 
       this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, enemy.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
-      this.ctx.restore();
-    });
   }
 
   drawBarText(current, max, barX, barY) {

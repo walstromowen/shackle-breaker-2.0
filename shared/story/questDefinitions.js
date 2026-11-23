@@ -98,7 +98,7 @@ export const QuestDefinitions = {
     "act2_red_moon": {
         id: "act2_red_moon",
         name: "A Dark Truth",
-        description: "Darius was not cursed by the stone. His own magic emptied him, one spell at a time, until only the kneeling was left. Every spell drains the one who casts it, and when nothing is left, the shackles take the rest. The moon rises red every night now, the dead walk the roads, and every enemy is a little stronger than before. Grow strong, cast with care, and keep your torch lit.",
+        description: "Darius is dead. \"It was never the stone,\" he said at the end. \"Mind what you give.\" Your shackles were warm when you climbed out of the dark, and they have not cooled since. The moon rises red every night now, and the dead walk the roads. The hooded man will want to hear of it, if he is still at his forge. Grow strong, and keep your torch lit.",
         objectives: [
             { id: "obj_reach_level_12", type: "party_level", targetLevel: 20, amount: 1 },
             { id: "obj_kill_risen", type: "kill_enemy", targetId: "SKELETAL_WARRIOR", amount: 5 }
@@ -603,7 +603,7 @@ export const QuestDefinitions = {
     },
 
     // Nikoli's hunt (story/encounters/story/nikoli.js): he mentions the beast after the snow leopards, and asking about it starts this. Handed in
-    // to him wherever he is (by his campfire, or in act 2 the Hooded Stranger's old workshop). The Panzerkamfer is found by following the great
+    // to him wherever he is (by his campfire, or in act 3 the Hooded Stranger's old workshop). The Panzerkamfer is found by following the great
     // tracks in the snow of the mountains (story/encounters/tracksInTheSnow.js).
     // ========================================================
     // ACT 2, THE DESERT: "The Hands That Speak" (the Hooded Stranger, in his desert workshop: story/encounters/story/hoodedStranger.js)
@@ -645,7 +645,7 @@ export const QuestDefinitions = {
         rewards: { exp: 2000, currency: 800, items: [{ id: "shmindolyns_draught", amount: 1 }, { id: "healing_tonic", amount: 3 }] }
     },
 
-    // Act 3, "Jaeger only" (story/heroes.js): the snowy workshop wrecked, the hooded man taken. Codey's signs point to the catacombs where the player
+    // Act 4, "Jaeger only" (story/heroes.js): the snowy workshop wrecked, the hooded man taken. Codey's signs point to the catacombs where the player
     // met "Nikoli". Won when the fight there is won (story/encounters/story/heroesNorth.js hands it in itself).
     "the_pursuer": {
         id: "the_pursuer",

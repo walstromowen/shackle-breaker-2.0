@@ -1151,32 +1151,17 @@ export const BattleAnimationDefinitions = {
         ],
         target: { flash: flash(0.4, 2.0, 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)') }
     }),
-    "solar_beam": anim(2.6, {
+    // Storm Front breaking (the charge plays Downwind): the storm looms over the one target, darkens the field, and the blast tears through
+    "storm_front": anim(2.4, {
         seconds: true,
-        hit: 1.35,
-        audio: [
-            sfx(0.05, 'lightShimmerSfx', { volume: 1, pitch: 0.9 }),     // motes of sunlight gather (it borrowed Spite's cast before)
-            sfx(0.95, 'fireballCastSfx', { volume: 1.2, pitch: 0.7 }),
-            sfx('hit', 'lightBellSfx', { volume: 0.9, pitch: 0.85 }),      // the bell tolls as the beam strikes
-            sfx('hit', 'shockSfx', { volume: 0.45, pitch: 0.7 })
-        ],
-        actor: wobble(0, 1.0, 8, { flash: flash(0, 1.9, tint('gold', { bright: 260, sat: 400, glow: 'gold', glowSize: 15 })) }),
+        audio: [sfx(0.05, 'stormFrontSfx', { volume: 1.0 })],
+        background: background(0, 2.4, 'current', 'brightness(55%) saturate(35%) contrast(115%)'),
+        actor: wobble(0, 0.8, 6, { flash: flash(0, 0.9, 'brightness(170%) saturate(20%)') }),
         vfx: [
-            // motes of sunlight spiral in while the caster gathers
-            ...[0, 2.094, 4.189].flatMap(phase => [
-                orbit(0.05, { at: 'source', life: 0.95, turns: 1.5, radius: 130, squash: 0.55, phase, scale: 0.55, color: '#ffe680', offsetY: -30 }),
-                orbit(0.05, { at: 'source', life: 0.95, turns: 1.5, radius: 130, squash: 0.55, phase: phase - 0.35, scale: 0.3, color: '#ffffff', alpha: 0.4, offsetY: -30 })
-            ]),
-            spawn(0.4, 'spiteAnimation', { at: 'source', life: 0.55, scale: 2.2, move: 'shrink_and_fade' }),
-            ...stream(0.95, 40, 0.02, 'flamethrowerAnimation', { life: 0.3, scale: 1.8, jitter: 6, filter: tint('gold', { bright: 260, sat: 300 }) }),
-            ...stream(0.95, 20, 0.04, 'flamethrowerAnimation', { life: 0.3, scale: 2.6, jitter: 6, alpha: 0.35, filter: tint('gold', { bright: 260, sat: 300 }) }),
-            spawn('hit', 'spiteAnimation', { life: 0.8, scale: 4 }),
-            burst('hit', { count: 22, color: '#ffe680', scale: 1.2, minSpeed: 180, maxSpeed: 440 })
+            spawn(0.2, 'stormFrontAnimation', { life: 1.6, frames: 4, scale: 3.4, move: 'loom_over', blend: 'normal' }),
+            ...repeat(1.3, 6, 0.12, t => burst(t, { count: 8, color: '#dfe8ee', shape: 'streak', length: 90, scale: 0.8, rotation: 1.571, angle: 0, cone: 30, minSpeed: 320, maxSpeed: 640, minLife: 0.25, maxLife: 0.45, glow: false, envelope: true }))
         ],
-        target: {
-            shake: shake('hit', 'hit+0.8', 36),
-            flash: flash('hit', 'hit+1.0', tint('gold', { bright: 350, sat: 300, glow: 'gold', glowSize: 20 }))
-        }
+        target: { shake: shake(1.25, 2.1, 38), flash: flash(1.25, 2.0, 'brightness(190%) saturate(30%)') }
     }),
     // The dark hand: drawn solid ('normal'; a dark purple hand all but vanishes on the glowing 'screen' blend). It is a slow, long cast on purpose: the hand
     // starts small and faint and swells over the target for about four seconds ('loom_over'), stays there, and thins away at the end. The sound is played

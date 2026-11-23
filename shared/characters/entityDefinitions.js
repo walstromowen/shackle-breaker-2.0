@@ -106,13 +106,17 @@ export const ENTITY_DEFINITIONS = {
         spritePortrait: "madmanPortrait",
         crySound: "madmanCry",
         deathSound: "madmanCry",
+        // starved and frenzied: little to them, but they swing hard. Unarmed they hit for 1 against any armour, so each grabs what lay to hand
+        // (armedWith, battle/enemyArms.js): its weapon decides how it fights, and grows with its level. An ambush of them is short and bloody.
+        attributes: { ...HUMANOID_TEMPLATE.attributes, vigor: 6, strength: 12, dexterity: 12 },   // the player's 50 points, little of it in vigor
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 20, maxStamina: 10, speed: 5
+            maxHp: 20, maxStamina: 12, speed: 6
         },
+        armedWith: ["wooden_club", "dagger", "handaxe", "scythe"],
         currencyReward: { min: 2, max: 8 },
         lootTableId: "madman_drops",
-        abilities: [...REGULAR_HUMANOID_ABILITIES, "bite", "claw"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: [...HUMANOID_TEMPLATE.tags],
         traitRewards: []
     },
@@ -182,10 +186,14 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 11, strength: 11, dexterity: 8
         },
-        // No traits: a rotter's remains turn acidic only once the blood moon is up (act 2, story/actDefinitions.js `enemies.ROTTER`)
+        // No traits: a rotter's remains turn acidic only once the blood moon is up (act 4, story/actDefinitions.js `enemies.ROTTER`)
+        // No weapon, but nails and teeth gone hard as horn: without them its claw and bite did 1 against any armour. They grow with it like a weapon
+        // would, and it learns a move every 5 levels (characters/naturalPackages.js: the one humanoid with a package; the shackled dead are never recruited)
+        naturalPackage: 'rotter',
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 20, maxStamina: 10, speed: 5
+            maxHp: 20, maxStamina: 10, speed: 5,
+            baseAttack: { blunt: 1, slash: 9, pierce: 8 }
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "rotter_drops",
@@ -732,6 +740,7 @@ export const ENTITY_DEFINITIONS = {
     "DOG": {
         ...BEAST_TEMPLATE,
         name: "Dog",
+        naturalPackage: 'canine',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "germanSheepherdSprite",
         spritePortrait: "germanSheepherdPortrait",
@@ -755,6 +764,7 @@ export const ENTITY_DEFINITIONS = {
     "WOLF": {
         ...BEAST_TEMPLATE,
         name: "Wolf",
+        naturalPackage: 'canine',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
@@ -776,9 +786,31 @@ export const ENTITY_DEFINITIONS = {
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
     },
 
+    /* The Bear: slow, heavy and hard to put down. Its art is waiting to be painted (tools/art/templates/README.md: bear_portrait.png, bear_sprite.png);
+       Bear Form turns a caster into one (battle/summons.js FORMS.bear, which draws this sheet once it has art). Not met in the world yet. */
+    "BEAR": {
+        ...BEAST_TEMPLATE,
+        name: "Bear",
+        naturalPackage: 'ursine',   // characters/naturalPackages.js
+        level: 1,
+        spriteOverworld: "bearSprite",
+        spritePortrait: "bearPortrait",
+        attributes: { ...BEAST_TEMPLATE.attributes, vigor: 14, strength: 14, dexterity: 8 },
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 24, maxStamina: 16, speed: 4, critical: 0.08,
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 6, slash: 4, pierce: 3, ice: 2 },
+            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, ice: 0.2 },
+            baseAttack: { blunt: 8, slash: 8, pierce: 6 }
+        },
+        abilities: [...BEAST_TEMPLATE.abilities, 'claw', 'pounce'],
+        tags: [...BEAST_TEMPLATE.tags, "URSINE"]
+    },
+
     "SNOW_LEOPARD": {
         ...BEAST_TEMPLATE,
         name: "Snow Leopard",
+        naturalPackage: 'feline',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "snowLeopardSprite",
         spritePortrait: "snowLeopardPortrait",
@@ -827,6 +859,7 @@ export const ENTITY_DEFINITIONS = {
     "CAVE_SPIDER": {
         ...BEAST_TEMPLATE,
         name: "Cave Spider",
+        naturalPackage: 'arachnid',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "legionarySprite",
         spritePortrait: "caveSpiderPortrait",
@@ -874,6 +907,7 @@ export const ENTITY_DEFINITIONS = {
     "SHACKLED_STEED": {
         ...BEAST_TEMPLATE,
         name: "Shackled Steed",
+        naturalPackage: 'hoofed',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "shackledSteedSprite",
         spritePortrait: "shackledSteedPortrait",
@@ -901,6 +935,7 @@ export const ENTITY_DEFINITIONS = {
     "HAWK": {
         ...BEAST_TEMPLATE,
         name: "Hawk",
+        naturalPackage: 'avian',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "hawkSprite",
         spritePortrait: "hawkPortrait",
@@ -920,7 +955,7 @@ export const ENTITY_DEFINITIONS = {
         },
         lootTableId: "mad_man_drops",
         // a talon slash, Take Flight (it starts every fight in the air for 2 turns: the Airborne trait), and Talon Strike (pierce, can make bleed)
-        abilities: [...BASE_ENTITY.abilities, "slash", "take_flight", "talon_strike"],
+        abilities: [...BASE_ENTITY.abilities, "claw", "take_flight", "talon_strike"],   // talons, not a blade's Slash
         traits: ["airborne"],
         tags: ["BIOLOGICAL", "BEAST", "AVIAN"]
     },
@@ -928,6 +963,7 @@ export const ENTITY_DEFINITIONS = {
     "GRIM_STAG": {
         ...BEAST_TEMPLATE,
         name: "Grim Stag",
+        naturalPackage: 'hoofed',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "grimStagSprite",
         spritePortrait: "grimStagPortrait",
@@ -946,13 +982,14 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 24, max: 48 },
         lootTableId: "grim_stag_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "claw", "reckless_charge", "eviscerate"],
+        abilities: [...BEAST_TEMPLATE.abilities, "claw", "reckless_charge", "guard_break"],   // antlers crash: no Eviscerate for an animal but the leopard and the hawk
         tags: [...BEAST_TEMPLATE.tags]
     },
 
     "DUNE_MAW": {
         ...BEAST_TEMPLATE,
         name: "Dune Maw",
+        naturalPackage: 'burrower',   // characters/naturalPackages.js
         frameSize: 192,
         level: 1,
         spriteOverworld: "duneMawSprite",
@@ -981,6 +1018,7 @@ export const ENTITY_DEFINITIONS = {
     "ICECOIL": {
         ...BEAST_TEMPLATE,
         name: "Icecoil",
+        naturalPackage: 'burrower',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "iceCoilPortrait",
         spritePortrait: "iceCoilPortrait",
@@ -1007,6 +1045,7 @@ export const ENTITY_DEFINITIONS = {
     "THUNDER_LOCUST": {
         ...BEAST_TEMPLATE,
         name: "Thunder Locust Swarm",
+        naturalPackage: 'swarm',   // characters/naturalPackages.js
         level: 1,
         spriteOverworld: "thunderLocustSprite",
         spritePortrait: "thunderLocustPortrait",
@@ -1202,7 +1241,7 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "PANZERIAN"]
     },
 
-    /* Jaeger as he fights (act 3, story/heroes.js: "The Pursuer" in the catacombs, "Brothers" in the snowy house, where Nikoli fights beside the player).
+    /* Jaeger as he fights (act 4, story/heroes.js: "The Pursuer" in the catacombs, "Brothers" in the snowy house, where Nikoli fights beside the player).
        A boss: Nikoli's own strength-and-ice build, crueller. He is never killed: beaten, he flees, and comes back later in the story. */
     "JAEGER_BOSS": {
         ...HUMANOID_TEMPLATE,
@@ -1232,7 +1271,7 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "PANZERIAN", "BOSS", "ELITE"]
     },
 
-    // Codey (Elsali), the Namuh nightblade (docs/story.md): with Mentoras in the snowy house in act 3 (story/heroes.js). Only ever met, never fought.
+    // Codey (Elsali), the Namuh nightblade (docs/story.md): with Mentoras in the snowy house in act 4 (story/heroes.js). Only ever met, never fought.
     // Art: the male Namuh nightblade's sheets.
     "CODEY": {
         ...HUMANOID_TEMPLATE,

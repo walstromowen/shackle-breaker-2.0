@@ -12,7 +12,7 @@
      a step active, not done yet        waiting_<step> .. waiting_<step>_3: small talk and a reminder of what he asked
      a step not yet given               offer_<step>, offer_<step>_2, then give_<step> (an old save, or a step handed in before he existed)
      every step handed in, act 1        after_darius .. after_darius_3
-   Act 2, in the desert workshop (world.strangerDesertHome): "The Hands That Speak", the search for Codey (codey1, codey2, codey3, all turnIn
+   Act 3, in the desert workshop (world.strangerDesertHome): "The Hands That Speak", the search for Codey (codey1, codey2, codey3, all turnIn
    HOODED_STRANGER): desert_meet .. desert_meet_4 and give_codey1 the first time; then waiting_ / turnin_ / lore_ / give_ as above. codey3's last
    objective is the Dry Kraken, which ambushes the player in the open desert once the miragewrights are dead (story/storyAmbush.js,
    story/encounters/story/codey.js); the hand-in is the reunion; after_codey .. after_codey_3 afterwards.
@@ -27,7 +27,7 @@
    the ones who could work a spell went strange first (he does not know why, and would rather not); the king gave one of the stones to Darius, a
    governor and one of his advisers, to keep until he came back, and Darius lost it (his soldiers in the old colors search for it still) and he
    found it; the red moon.
-   He is Cornelius Mentoras, once commander of the royal guard (docs/story.md): never said, and nothing he says may give it away before the story does. (Act 2, story/encounters/story/actTwo.js, shows the rest.)
+   He is Cornelius Mentoras, once commander of the royal guard (docs/story.md): never said, and nothing he says may give it away before the story does. (Act 3, story/encounters/story/actTwo.js, shows the rest.)
    His grief (his son, docs/story.md) is never spoken of. Once only, when Codey comes back alive, it slips out: "One of you did."
 
    Personal: in a party of players this is never shared or voted on, since it is about this player's own quests.
@@ -38,14 +38,14 @@ import { movedNorth, heroesOutcome, has as hasMilestone } from '../../heroes.js'
 import { toStage, next } from '../stageKit.js';
 
 const CHAIN = ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'];
-const DESERT = ['codey1', 'codey2', 'codey3'];   // act 2: the search for Codey
+const DESERT = ['codey1', 'codey2', 'codey3'];   // act 3: the search for Codey
 const IMG = { col: 0, row: 0 };
 const TITLE = "The Hooded Stranger";
 
 const leave = (text = "Leave him to his work.") => ({ text, outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] });
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
 
-/** The stage he opens with, from the player's quests (and, in act 2, the desert search). */
+/** The stage he opens with, from the player's quests (and, in act 3, the desert search). */
 function opening() {
     const q = gameState.quests || {};
     const active = (id) => !!(q.active && q.active[id]);
@@ -58,14 +58,14 @@ function opening() {
         if (id === 'shackled7' && !hasMilestone('arc_knight_slain')) return 'knight_waits';
         return `offer_${id}`;
     }
-    if (!hasMilestone('act2')) return 'after_darius';
-    // act 2: the desert
+    if (!hasMilestone('darius_slain')) return 'after_darius';
+    // act 3: the desert
     for (const id of DESERT) {
         if (done(id)) continue;
         if (active(id)) return QuestModel.checkCompletion(gameState, id) ? `turnin_${id}` : `waiting_${id}`;
         return id === 'codey1' ? 'desert_meet' : `offer_${id}`;
     }
-    // act 3, in the snowy house (story/heroes.js)
+    // act 4, in the snowy house (story/heroes.js)
     if (movedNorth()) {
         const o = heroesOutcome();
         if (o === 'friends' || o === 'brothers') return 'friends_m';
@@ -210,7 +210,7 @@ export const hoodedStranger = {
         after_darius_2: stage("\"I do not know what comes next. ...I rarely do. I simply hide it better than most.\"", next("after_darius_3")),
         after_darius_3: stage("\"Go carefully.\"", [leave("Leave.")]),
 
-        // ==== act 2, the desert workshop: "The Hands That Speak" ====
+        // ==== act 3, the desert workshop: "The Hands That Speak" ====
         // ---- the first visit: the red moon (as new to him as to the player), and Codey ----
         desert_meet: stage("The workshop is cold. The hooded man sits against a dead forge, the broken chain across his knees. He does not look surprised to see you. \"You have seen the moon.\"",
             next("desert_meet_2"), { ambience: "none" }),
@@ -262,7 +262,7 @@ export const hoodedStranger = {
         sword_2: stage("\"He was looking for me. Wasn't he.\"", next("sword_3")),
         sword_3: stage("He does not wait for an answer. For a long while he only looks at it. Then he holds it out to you, hilt first. \"Keep it. He would want it used.\"",
             [leave("Take it back.")].map(d => ({ ...d, outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "brothers_sword_shown" } }, { type: "END_ENCOUNTER", payload: null }] }] }))),
-        // act 3: with Nikoli there ("friends", "brothers"); back from the catacombs ("pursuer")
+        // act 4: with Nikoli there ("friends", "brothers"); back from the catacombs ("pursuer")
         friends_m: stage("\"He cheats at cards. In three languages.\"", [leave("Leave.")]),
         rescued_m: stage("\"Codey has forgiven me for being caught. I have not.\"", [leave("Leave.")]),
         after_codey_2: stage("\"He keeps watch at the door. So do I. Between the two of us and the voices, it is getting crowded in here.\"", next("after_codey_3")),

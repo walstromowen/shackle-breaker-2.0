@@ -139,7 +139,8 @@ ui_icons: './assets/icons/ui_icons.png',
     objSandDune3: './assets/mapObjects/objSandDune3.png',
     objDesertSkull: './assets/mapObjects/objDesertSkull.png',
     objBonePile: './assets/mapObjects/objBonePile.png',
-    objBrothersSword: './assets/mapObjects/objBrothersSword.png',   // Nikoli's greatsword planted in the snow (act 3: tools/art/brothersSwordObject.py)
+    objStrangerNote: './assets/mapObjects/objStrangerNote.png',     // the Hooded Stranger's note in his old workshop (act 3: tools/art/strangerNote.py)
+    objBrothersSword: './assets/mapObjects/objBrothersSword.png',   // Nikoli's greatsword planted in the snow (act 4: tools/art/brothersSwordObject.py)
     objAbandonedHouse1: './assets/mapObjects/objAbandonedHouse1.png',
     objAbandonedStoneHouse: './assets/mapObjects/objAbandonedStoneHouse.png',
     objStoneWorkshop: './assets/mapObjects/objStoneWorkshop.png',   // the stone house as the workshop: lit windows, a smouldering chimney
@@ -320,7 +321,9 @@ ui_icons: './assets/icons/ui_icons.png',
     dryKrakenPortrait: './assets/sprites/dry_kraken/dry_kraken_portrait.png',   // the Dry Kraken's head: battle sheet, 192 px frames (placeholder shapes: tools/art/dryKrakenPlaceholder.py)
     dryKrakenTentaclePortrait: './assets/sprites/dry_kraken/dry_kraken_tentacle_portrait.png',   // one of its eight tentacles: battle sheet, 128 px frames (placeholder)
     hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',   // the hunting hawk companion: battle sheet (rows 0-1 facing left, 4-5 facing right)
-    hawkSprite: './assets/sprites/hawk/hawk_sprite.png',       // its map sheet: it hovers over its shadow
+    hawkSprite: './assets/sprites/hawk/hawk_sprite.png',
+    bearPortrait: './assets/sprites/bear/bear_portrait.png',   // the Bear (and Bear Form): blank until painted (tools/art/templates/README.md)
+    bearSprite: './assets/sprites/bear/bear_sprite.png',       // its map sheet: it hovers over its shadow
     shackledSteedPortrait: './assets/sprites/shackled_steed/shackled_steed_portrait.png',
     sandStalkerPortrait: './assets/sprites/sand_stalker/sand_stalker_portrait.png',
     grimStagPortrait: './assets/sprites/grim_stag/grim_stag_portrait.png',
@@ -407,6 +410,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     gustAnimation: './assets/abilityAnimations/gust.png',
     downwindAnimation: './assets/abilityAnimations/downwind.png',
     tempestAnimation: './assets/abilityAnimations/tempest.png',
+    stormFrontAnimation: './assets/abilityAnimations/storm_front.png',   // Storm Front (tools/art/stormFrontAssets.py)
     tidalWaveAnimation: './assets/abilityAnimations/tidal_wave.png',
     mendingTideAnimation: './assets/abilityAnimations/mending_tide.png',
     glacialSpikeAnimation: './assets/abilityAnimations/glacial_spike.png',
@@ -539,6 +543,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     gustSfx: './assets/audio/sfx/abilities/insight/gust.mp3',
     downwindSfx: './assets/audio/sfx/abilities/insight/downwind.mp3',
     tempestSfx: './assets/audio/sfx/abilities/insight/tempest.mp3',
+    stormFrontSfx: './assets/audio/sfx/abilities/insight/storm_front.mp3',
     tidalWaveSfx: './assets/audio/sfx/abilities/insight/tidal_wave.mp3',
     mendingTideSfx: './assets/audio/sfx/abilities/insight/mending_tide.mp3',
     glacialSpikeCastSfx: './assets/audio/sfx/abilities/insight/glacial_spike_cast.mp3',

@@ -43,7 +43,8 @@ export class CombatCalculator {
         const defenderEvasion = defStats.evasion ?? 100; 
         
         const rawHitChance = abilityAccuracy * (attackerAcc / Math.max(1, defenderEvasion)); 
-        const hitChance = Math.min(0.95, rawHitChance); 
+        // a sure hit (an ability's `sureHit`, passed as an accuracy of Infinity) never misses, whatever the evasion: no 95% cap
+        const hitChance = abilityAccuracy === Infinity ? 1 : Math.min(0.95, rawHitChance); 
         const hitRoll = rng(); 
         
         console.log(`[MATH DEBUG] Hit Check -> Acc:${abilityAccuracy} * (AtkAcc:${attackerAcc} / DefEva:${defenderEvasion}) = Raw ${(rawHitChance * 100).toFixed(1)}% | Capped: ${(hitChance * 100).toFixed(1)}% | Roll: ${(hitRoll * 100).toFixed(1)}% | Hit: ${hitRoll <= hitChance}`); 

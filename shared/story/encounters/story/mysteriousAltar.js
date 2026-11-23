@@ -49,7 +49,7 @@ export const mysteriousAltar = {
                 { text: "Face Darius.", conditions: [HUMANOID], outcomes: toStage("darius_rises") },
                 {
                     text: "[The Groveler is dead] Search behind the altar.",
-                    conditions: [{ type: "has_milestone", id: "act2" }, HUMANOID],
+                    conditions: [{ type: "has_milestone", id: "darius_slain" }, HUMANOID],
                     customActionText: "You put your shoulder to the altar. Stone grinds on stone, and it slides aside.",
                     outcomes: toStage("hidden_stair")
                 },
@@ -106,9 +106,9 @@ export const mysteriousAltar = {
                     ]
                 },
                 {
-                    // once Darius the Groveler is beaten (act 2), every altar hides the same thing: a stair down into the catacombs
+                    // once Darius the Groveler is beaten (act 3), every altar hides the same thing: a stair down into the catacombs
                     text: "[The Groveler is dead] Search behind the altar.",
-                    conditions: [{ type: "has_milestone", id: "act2" }, HUMANOID],
+                    conditions: [{ type: "has_milestone", id: "darius_slain" }, HUMANOID],
                     customActionText: "You put your shoulder to the altar. Stone grinds on stone, and it slides aside.",
                     outcomes: toStage("hidden_stair")
                 },
@@ -362,11 +362,11 @@ export const mysteriousAltar = {
                     text: "Draw your weapon.",
                     customActionText: "You draw your weapon.",
                     conditions: [HUMANOID],
-                    // Winning plays the encounter that starts act 2 (story/encounters/story/actTwo.js) before the party is back on the map
+                    // Winning plays the encounter that starts act 3 (story/encounters/story/actTwo.js) before the party is back on the map
                     // the altar stays through the fight (lose, and it still waits for you); A Dark Truth, after a win, uncovers the stair down
                     outcomes: fight("darius_boss", false, { encounterId: "act_two" }, "dariusEncounterBgm")
                 }
             ]
         },
     }
-};
+};

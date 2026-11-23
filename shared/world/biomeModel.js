@@ -76,7 +76,7 @@ export class BiomeModel {
                 used = hi;
             }
             if (rngValue < lo || rngValue >= hi) continue;
-            if (rule.minAct && ActSystem.getAct() < rule.minAct) continue;   // only from that act on (an act 2 Arc Knight on patrol)
+            if (rule.minAct && ActSystem.getAct() < rule.minAct) continue;   // only from that act on (an act 3 Arc Knight on patrol)
             let spawnId = rule.id;
             if (rule.pool) {
                 spawnId = rule.pool[Math.floor(rngValue * 1000) % rule.pool.length];
@@ -103,7 +103,7 @@ export class BiomeModel {
         const dolos = Dolos.effects(gameState, ActSystem.isBloodMoon(currentHour)).ambushRate;   // his attention (story/dolos.js)
         if (!(this.battles.rate > 0) || Math.random() > rate * rateScale * dolos) return null;
         // A blood moon night has a table of its own (`tables.bloodMoon`), the dead and the cursed that rise under it
-        // in act 2 the night's enemies are sometimes abroad by day too (actDefinitions.js nightByDay)
+        // in act 3 the night's enemies are sometimes abroad by day too (actDefinitions.js nightByDay)
         const nightByDay = timeOfDay !== 'night' && this.battles.tables.night && ActSystem.nightEnemiesByDay();
         const tableId = (ActSystem.isBloodMoon(currentHour) && this.battles.tables.bloodMoon)
             || (nightByDay ? this.battles.tables.night : null)
@@ -168,4 +168,4 @@ export class BiomeModel {
         }
         return this.music.day;
     }
-}
+}

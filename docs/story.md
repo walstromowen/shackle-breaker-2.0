@@ -28,7 +28,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
   the king came to rely on his new **Arc Knights** instead: knights who infused their weapons and armour with the artifact's magic (the fire in
   their blades and plate). The old guard was phased out. The Arc Knights are the guard of the corrupted king now, the **enforcers of his will** in
   the dark lands: they knelt to take the fire, and the king's voice came with it; bound and cursed, they serve him still, even from the ruin (in the
-  game, act 1's mini boss waits in the Hooded Stranger's yard, and from act 2 more of them patrol the plains). They mean nothing to the mad and the
+  game, act 1's mini boss waits in the Hooded Stranger's yard, and from act 3, the blood moon, more of them patrol the plains). They mean nothing to the mad and the
   mad nothing to them: they come for whoever the king wants dead.
 
 ## The stones, the artifact and magic
@@ -37,7 +37,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
   opens. The king called it a gift and built a palace and a shrine to it.
 - **The other stones kept falling all through the war**, one here, one there, year after year. (Not all on one night.)
 - **Magic** came with the artifact. It is like a science, neither good nor bad: the energy for a spell must come **from the caster or from someone
-  else**. The artifact draws it from the Namuh's realm; in the game, every spell also takes a piece of the one who casts it (corruption, the shackles).
+  else**. The artifact draws it from the Namuh's realm; in the game, what a character learns of it (each Insight read) and the cruelty of their choices take a piece of them (corruption, the shackles). Casting itself costs nothing of it.
 - Those who use the artifact's power go wild-eyed and laugh without end. People who never use it are mocked as **"lightweights"**.
 - **SECRET: Dolos**, an ancient being, is bound inside the artifact and slowly working his way out. He corrupts the king.
 
@@ -62,20 +62,20 @@ fall, when the player breaks out of the king's chain line. This page is a living
   loves dramatic entrances and name-calling ("Lightweight"). The artifact's eager champion. In the game: the king gave him **one of the stones** (not
   the artifact) to keep safe until he came back; he lost it, sent his soldiers in the old colors to search for it forever, and kneels at the altar
   in the caves waiting for a king who never comes. When he sees the glow of the player's stone he takes it for the king's sign that the stranger in
-  chains was entrusted too, and turns on them. (Darius the Groveler, the end of act 1.)
+  chains was entrusted too, and turns on them. (Darius the Groveler, the end of act 2.)
 - **Jaeger Ironson, "The Pursuer"**: Panzerian general, Mentoras's analytical rival; ruthless (a hunt where his four companions froze to death).
   Spring boots, gauntlets. Later corrupted, sent to hunt the escaped Mentoras.
 - **Nikolai Ironson**: Jaeger's brother, Panzerian general. Witty, boyish grin, missing teeth, speaks in the third person in broken Alterian, yet
   educated at both a Panzerian and an Alterian university. Mentoras's friend. Later joins him and Codey.
   - *In the game* he is **Nikoli** (story/encounters/story/nikoli.js): he camps by the first campfire of the snowy mountains, hunting for Commander
     Mentoras, an old friend he did not always agree with. They have **not met again yet**: the Hooded Stranger does not know he is being looked for.
-    In act 2, if the player told him about the hooded man, he waits in the Stranger's old workshop, one step behind. His brother is Jaeger.
+    In act 3, if the player told him about the hooded man, he waits in the Stranger's old workshop, one step behind. His brother is Jaeger.
 - **Elsali / El Shadi, "Codey"**: a Namuh nightblade, about the age Jacob would be now had he lived. Mute, empathetic, quick, and a formidable
   warrior: he was sent to attack Mentoras in the attack on the capital and fought him to a standstill. The king imprisoned them together; after many
   years they were forced to work together to escape. A cautious, hesitant bond built on necessity and respect: they slowly learn to talk (his hand
   signs; Mentoras nicknamed him "Codey" for them) and earn each other's respect. At the very end, in one of the few words he ever speaks, he calls
   Mentoras "Dad", and heals his grief. Protagonist 2.
-  - *In the game* (act 2, "The Hands That Speak": questDefinitions.js codey1 to codey3, story/encounters/story/hoodedStranger.js and codey.js): the
+  - *In the game* (act 3, "The Hands That Speak": questDefinitions.js codey1 to codey3, story/encounters/story/hoodedStranger.js and codey.js): the
     Hooded Stranger, now in a desert workshop, sends the player after Codey (sand stalkers, the old road's calcified crusaders, the miragewrights),
     until the Dry Kraken rises out of the sand with Codey in its grip. The reunion is the only time Mentoras's grief slips out ("One of you did.").
 - **General Sekrav**: general of the Alterian legion. Young, never defeated, popular.
@@ -101,7 +101,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
 - The player is a nameless prisoner in the king's chain line who breaks free (the prologue): a Shackle Breaker, after the fall.
 - The madmen, magic addicts, rotters and hollows are the people of Altus gone mad; the legionaries and watchmen in "the old colors" still march as
   if the war never ended (Darius's soldiers, searching for his stone).
-- The catacombs (act 2) end in a dark round hall where an **Infernus Sentinel** stands (one in every catacomb, so never "the"): a living stone statue of a cosmic knight, cracks in its armour
+- The catacombs (act 3) end in a dark round hall where an **Infernus Sentinel** stands (one in every catacomb, so never "the"): a living stone statue of a cosmic knight, cracks in its armour
   open onto a moving night sky. It guards the doorway down to Infernus. What the game says so far is short and cryptic: waking, *"Again the light. Again the fall."*; broken, *"Below, they remember."* That Infernus were the Alterians' own ancestors, driven mad by the same
   artifact, is **not stated yet**: keep it for when the story goes down there.
-- Act 1 ends with Darius; act 2 is the blood moon. Corruption is the game's cost of magic; the shackles take those who cast too much.
+- The acts: act 1 ends when the first of the King's Arc Knights dies; act 2 (Dolos turns his eye to the party, the world a little harder) ends with Darius; act 3 is the blood moon; act 4 begins when the Dry Kraken dies and the heroes go north (story/actDefinitions.js). The quests keep their own pace. Corruption is the cost of learning magic (Insights) and of cruel choices; the shackles take those who give too much. The game never explains it outright: Darius's last words and the warm shackles hint at it.

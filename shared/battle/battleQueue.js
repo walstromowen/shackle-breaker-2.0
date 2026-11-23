@@ -2,6 +2,7 @@
 //
 // Builds turns for a battle's turn queue (`state.turnQueue`, played by the TurnManager). Every function takes the battle `state` first and only
 // reads and writes it, so none of this needs a screen: the BattleController decides WHEN something happens, this file says WHAT gets queued.
+import { onFallen } from './summons.js';
 import { events } from '../core/eventBus.js';
 import { AbilityFactory } from '../abilities/abilityFactory.js';
 import { BattleRewardSystem } from './battleRewardSystem.js';
@@ -167,6 +168,15 @@ function fallsWithOf(c) {
 export function queueDeath(state, combatant) {
     if (combatant._deathHandled) return;
     combatant._deathHandled = true;
+
+    // summons (battle/summons.js): a familiar crumbles (no kill, no slot to fill); one that had a familiar takes it down with it
+    const crumbled = onFallen(state, combatant);
+    if (combatant.isFamiliar) {
+        state.turnQueue = state.turnQueue.filter(turn => turn.actor !== combatant);
+        crumbled.forEach(message => state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message }));
+        return;
+    }
+    crumbled.forEach(message => state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message }));
 
     // A limb dies with its body (an enemy's `fallsWith`: the template id of the one it dies with): when the Dry Kraken's head falls, every one of its
     // tentacles still in the fight falls too. Those on the field faint after it; those still waiting under the sand simply never come up (their

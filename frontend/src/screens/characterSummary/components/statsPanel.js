@@ -91,7 +91,7 @@ export class StatsPanel {
             { id: "insightRecovery", label: "INS REC", val: insRec > 0 ? `${insRec}` : `${insRec}` },
             { id: "evasion", label: "EVA", val: `${evasion}` },
             { id: "corruption", label: "COR", val: `${corruption}%` }
-        ].filter(stat => stat.id !== "corruption" || CorruptionSystem.isRevealed());   // corruption is a secret until act 2
+        ].filter(stat => stat.id !== "corruption" || CorruptionSystem.isRevealed());   // corruption is a secret until act 3 (CORRUPTION.REVEAL_ACT: Darius)
 
         const colWidth = w / 2;
         const numRows = Math.ceil(combatStats.length / 2);

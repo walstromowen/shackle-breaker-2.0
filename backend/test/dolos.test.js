@@ -12,7 +12,7 @@ import { EntityFactory } from '../../shared/characters/entityFactory.js';
 
 const quiet = (fn) => { const l = console.log, w = console.warn; console.log = console.warn = () => {}; try { return fn(); } finally { console.log = l; console.warn = w; } };
 const reset = (difficulty = 'normal') => {
-    gameState.world.changes = {};
+    gameState.world.changes = { 'story:arc_knight_slain': true };   // he wakes once the first Arc Knight is dead (act II)
     gameState.world.time = 8 * 60;
     gameState.difficulty = difficulty;
     gameState.party.members = [];
@@ -126,17 +126,23 @@ test('his signs: nameless while he is hidden, named once the story reveals him; 
     assert.match(signs.at(-1).text, /Dolos/);
 });
 
-test('a grace period: he takes no notice of a party below level 5', async () => {
-    const { GRACE_LEVEL } = await import('../../shared/story/dolos.js');
+test('he sleeps until the first Arc Knight is dead: no tension, no fights remembered, no counters, nothing changed', async () => {
+    const { WAKES_ON } = await import('../../shared/story/dolos.js');
+    assert.equal(WAKES_ON, 'arc_knight_slain');
     reset();
-    gameState.party.members = [quiet(() => EntityFactory.create('HUMANOID', { level: GRACE_LEVEL - 1, levelEdge: false }))];
-    hours(200);
+    delete gameState.world.changes['story:arc_knight_slain'];
+    gameState.milestones = [];
+    gameState.party.members = [quiet(() => EntityFactory.create('HUMANOID', { level: 30, levelEdge: false }))];
+    hours(200, true);
     Dolos.recordFight({ victory: true, hpLeft: 1 });
     assert.equal(Dolos.state().phase, 'calm');
     assert.equal(Dolos.state().tension, 0);
-    gameState.party.members = [quiet(() => EntityFactory.create('HUMANOID', { level: GRACE_LEVEL, levelEdge: false }))];
+    assert.deepEqual(Dolos.effects(gameState, true), { ...PHASE_EFFECTS.calm, phase: 'calm' }, 'not even a blood moon stirs him');
+    const foe = quiet(() => EntityFactory.create('LEGIONARY', 10));
+    assert.equal(Dolos.counter(foe, { rand: () => 0 }).countered, false, 'no readied enemies (only a lone ambusher against a bigger party, the party-size rule)');
+    gameState.world.changes['story:arc_knight_slain'] = true;
     hours(30);
-    assert.ok(Dolos.state().tension > 0, 'at level 5 he looks up');
+    assert.ok(Dolos.state().tension > 0, 'the knight dead: he looks up');
 });
 
 test('only the world\'s owner moves him; the others play by the state they are sent', () => {

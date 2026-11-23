@@ -1,8 +1,9 @@
-/* Act 3: where the stories of Mentoras (the Hooded Stranger), Nikoli and Jaeger come together (story/heroes.js says which outcome a player has, and who
+/* Act 4: where the stories of Mentoras (the Hooded Stranger), Nikoli and Jaeger come together (story/heroes.js says which outcome a player has, and who
    stands where). Here are the scenes that are not Nikoli's or the Stranger's own (those are in nikoli.js and hoodedStranger.js):
 
      codey            Codey in the snowy house: a nod; or, Mentoras taken ("pursuer"), the wrecked house, Codey wounded, his signs, the quest the_pursuer.
      stranger_mark    the desert workshop once they have gone north: Codey's mark scratched into the anvil, and mountains under snow.
+     stranger_note    (act 3) his old workshop when Nikoli is not waiting there: the note he left, pointing to a desert village's forge.
      brothers_sword   "ashes": Nikoli's cold campfire, his greatsword planted in the snow. Taking it is the player's own doing.
      pursuer          "pursuer": in the hoard of the catacombs, Jaeger and his prisoner; the fight (a boss, no escape), then pursuer_won.
      pursuer_won      Jaeger flees into the dark; the chains broken; Mentoras's thanks. He never blames the player: he does not know.
@@ -39,6 +40,24 @@ export const codey = {
             decisions: end("\"I'll bring him back.\"", [{ type: "START_QUEST", payload: { questId: "the_pursuer" } }, { type: "GRANT_MILESTONE", payload: { id: "mentoras_taken" } }]) },
         taken_waiting: { displayText: "Codey", image: CODEY_IMG,
             text: "Codey has not moved from the wall. When he sees you, he signs the skull and the steps again, slower.",
+            decisions: end() }
+    }
+};
+
+/* Act 3, his old workshop, Nikoli not there to tell it (InteriorFactory.workshopResident: STRANGER_NOTE): what sends the player to the desert. */
+export const strangerNote = {
+    id: "stranger_note",
+    title: "A Note",
+    imageSheet: "encounter_hooded_stranger",
+    personal: false,   // the world's story: shared with the party near you
+    tone: "cold",
+    initialStage: "note",
+    stages: {
+        note: { displayText: "A Note", image: STRANGER_IMG, ambience: "none",
+            text: "The forge is cold, and the hooded man is gone. A scrap of paper is nailed to a crate beside it. The hand is shaky, the ink smudged with soot.",
+            decisions: [{ text: "Read it.", outcomes: toStage("note_2") }, ...end()] },
+        note_2: { displayText: "A Note", image: STRANGER_IMG,
+            text: "\"Gone to the sand. Someone I owe walked in and did not walk out. Find the forge in a desert village if you want me. If I am mad by then, be polite about it.\"",
             decisions: end() }
     }
 };

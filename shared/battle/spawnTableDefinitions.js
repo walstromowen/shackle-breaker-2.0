@@ -36,9 +36,9 @@ export const SpawnTableDefinitions = {
                     { id: 'MAGIC_ADDICT', weight: 30 },
                     // a watchman of the old colors, now and then even by day (5 in 155 of the shackled: about 2% of the day's foes)
                     { id: 'WATCHMAN', weight: 5 },
-                    // act 2: the old soldiers walk the plains in daylight (the dead walk only in the catacombs)
-                    { id: 'WATCHMAN', weight: 20, minAct: 2 },
-                    { id: 'HOLLOW_HARVESTER', weight: 20, minAct: 2, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+                    // act 3: the old soldiers walk the plains in daylight (the dead walk only in the catacombs)
+                    { id: 'WATCHMAN', weight: 20, minAct: 3 },
+                    { id: 'HOLLOW_HARVESTER', weight: 20, minAct: 3, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
                 ]
             }
         ]
@@ -118,8 +118,8 @@ export const SpawnTableDefinitions = {
                 members: [
                     { id: 'SAND_STALKER', weight: 70, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
                     { id: 'CALCIFIED_CRUSADER', weight: 30, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } },
-                    // act 2
-                    { id: 'MIRAGEWRIGHT', weight: 25, minAct: 2, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+                    // act 3
+                    { id: 'MIRAGEWRIGHT', weight: 25, minAct: 3, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
                 ]
             },
             {
@@ -333,7 +333,7 @@ export const SpawnTableDefinitions = {
     },
 
     // ==========================================
-    // BLOOD MOON NIGHTS (act 2: every night). BiomeModel.getBattle uses a biome's `battles.tables.bloodMoon` instead of its night table.
+    // BLOOD MOON NIGHTS (act 3: every night). BiomeModel.getBattle uses a biome's `battles.tables.bloodMoon` instead of its night table.
     // The dead rise, the cursed come in greater numbers, and nothing is left alone to wander off.
     // ==========================================
     "plains_battles_blood_moon": {

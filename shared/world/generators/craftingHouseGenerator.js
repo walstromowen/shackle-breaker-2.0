@@ -73,7 +73,7 @@ export class CraftingHouseGenerator {
             if (this.stationPositions.length) this.stationPos = this.stationPositions[Math.floor(this.stationPositions.length / 2)];
         }
         const sc = this.stationPos ? this.stationPos[0] : 0;
-        // the quest giver (config.questGiver: the one workshop he lives in, or a list of those who are there: the snowy house of act 3, story/heroes.js),
+        // the quest giver (config.questGiver: the one workshop he lives in, or a list of those who are there: the snowy house of act 4, story/heroes.js),
         // standing beside the work table, facing the door; each in the next free place
         if (this.config.questGiver) {
             const spots = [[a.c1 - 1, a.r0 + 2], [a.c0 + 1, a.r0 + 2], [a.c1 - 1, a.r0 + 3], [a.c0 + 1, a.r0 + 3], [a.c1, a.r0 + 2], [a.c0, a.r0 + 2], [a.c1 - 2, a.r0 + 3], [a.c0 + 2, a.r0 + 3]];

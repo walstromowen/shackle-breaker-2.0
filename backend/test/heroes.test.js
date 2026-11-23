@@ -19,16 +19,16 @@ import { WorldManager } from '../../shared/world/worldManager.js';
 
 const DESERT_DONE = ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8', 'codey1', 'codey2', 'codey3'];
 const story = (milestones = [], { completed = DESERT_DONE, active = {} } = {}) => {
-    gameState.milestones = ['act2', 'act3', ...milestones];
+    gameState.milestones = ['darius_slain', 'kraken_slain', ...milestones];
     gameState.quests = { active: { ...active }, completed: completed.slice(), trackedIds: [] };
 };
 const results = (enc, id) => E[enc].stages[id].decisions.flatMap(d => (d.outcomes || []).flatMap(o => o.results));
 const nexts = (enc, id) => results(enc, id).filter(r => r.type === 'ADVANCE_STAGE').map(r => r.payload.stageId);
 
-test('act 3 begins when the Dry Kraken dies, and keeps act 2\'s world', () => {
-    assert.ok(results('codey_freed', 'sinks').some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'act3'));
-    gameState.milestones = ['act2', 'act3'];
-    assert.equal(ActSystem.getAct(), 3);
+test('act 4 begins when the Dry Kraken dies, and keeps act 3\'s world', () => {
+    assert.ok(results('codey_freed', 'sinks').some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'kraken_slain'));
+    gameState.milestones = ['darius_slain', 'kraken_slain'];
+    assert.equal(ActSystem.getAct(), 4);
     assert.equal(ActSystem.getActDefinition().bloodMoon, true, 'the blood moon goes on');
     gameState.milestones = [];
 });
@@ -147,4 +147,19 @@ test('the assets: Codey on the male nightblade\'s sheets, the sword\'s icon and 
     }
     const voices = JSON.parse(fs.readFileSync(new URL('../../tools/voice/voices.json', import.meta.url), 'utf8')).voices;
     for (const id of Object.keys(VOICED)) for (const l of linesOf(id, E[id])) assert.ok(voices[l.speaker], `${id}.${l.stageId}: ${l.speaker}`);
+});
+
+test('act 2: his old workshop holds Nikoli if he was told, else the note he left pointing to the desert; both gone once he has gone north', () => {
+    resetWorldForNewGame();
+    gameState.world.strangerHome = '1_1';
+    story([]);
+    gameState.milestones = ['darius_slain'];   // act 2, Codey not yet found
+    assert.equal(InteriorFactory.workshopResident('1_1', 'PLAINS'), 'STRANGER_NOTE', 'no Nikoli: the note');
+    assert.match(E.stranger_note.stages.note_2.text, /desert village/, 'it says where');
+    assert.equal(E.stranger_note.stages.note.decisions[0].outcomes[0].results[0].payload.stageId, 'note_2');
+    gameState.milestones = ['darius_slain', 'nikoli_told'];
+    assert.equal(InteriorFactory.workshopResident('1_1', 'PLAINS'), 'NIKOLI_NPC', 'Nikoli tells it instead');
+    gameState.milestones = ['darius_slain', 'kraken_slain', 'codey_back'];
+    assert.equal(InteriorFactory.workshopResident('1_1', 'PLAINS'), null, 'gone north: nothing left there');
+    assert.match(E.nikoli.stages.workshop_2.text, /desert/i);
 });

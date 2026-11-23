@@ -248,7 +248,7 @@ export class LevelUpRenderer {
             { id: "insightRecovery", label: "INS REC", c: currentStats.insightRecovery, p: previewStats.insightRecovery },
             { id: "evasion", label: "EVA", c: currentStats.evasion, p: previewStats.evasion },
             { id: "corruption", label: "COR", c: currentStats.corruption, p: previewStats.corruption, isPct: true }
-        ].filter(stat => stat.id !== "corruption" || CorruptionSystem.isRevealed());   // corruption is a secret until act 2
+        ].filter(stat => stat.id !== "corruption" || CorruptionSystem.isRevealed());   // corruption is a secret until act 3 (CORRUPTION.REVEAL_ACT: Darius)
 
         const cColW = colW / 2;
         const rowH = 32;

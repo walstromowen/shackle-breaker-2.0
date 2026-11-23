@@ -88,7 +88,7 @@ function strangerGraveObjects(out) {
     if (Number.isFinite(c) && Number.isFinite(r)) out.set(`${c},${r}`, 'STRANGER_GRAVE');
 }
 
-/* Wanderers: map objects whose definition has `wander` (the madmen, the act 2 Arc Knights on patrol) walk about their home cell, never leaving its
+/* Wanderers: map objects whose definition has `wander` (the madmen, the act 3 Arc Knights on patrol) walk about their home cell, never leaving its
    chunk (the chunk is made and unmade with them). Every player sees them in the same place: each walks a round of its own, worked out from the
    world's seed and its home (a few waypoints near home, the paths between them, pauses on the way), and where it is on that round is the clock's
    (Date.now, a step every stepMs). wander: { radius, stepMs: [min, max] (the mean is its step), pauseChance (a pause at a step of the way),
@@ -352,7 +352,7 @@ export class WorldManager {
        Nikoli makes camp beside the first campfire of the snowy mountains the world puts down near the player (claimed for the world:
        InteriorFactory.claimHome 'nikoliCampfire'). Until this player has met him, the scene of the meeting stands there: Nikoli just north of the
        fire facing up, and three snow leopards further north stalking down toward him (both start the meeting when the player comes near). Once met,
-       the cats are gone and he stands there facing the player, until this player's story sends him on (act 2, once told where to look: then he is in
+       the cats are gone and he stands there facing the player, until this player's story sends him on (act 3, once told where to look: then he is in
        the Hooded Stranger's old workshop, InteriorFactory.workshopResident). None of it is written into the world's changes: each player sees the
        scene where their own story has it, and refreshStoryObjects brings the loaded world up to date (SceneManager, on every return to the overworld). */
     _storyObjects() {
@@ -365,10 +365,10 @@ export class WorldManager {
         if (!w.nikoliCampfire) return out;
         // the story's flags belong to the world (story/worldStory.js): everyone in it sees the same scene
         const ms = { includes: (id) => storyHas(id) };
-        if (ms.includes('act2') && ms.includes('nikoli_told')) return out;
+        if (ms.includes('darius_slain') && ms.includes('nikoli_told')) return out;
         const [c, r] = String(w.nikoliCampfire).split(',').map(Number);
         if (!Number.isFinite(c) || !Number.isFinite(r)) return out;
-        // act 3, neither brother told ("ashes", story/heroes.js): his camp is cold, and his greatsword stands planted in the snow where he stood
+        // act 4, neither brother told ("ashes", story/heroes.js): his camp is cold, and his greatsword stands planted in the snow where he stood
         if (movedNorth() && heroesOutcome() === 'ashes') {
             if (!ms.includes('brothers_sword_taken')) out.set(`${c},${r - 1}`, 'BROTHERS_SWORD');
             return out;
@@ -379,19 +379,19 @@ export class WorldManager {
         if (!met) for (const [dc, dr] of [[-1, -4], [0, -5], [1, -4]]) out.set(`${c + dc},${r + dr}`, 'SNOW_LEOPARD_STALKING');
         return out;
     }
-    /* A gravestone was put down. In act 1, before Osric has a seat, each one outside a castle is a candidate graveyard; noticeAmputatorGraveyard claims
+    /* A gravestone was put down. Before Darius falls (acts 1 and 2), before Osric has a seat, each one outside a castle is a candidate graveyard; noticeAmputatorGraveyard claims
        the first the player comes near (as with Nikoli's campfire: the world makes the land well beyond the screen). */
     _gravestonePlaced(col, row) {
         const w = gameState.world;
-        if (w.isInterior || w.amputatorGraveyard || ActSystem.getAct() !== 1) return;
+        if (w.isInterior || w.amputatorGraveyard || ActSystem.getAct() >= 3) return;
         if (this.terrain && this.terrain.castles && this.terrain.castles.isCastleCell(col, row)) return;
         (this._graveCandidates ||= new Set()).add(`${col},${row}`);
     }
-    /** Called as each step ends, in act 1: the nearest graveyard within NIKOLI_CAMP_SIGHT of the player (just beyond the screen) becomes Osric of the
+    /** Called as each step ends, before Darius falls: the nearest graveyard within NIKOLI_CAMP_SIGHT of the player (just beyond the screen) becomes Osric of the
      *  Saw's, if he has none yet: he sits on a free cell beside its stones. */
     noticeAmputatorGraveyard(col, row) {
         const w = gameState.world;
-        if (w.amputatorGraveyard || w.isInterior || !this._graveCandidates || !this._graveCandidates.size || ActSystem.getAct() !== 1) return false;
+        if (w.amputatorGraveyard || w.isInterior || !this._graveCandidates || !this._graveCandidates.size || ActSystem.getAct() >= 3) return false;
         // a graveyard is 3 to 5 stones in one 7 x 7 plot (structures.js GRAVEYARD); the lone stones on a village's verge (9 or more steps apart) are not one
         const all = [...this._graveCandidates].map(k => k.split(',').map(Number));
         const inPlot = (c, r) => all.filter(([c2, r2]) => Math.abs(c2 - c) <= 6 && Math.abs(r2 - r) <= 6).length;
@@ -659,7 +659,7 @@ export class WorldManager {
         }
         this.objects.delete(key);
     }
-    /* The story characters as this player's story has them now: what changed since they were put down (met, told, act 2) is swapped in place. */
+    /* The story characters as this player's story has them now: what changed since they were put down (met, told, act 3) is swapped in place. */
     refreshStoryObjects() {
         if (gameState.world.isInterior) return;
         const want = this._storyObjects();
@@ -781,6 +781,24 @@ export class WorldManager {
                 const rule = altRules[i];
                 if (lvl < (rule.minLevel ?? 0) || lvl > (rule.maxLevel ?? 99)) continue;
                 if (this.pseudoRandom(col * 31 + i * 7 + 500, row * 37 + i * 11 + 500) >= rule.chance) continue;
+                const adef = MAP_OBJECTS_DEFINITIONS[rule.id];
+                if (!adef || !this.isFootprintValid(col, row, adef.w || adef.width || 1, adef.h || adef.height || 1)) continue;
+                return rule.id;
+            }
+        }
+        /* `_ANYWHERE` rules (biomeDefinitions.js): on any open ground or plateau top, each with its own roll (the strange obelisks) */
+        const anyRules = biome.mapObjects && biome.mapObjects._ANYWHERE;
+        if (anyRules && (myTileId === CONFIG.TILE_TYPES.LAYER_2 || isPlateau(myTileId))) {
+            for (let i = 0; i < anyRules.length; i++) {
+                const rule = anyRules[i];
+                if (rule.region) {
+                    // one picked cell per region, in its middle half: only that cell can hold it
+                    const S = rule.region, m = Math.floor(S / 4), span = S - 2 * m;
+                    const rx = Math.floor(col / S), ry = Math.floor(row / S);
+                    const pc = rx * S + m + Math.floor(this.pseudoRandom(rx * 71 + i * 3 + 1300, ry * 73 + 1300) * span);
+                    const pr = ry * S + m + Math.floor(this.pseudoRandom(rx * 79 + 1400, ry * 83 + i * 5 + 1400) * span);
+                    if (col !== pc || row !== pr || this.pseudoRandom(rx * 89 + 1500, ry * 97 + i * 7 + 1500) >= rule.chance) continue;
+                } else if (this.pseudoRandom(col * 53 + i * 13 + 900, row * 59 + i * 17 + 900) >= rule.chance) continue;
                 const adef = MAP_OBJECTS_DEFINITIONS[rule.id];
                 if (!adef || !this.isFootprintValid(col, row, adef.w || adef.width || 1, adef.h || adef.height || 1)) continue;
                 return rule.id;

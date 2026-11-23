@@ -26,7 +26,7 @@ export const COVENANTS = {
         // The armor set is the Amputators' own, sold nowhere else
         wares: {
             1: ['wooden_club', 'mace'],   // plain weapons, for now
-            2: ['amputators_hood', 'amputators_apron', 'amputators_gloves', 'amputators_trousers', 'amputators_boots']
+            3: ['amputators_hood', 'amputators_apron', 'amputators_gloves', 'amputators_trousers', 'amputators_boots']
         }
     }
 };

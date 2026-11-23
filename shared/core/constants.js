@@ -171,9 +171,9 @@ export function scalingFor(type, attributes = {}, table = DAMAGE_SCALING) {
 // ===============================================
 // CORRUPTION
 // ===============================================
-// Each character carries a corruption from 0 to 100 (shown as a percent). Magic raises it, and so do cruel choices; kind ones lower it (CorruptionSystem).
+// Each character carries a corruption from 0 to 100 (shown as a percent). Reading Insights raises it (abilities/insights.js INSIGHT_CORRUPTION), and so do cruel
+// choices; kind ones lower it (CorruptionSystem). Casting spells does not.
 // BALANCE KNOBS, all in one place:
-//   PER_MAGIC_USE   corruption gained each time a party member uses a magical ability (a tag of 'magical'; an ability can set its own with `corruption: n`)
 //   TIERS           what a corruption of at least `at` does while it lasts. They stop the moment it drops below again (StatCalculator reads them every time).
 //                   maxHpMultiplier scales max health, magicDamageBonus adds to every magical damage type (0.25 = +25%).
 //   SHACKLE_AT      at this much the character is shackled: down like a fainted one, and it cannot be undone without the item named by UNSHACKLE_ITEM
@@ -184,7 +184,6 @@ export function scalingFor(type, attributes = {}, table = DAMAGE_SCALING) {
 //                   next to the biome's own (a plains encounter is 10 to 20, a lone cave or mountain one is 100, so 80 is about half of everything met). Without a shackled member it is not in the pool at all.
 export const CORRUPTION = {
     MAX: 100,
-    PER_MAGIC_USE: 1,
     TIERS: [
         { at: 50, id: 'corrupted', name: 'Corrupted', maxHpMultiplier: 0.5, magicDamageBonus: 0.25,
           message: "{name}'s body withers as the darkness spreads, and the magic answers with a hungry surge." },
@@ -192,7 +191,7 @@ export const CORRUPTION = {
     SHACKLE_AT: 100,
     UNSHACKLE_ITEM: 'meteorite',
     UNSHACKLE_TO: 40,
-    REVEAL_ACT: 2,
+    REVEAL_ACT: 3,
     BETRAYAL_WEIGHT: 80,
 };
 

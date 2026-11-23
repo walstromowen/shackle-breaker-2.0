@@ -18,11 +18,11 @@ test('the hawk is offered as a starting companion and joins as a beast with its 
     assert.ok(offer, 'Hunting Hawk is in the character creator');
     const H = ENTITY_DEFINITIONS.HAWK;
     for (const id of H.abilities) assert.ok(AbilityDefinitions[id], `${id} exists`);
-    assert.ok(['slash', 'take_flight', 'talon_strike'].every(a => H.abilities.includes(a)), 'slash, take flight and talon strike');
+    assert.ok(['claw', 'take_flight', 'talon_strike'].every(a => H.abilities.includes(a)), 'claw (talons, not a blade), take flight and talon strike');
     // it hits like a hunter, not for 1: Talon Strike is pierce (armour stops it less than slash), stronger than a plain bite, and can make bleed
     const t = AbilityDefinitions.talon_strike;
     assert.equal(t.effects[0].damageType, 'pierce');
-    assert.ok(t.effects[0].power > AbilityDefinitions.bite.effects[0].power);
+    assert.equal(t.sureHit, true, 'the dive never misses (Bite is the strong one)');
     assert.ok(t.statusEffects.some(s => s.id === 'bleed'));
     assert.ok(H.baseStats.baseAttack.pierce >= 7 && H.baseStats.baseAttack.slash >= 6);
     assert.ok(!H.abilities.includes('hit_and_run'), 'Hit & Run is not finished: not the hawk\'s yet');

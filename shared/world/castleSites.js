@@ -36,8 +36,8 @@ export const CASTLE_SITES = {
     RING: 3,             // open ground round the plateau's foot
     BASE: 3,             // the plateau's level (LAYER_3)
     START_CLEAR: 220,    // no castle within this many cells of the start of the world
-    GATES_SHUT: false,   // true: the outer gates are shut (portcullises down, the ways through barred) before OPEN_ACT. Open for now: act 4 is not in the game yet
-    OPEN_ACT: 4,
+    GATES_SHUT: false,   // true: the outer gates are shut (portcullises down, the ways through barred) before OPEN_ACT. Open for now: act 5 is not in the game yet
+    OPEN_ACT: 5,
     INNER_SHUT: false,   // true: every inner gate is shut until opened (WorldManager.openInnerGate, from an encounter at it). Open for now
 };
 const NONE = -1, F_PATH = 1, F_CASTLE = 2, F_COVER = 4;

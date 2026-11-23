@@ -85,18 +85,18 @@ test('once roused he stands in the gate of the Stranger\'s yard, the only way ou
     assert.deepEqual(objs().filter(([, id]) => /FENCE/.test(id)), [], 'and the fence left as it was');
 });
 
-test('act 2: Arc Knights on patrol, rare, in the plains; the patrol is the fight, with the hunt\'s music and only one thing to do', async () => {
+test('act 3 (the blood moon, as before): Arc Knights on patrol, rare, in the plains; the patrol is the fight, with the hunt\'s music and only one thing to do', async () => {
     const { BIOME_DEFINITIONS } = await import('../../shared/world/biomeDefinitions.js');
     const { BiomeModel } = await import('../../shared/world/biomeModel.js');
     const plains = Object.values(BIOME_DEFINITIONS).find(b => b.id === 'PLAINS');
     const rule = Object.values(plains.mapObjects).flat().find(r => r && r.id === 'ARC_KNIGHT_PATROL');
-    assert.ok(rule && rule.minAct === 2 && rule.chance - rule.rangeStart <= 0.0002, 'rare, and from act 2');
+    assert.ok(rule && rule.minAct === 3 && rule.chance - rule.rangeStart <= 0.0002, 'rare, and from act 3');
     const biome = new BiomeModel(plains);
     const tile = Object.keys(plains.mapObjects).find(t => plains.mapObjects[t].includes(rule));
     const roll = rule.rangeStart + 0.00005;
     gameState.milestones = [];
     assert.ok(!biome.getSpawnId(tile, roll) || biome.getSpawnId(tile, roll).id !== 'ARC_KNIGHT_PATROL', 'not in act 1');
-    gameState.milestones = ['act2'];
+    gameState.milestones = ['darius_slain'];
     assert.equal(biome.getSpawnId(tile, roll).id, 'ARC_KNIGHT_PATROL', 'in act 2');
     gameState.milestones = [];
     assert.ok(M.ARC_KNIGHT_PATROL.wander && M.ARC_KNIGHT_PATROL.interaction.triggerRadius >= 3, 'he walks; coming near him is the fight');

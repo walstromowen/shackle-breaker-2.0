@@ -552,7 +552,7 @@ export const ItemDefinitions = {
       attackGrowth: { earth: 3 },
       requirements: { attunement: 9, intelligence: 7 },
       requirementGrowth: { attunement: 2, intelligence: 2 },
-      spells: { 1: ["vine_lash"], 2: ["boulder_throw"], 3: ["earthquake"], 4: ["acid_pool"] }
+      spells: { 1: ["vine_lash"], 2: ["boulder_throw"], 3: ["earthquake"], 4: ["acid_pool"], 5: ["bear_form"] }
     }
   },
   "insight_of_lightning": {
@@ -618,7 +618,7 @@ export const ItemDefinitions = {
       attackGrowth: { wind: 3 },
       requirements: { attunement: 9, intelligence: 7 },
       requirementGrowth: { attunement: 2, intelligence: 2 },
-      spells: { 1: ["gust"], 2: ["downwind"], 3: ["tempest"] }
+      spells: { 1: ["gust"], 2: ["downwind"], 3: ["tempest"], 4: ["storm_front"] }
     }
   },
   "insight_of_arcane": {
@@ -684,7 +684,7 @@ export const ItemDefinitions = {
       attackGrowth: { dark: 3 },
       requirements: { intelligence: 10, attunement: 7 },
       requirementGrowth: { intelligence: 2, attunement: 2 },
-      spells: { 1: ["spirit_reap"] }
+      spells: { 1: ["spirit_reap"], 3: ["raise_skeleton"] }
     }
   },
 
@@ -970,7 +970,7 @@ export const ItemDefinitions = {
     }
   },
 
-  // --- THE AMPUTATORS' ARMOR SET (tier 3: unique, sold only by Senior Surgeon Osric, from act 2; story/covenants.js COVENANTS.amputators.wares) ---
+  // --- THE AMPUTATORS' ARMOR SET (tier 3: unique, sold only by Senior Surgeon Osric, from act 3; story/covenants.js COVENANTS.amputators.wares) ---
   // Icons: the armor sheet's column 5 (assets/icons/armor.png: a column per set, a row per slot, head to feet).
   // Built like leather (stitched hide, light on the feet) but for a surgeon's work: strong against cuts and stabs (slash 20, pierce 17 for the set,
   // against leather's 13 and 9), weaker against blunt blows (11), and each piece mends the wearer (+1 HP recovery, +5 for the set) where leather

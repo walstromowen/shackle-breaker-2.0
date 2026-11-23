@@ -58,7 +58,7 @@ test('each carriage has its own dead man, or none: stuck ring, loose ring or nob
 });
 
 test('Dolos decides how many come to an encounter\'s fight; a set piece is left as written', () => {
-    gameState.world.changes = {};
+    gameState.world.changes = { 'story:arc_knight_slain': true };   // he is awake
     gameState.world.time = 600;
     worldSync.ownsWorld = true;
     gameState.party.members = [quiet(() => EntityFactory.create('HUMANOID', { level: 10, levelEdge: false }))];

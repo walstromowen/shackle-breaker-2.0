@@ -1,4 +1,5 @@
 import { DAMAGE_SCALING, ENEMY_DAMAGE_SCALING, BEST_OF_SCALING, DEFENSE_PER_SCALING_POINT, CORRUPTION } from '../core/constants.js';
+import { INSIGHT_CORRUPTION } from '../abilities/insights.js';
 import { HP_PER_VIGOR_SCALE, VIGOR_DEFENSE_PER_POINT, STAMINA_RECOVERY_PER_DEX, INSIGHT_RECOVERY_PER_ATT, STAMINA_ATTRIBUTES, INSIGHT_ATTRIBUTES,
     ENEMY_VIGOR_DEFENSE_PER_POINT, ENEMY_RECOVERY_PER_POINT, StatCalculator } from './statCalculator.js';
 import { rollModifier, formatModifier, rollRuleText } from '../story/encounterRolls.js';
@@ -220,7 +221,7 @@ function describeStat(key, type, opts) {
         for (const a of (beast ? BEAST_INSIGHT : INSIGHT_ATTRIBUTES)) rows.push({ label: NAMES[a], value: perPoint(beast ? ENEMY_RECOVERY_PER_POINT : INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
     } else if (key === 'corruption') {
         // What it does comes from the same table the game plays by (CORRUPTION in core/constants.js)
-        rows.push({ label: 'Each magical ability used', value: `+${CORRUPTION.PER_MAGIC_USE}%`, kind: 'attack' });
+        rows.push({ label: 'Each Insight read', value: `+${INSIGHT_CORRUPTION[0]}% to +${INSIGHT_CORRUPTION[INSIGHT_CORRUPTION.length - 1]}%`, kind: 'attack' });
         for (const tier of CORRUPTION.TIERS) rows.push({ label: `At ${tier.at}%`, value: tierEffects(tier), kind: 'defense' });
         rows.push({ label: `At ${CORRUPTION.SHACKLE_AT}%`, value: 'Shackled', kind: 'defense' });
         note = 'Cruel choices raise it and kind ones lower it. A shackled member is down until a fallen meteorite breaks the chains, and may turn on the party first.';

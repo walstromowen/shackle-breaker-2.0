@@ -892,7 +892,7 @@ export const LootTableDefinitions = {
             { id: "panzerian_spring_inserts", dropRate: 0.15 },
         ]
     },
-    // Jaeger (act 3, JAEGER_BOSS): a Panzerian general's kit: his spring boots' inserts, his greatsword, the cold of the north. Beaten, he flees,
+    // Jaeger (act 4, JAEGER_BOSS): a Panzerian general's kit: his spring boots' inserts, his greatsword, the cold of the north. Beaten, he flees,
     // and leaves behind what came loose in the fight.
     "boss_jaeger_drops": {
         type: "independent",
@@ -1138,7 +1138,9 @@ LootTableDefinitions.container_crate = {
         { id: "stone", weight: 14, min: 1, max: 3 },
         { id: "coal", weight: 14, min: 1, max: 2 },
         { id: "iron_ore", weight: 10, min: 1, max: 2 },
-        { id: "copper_ore", weight: 8, min: 1, max: 2 },
+        { id: "copper_ore", weight: 22, min: 1, max: 3 },     // copper and small keys: much more common in crates and barrels than anywhere else
+        { id: "copper_ingot", weight: 14, min: 1, max: 2 },
+        { id: "small_iron_key", weight: 14, min: 1, max: 1 },
         { id: "tin_ore", weight: 8, min: 1, max: 2 },
         { id: "iron_ingot", weight: 6, min: 1, max: 2 },
         { id: "torch", weight: 14, min: 1, max: 2 },
@@ -1159,7 +1161,10 @@ LootTableDefinitions.container_barrel = {
         { id: "plant_fibers", weight: 8, min: 1, max: 2 },
         { id: "healing_herb", weight: 8, min: 1, max: 1 },
         { id: "healing_tonic", weight: 3, min: 1, max: 1 },
-        { id: "escape_rope", weight: 3, min: 1, max: 1 }
+        { id: "escape_rope", weight: 3, min: 1, max: 1 },
+        { id: "copper_ore", weight: 14, min: 1, max: 2 },     // copper and small keys tucked in among the stores
+        { id: "copper_ingot", weight: 10, min: 1, max: 1 },
+        { id: "small_iron_key", weight: 12, min: 1, max: 1 }
     ]
 };
 // An ancient barrel in the catacombs: what the dead were sent off with, oils and tonics gone strange with age, bones.
@@ -1175,7 +1180,9 @@ LootTableDefinitions.container_ancient_barrel = {
         { id: "illuminating_tonic", weight: 7, min: 1, max: 1 },
         { id: "antidote", weight: 6, min: 1, max: 1 },
         { id: "illuminating_herb", weight: 6, min: 1, max: 2 },
-        { id: "kurtus_brew", weight: 4, min: 1, max: 1 }
+        { id: "kurtus_brew", weight: 4, min: 1, max: 1 },
+        { id: "copper_ingot", weight: 10, min: 1, max: 2 },   // grave goods: copper, and the keys to what the dead left locked
+        { id: "small_iron_key", weight: 12, min: 1, max: 1 }
     ]
 };
 // A ruined barrel in the catacombs: burst long ago; mostly its own staves, and whatever rolled out and was never picked up.
@@ -1187,7 +1194,9 @@ LootTableDefinitions.container_ruined_barrel = {
         { id: "plant_fibers", weight: 12, min: 1, max: 2 },
         { id: "linen", weight: 10, min: 1, max: 1 },
         { id: "torch", weight: 10, min: 1, max: 1 },
-        { id: "salt", weight: 6, min: 1, max: 1 }
+        { id: "salt", weight: 6, min: 1, max: 1 },
+        { id: "copper_ore", weight: 10, min: 1, max: 2 },
+        { id: "small_iron_key", weight: 8, min: 1, max: 1 }
     ]
 };
 // A crate packed with sacks: provisions and dry goods.
@@ -1201,7 +1210,9 @@ LootTableDefinitions.container_crate_sack = {
         { id: "healing_herb", weight: 12, min: 1, max: 2 },
         { id: "bandage", weight: 10, min: 1, max: 2 },
         { id: "aloe", weight: 6, min: 1, max: 1 },
-        { id: "antidote", weight: 4, min: 1, max: 1 }
+        { id: "antidote", weight: 4, min: 1, max: 1 },
+        { id: "copper_ingot", weight: 11, min: 1, max: 1 },
+        { id: "small_iron_key", weight: 10, min: 1, max: 1 }
     ]
 };
 // A traveller's pack, or a sack of goods: grain, supplies and bedding.
@@ -1277,6 +1288,10 @@ LootTableDefinitions.house = LootTableDefinitions.house_interior;
 /* Items a roll can leave out (a ROLL_LOOT_TABLE payload `exclude`: set names from here and / or plain item ids). A chest is a find, so it never
    hands out the common stuff you trip over on the road: raw wood, fibres, stone, flint and the like, and the tattered rags. */
 export const LootExclusionSets = {
+    /* The common crafting materials: what lies about on the ground or comes off any carcass. No encounter hands them out, chests included (every
+       encounter's ROLL_LOOT_TABLE leaves them out, frontend/src/screens/encounter/encounterLogic.js): a reward is something worth the trouble.
+       Crates, barrels and sacks still hold them: that is what they are for. Ores and ingots are not on it. */
+    common_materials: ['plant_fibers', 'soft_wood', 'hard_wood', 'stone', 'flint', 'sand', 'wheat', 'cotton', 'bone', 'salt', 'coal', 'fur'],
     low_tier: [
         'plant_fibers', 'soft_wood', 'hard_wood', 'stone', 'flint', 'sand', 'wheat', 'cotton', 'bone',
         'tattered_hood', 'tattered_shirt', 'tattered_gloves', 'tattered_pants', 'tattered_boots',

@@ -14,10 +14,10 @@ const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerat
 /* The places in a world that a story character takes as theirs the first time the player comes upon one (saved with the world; in multiplayer
    the host's world decides, see multiplayerSession):
      strangerHome          the Hooded Stranger's workshop: the first workshop the player walks into (an interior id, the door's cell "col_row")
-     strangerDesertHome    where he goes in act 2: the first workshop in a desert village the player walks into in act 2
+     strangerDesertHome    where he goes in act 3: the first workshop in a desert village the player walks into in act 3
      nikoliCampfire        Nikoli's camp: the first campfire of the snowy mountains the world puts down near the player ("col,row", WorldManager)
      jaegerCatacomb        where Jaeger waits, posing as Nikoli: the first catacombs the player walks into (an interior id); he stands in its hoard until met
-     strangerSnowHome      act 3: the first snowy-mountain crafting house entered once Codey is back, where Mentoras and Codey go (story/heroes.js)
+     strangerSnowHome      act 4: the first snowy-mountain crafting house entered once Codey is back, where Mentoras and Codey go (story/heroes.js)
      amputatorGraveyard    Senior Surgeon Osric's seat: the cell he sits on, in the first small graveyard the player comes near in act 1 ("col,row", WorldManager)
      amputatorQuarry       where Surgeon Garrick is, picked when Osric's quest starts ("col,row", WorldManager.pickAmputatorQuarry)
      strangerGrave         the old gravestone the Stranger buried his stone under, picked once his quest is given ("col,row", WorldManager.noticeStrangerGrave) */
@@ -54,18 +54,19 @@ export class InteriorFactory {
 
     /** Who stands in the workshop `interiorId` (an NPC map object id, or null), from the world's claims and this player's story:
      *    act 1             the Hooded Stranger, in his workshop (the first one entered is claimed for him)
-     *    act 2             he has gone to the first desert workshop entered in act 2 (`biomeId` is the village's biome); his old workshop
-     *                      holds Nikoli if the player told Nikoli where to look, and stands empty otherwise. Never both in one place. */
+     *    act 3             he has gone to the first desert workshop entered in act 3 (`biomeId` is the village's biome); his old workshop
+     *                      holds Nikoli if the player told Nikoli where to look, and otherwise the note he left (pointing to the desert),
+     *                      until he has gone north in act 4. Never both in one place. */
     static workshopResident(interiorId, biomeId = null) {
         const w = gameState.world;
         if (!w || !interiorId) return null;
-        if (!hasMilestone('act2')) {
+        if (!hasMilestone('darius_slain')) {
             InteriorFactory.claimStrangerHome(interiorId);
             return w.strangerHome === interiorId ? 'HOODED_STRANGER_NPC' : null;
         }
-        // his old workshop: Nikoli waits there once told, until he goes north to find Mentoras (act 3)
-        if (w.strangerHome === interiorId) return hasMilestone('nikoli_told') && !movedNorth() ? 'NIKOLI_NPC' : null;
-        // act 3, Codey back: the snowy house, and whoever this player's story has there (story/heroes.js); a list, placed side by side
+        // his old workshop: Nikoli waits there once told, until he goes north to find Mentoras (act 4)
+        if (w.strangerHome === interiorId) return movedNorth() ? null : hasMilestone('nikoli_told') ? 'NIKOLI_NPC' : 'STRANGER_NOTE';
+        // act 4, Codey back: the snowy house, and whoever this player's story has there (story/heroes.js); a list, placed side by side
         if (movedNorth() && biomeId === 'SNOWY_MOUNTAINS' && w.strangerDesertHome !== interiorId) InteriorFactory.claimHome('strangerSnowHome', interiorId);
         if (w.strangerSnowHome === interiorId) { const who = snowHouseResidents(); return who.length ? who : null; }
         if (biomeId === 'DESERT') InteriorFactory.claimHome('strangerDesertHome', interiorId);
@@ -88,7 +89,7 @@ export class InteriorFactory {
         // into is his (claimStrangerHome), wherever it is, saved with the world, and he is there on every visit; no other workshop ever has him.
         // In multiplayer the host's world decides, however many players there are: the claim goes to the host (onStrangerHome, set by
         // multiplayerSession), whose answer every player takes, and a guest who joins gets it with the world.
-        // In act 2 he moves on (workshopResident): to the first desert workshop entered, with Nikoli one step behind him.
+        // In act 3 he moves on (workshopResident): to the first desert workshop entered, with Nikoli one step behind him.
         if (type === 'ABANDONED_WORKSHOP' && interiorId) {
             const resident = InteriorFactory.workshopResident(interiorId, gameState.world && gameState.world.interiorBiome);
             if (resident) config = { ...config, questGiver: resident };

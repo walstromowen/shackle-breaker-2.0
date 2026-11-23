@@ -225,7 +225,7 @@ export class LightingRenderer {
     }
 
     /* The natural darkness of the day: CONFIG.DAY_GLOOM (constants.js), with whatever the current act changes (actDefinitions.js `lighting.dayGloom`: the
-       days of act 2 are darker and redder, with a smaller pool of daylight). Made again only when the act changes. */
+       days of the blood moon act (act 3) are darker and redder, with a smaller pool of daylight). Made again only when the act changes. */
     currentGloom() {
         const act = ActSystem.getAct();
         if (this._gloomAct !== act) {
@@ -434,7 +434,7 @@ export class LightingRenderer {
         dark.fill(1);
 
         const wm = worldManager;
-        // The blood moon of act 2: a red pool of moonlight around the player that fades into the black of the night. Outdoors only (a cave or a house is dark in its own way).
+        // The blood moon of act 3: a red pool of moonlight around the player that fades into the black of the night. Outdoors only (a cave or a house is dark in its own way).
         let moonlight = null;
         if (!gameState.world.isInterior) {
             const moon = ActSystem.getMoonlight(gameState.world.time / 60);
@@ -522,4 +522,4 @@ export class LightingRenderer {
         ctx.drawImage(this._add.cv, 0, 0, cols, rows, dx, dy, dw, dh);
         ctx.restore();
     }
-}
+}

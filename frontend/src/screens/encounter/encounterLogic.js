@@ -469,7 +469,9 @@ export class EncounterLogic {
                             computedRolls = Math.floor(rng() * (payload.maxRolls - payload.minRolls + 1)) + payload.minRolls;
                         }
                         if (rng() < Dolos.effects().lootBonusChance) computedRolls += 1;   // Dolos (story/dolos.js): a gift in his respite, spoils in his gaze
-                        const lootModel = LootTableFactory.generateLoot(actualTableId, computedRolls, payload.baseCurrency || 0, payload.exclude);
+                        // an encounter's reward (a chest's too) is never the common stuff: wood, stone, fibres, bones (lootTableDefinitions.js common_materials)
+                        const exclude = [...(Array.isArray(payload.exclude) ? payload.exclude : payload.exclude ? [payload.exclude] : []), 'common_materials'];
+                        const lootModel = LootTableFactory.generateLoot(actualTableId, computedRolls, payload.baseCurrency || 0, exclude);
                         if (lootModel.hasItems()) {
                             lootModel.items.forEach(item => {
                                 const qty = EncounterLogic._keepOf(item.qty);
@@ -738,7 +740,7 @@ export class EncounterLogic {
                     const targets = payload.target === 'entire_party' ? [...members] : [EncounterLogic.subject(payload)].filter(Boolean);
                     targets.filter(Boolean).forEach(char => {
                         const change = CorruptionSystem.change(char, payload.amount || 0);
-                        // Until the story reveals corruption (act 2) it builds quietly: nothing is said about it
+                        // Until the story reveals corruption (act 3) it builds quietly: nothing is said about it
                         if (CorruptionSystem.isRevealed()) {
                             if (change.amount > 0) generalMessages.push(`${char.name} feels the darkness take hold. (Corruption +${change.amount}%)`);
                             else if (change.amount < 0) generalMessages.push(`${char.name} feels a weight lift. (Corruption ${change.amount}%)`);

@@ -1,3 +1,4 @@
+import { livingFamiliars } from '../../../../shared/battle/summons.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { events } from '../../../../shared/core/eventBus.js';
@@ -223,6 +224,7 @@ export class BattleRenderer {
         // 2. Draw Entities
         this.combatantRenderer.drawGroup(state.activeEnemies, false, state, hitboxes);
         this.combatantRenderer.drawGroup(state.activeParty, true, state, hitboxes);
+        this.combatantRenderer.drawFamiliars(state, livingFamiliars(state));   // summoned familiars beside their casters (battle/summons.js)
 
         // the weather falling and blowing across the field, in front of the fighters
         this.weather.updateAndDrawFront(state, this.dt, CANVAS_WIDTH, CANVAS_HEIGHT);

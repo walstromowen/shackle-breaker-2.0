@@ -178,13 +178,13 @@ export const tracksInTheSnow = {
             text: "You close the distance unseen and bring the deer down in a single, clean strike.",
             decisions: [
                 {
-                    text: "Take the hide and bones.",
+                    text: "Take the hide.",
                     outcomes: [
                         {
                             weight: 100,
                             results: [
-                                // No raw meat / venison item exists yet; swap in one here when it does.
-                                { type: "GIVE_ITEM", payload: { items: [{ id: "fur", qty: 2 }, { id: "bone", qty: 2 }] } },
+                                // No raw meat / venison item exists yet; swap in one here when it does. Never the common materials (fur, bone): a cured hide
+                                { type: "GIVE_ITEM", payload: { items: [{ id: "leather", qty: 2 }] } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -378,8 +378,8 @@ export const tracksInTheSnow = {
                         {
                             weight: 100,
                             results: [
-                                // The old reward was 3 Pelts; the item list has "fur" instead (used by the leather recipe).
-                                { type: "GIVE_ITEM", payload: { items: [{ id: "fur", qty: 3 }] } },
+                                // The old reward was 3 Pelts; an encounter never hands out the common materials (fur), so good leather instead.
+                                { type: "GIVE_ITEM", payload: { items: [{ id: "leather", qty: 2 }] } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

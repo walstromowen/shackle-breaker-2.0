@@ -9,7 +9,7 @@ const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.u
 const loaded = new Set([...main.matchAll(/^\s*(\w+):\s*'\.\//gm)].map(m => m[1]));
 
 // the animations that replaced the generic "melee_lunge" placeholder
-const REWORKED = ['hit_and_run', 'item_throw_net', 'solar_beam', 'gravity', 'drain_life', 'healing_rain', 'rest', 'brew_of_madness', 'minor_heal', 'minor_recover', 'minor_channel',
+const REWORKED = ['hit_and_run', 'item_throw_net', 'gravity', 'drain_life', 'healing_rain', 'rest', 'brew_of_madness', 'minor_heal', 'minor_recover', 'minor_channel',
     'moderate_heal', 'moderate_recover', 'moderate_channel', 'osmose', 'raise_skeleton', 'bear_form', 'baton_pass', 'counter_stance', 'switch_combatant', 'item_bear_trap', 'item_smoke_bomb'];
 
 test('every ability that has an animation named after it plays that one, not the generic lunge', () => {
@@ -43,15 +43,15 @@ test('the heals, recovers and channels come in a small and a large size, in the 
     }
 });
 
-test('Solar Beam charges, fires, and lands inside its own length', () => {
-    const d = B.solar_beam;
-    const beam = d.vfx.filter(v => v.type === 'travel');
-    assert.ok(beam.length >= 40);
-    const last = Math.max(...beam.map(v => v.start));
-    assert.ok(last * d.duration + 0.5 <= d.duration + 0.01, 'the beam is over before the animation ends');
-    assert.ok(Math.min(...beam.map(v => v.start)) * d.duration >= 0.8, 'after a charge-up');
+test('Storm Front (which replaced Solar Beam): the charge plays Downwind, the release its own storm that breaks inside its length', () => {
+    assert.equal(A.solar_beam, undefined, 'Solar Beam is gone');
+    assert.equal(A.storm_front.chargeAnimationId, 'downwind');
+    assert.ok(B.downwind);
+    const d = B.storm_front;
+    const ends = [...d.vfx, ...d.audio].map(c => c.start);
+    assert.ok(Math.max(...ends) <= 1, 'every cue inside the animation');
+    assert.ok(d.target.shake && d.target.shake.start * d.duration >= 1, 'the storm breaks after it has loomed');
 });
-
 test('every sound, sprite sheet and background any battle animation names is loaded by main.js', () => {
     for (const [id, d] of Object.entries(B)) {
         for (const c of d.audio || []) assert.ok(loaded.has(c.key), `${id}: sound ${c.key}`);

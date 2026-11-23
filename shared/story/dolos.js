@@ -25,6 +25,8 @@ import { gameState } from '../core/gameState.js';
 import { worldSync } from '../core/worldSync.js';
 import { events } from '../core/eventBus.js';
 import { StatCalculator } from '../characters/statCalculator.js';
+import { WEAPON_DUE } from '../battle/enemyArms.js';
+import { hasWorldFlag } from './worldStory.js';
 
 export const PHASES = ['respite', 'calm', 'stirring', 'gaze'];
 
@@ -62,8 +64,9 @@ export const COUNTERS = {
     magic:    { trait: 'tough', armor: ['cloth_robe', 'cloth_hood'] }
 };
 const MEMORY = 6;
-export const GRACE_LEVEL = 5;                     // he takes no notice of a party below this level: the opening hours are the player's own                                 // the fights he remembers when he weighs the party
-const WEAPON_DUE = [1, 4, 9, 15, 22];            // the levels a weapon is usually upgraded by (tools/playthroughSim.mjs): the curve he holds the party to
+// he takes no notice of the party until the first of the King's Arc Knights is dead (act II, story/actDefinitions.js): the opening hours are the player's own
+export const WAKES_ON = 'arc_knight_slain';
+// WEAPON_DUE (battle/enemyArms.js): the levels a weapon is usually upgraded by (tools/playthroughSim.mjs): the curve he holds the party to, and every enemy's weapon follows
 const KEY = 'dolos';
 
 /* The omens of his attention. Nameless while he is hidden; once the story names him, he is named. */
@@ -90,10 +93,9 @@ export const Dolos = {
         return TEMPERAMENTS[state.difficulty] || TEMPERAMENTS.normal;
     },
 
-    /** Whether he has noticed the party yet: not until its strongest member reaches GRACE_LEVEL. */
+    /** Whether he has noticed the party yet: not until the first Arc Knight is dead (WAKES_ON, a story flag of the world). Until then he does nothing at all. */
     noticed(state = gameState) {
-        const members = (state.party && state.party.members || []).filter(Boolean);
-        return !members.length || members.some(m => (m.level || 1) >= GRACE_LEVEL);
+        return hasWorldFlag(WAKES_ON, state);
     },
 
     named(state = gameState) {
@@ -150,6 +152,7 @@ export const Dolos = {
         const done = { countered: false, trait: null, weapon: 0, armor: [] };
         const st = entity && (entity.state || entity);
         if (!st || bossOrLimb || (st.tags || []).includes('BOSS')) return done;
+        if (!this.noticed(state) && !(outnumbered > 0)) return done;   // asleep: only the outnumbered ambusher's readying (party-size balance) stays
         const phase = this.effects(state, bloodMoon).phase;
         const edge = this.edge(state);
         // an outnumbered ambusher (SpawnTableFactory OUTNUMBERED) is always readied; any other now and then
@@ -216,6 +219,7 @@ export const Dolos = {
 
     /** What he is doing to the world now (PHASE_EFFECTS of the phase, a blood moon counted as at least stirring), with the phase. */
     effects(state = gameState, bloodMoon = false) {
+        if (!this.noticed(state)) return { ...PHASE_EFFECTS.calm, phase: 'calm' };   // asleep: nothing of his touches the world
         const d = this.state(state);
         const phase = bloodMoon && PHASES.indexOf(d.phase) < PHASES.indexOf('stirring') ? 'stirring' : d.phase;
         const e = { ...PHASE_EFFECTS[phase], phase };

@@ -1,12 +1,12 @@
 /* A Dark Truth: the turning point of the game. It plays straight after Darius the Groveler is defeated (the START_BATTLE of the altar's last Darius stage carries
- * `afterVictory: { encounterId: "act_two" }`, see SceneManager), and its last choice grants the milestone 'act2'.
+ * `afterVictory: { encounterId: "act_two" }`, see SceneManager), and its last choice grants the milestone 'darius_slain': act III, the blood moon.
  *
  * Where the curse is hinted at, never explained. The altar's last light shows Darius's life: the king's young adviser kneeling at the fallen stone
  * night after night, losing small things he does not notice, until only the kneeling was left. His last words (truth) are all the telling there is:
  * it was never the stone, it was what he gave it, and it counts. Then the player's shackles are warm. What that means is left to the player and to the
- * screens (corruption, shown from act 2 on: characters/corruptionSystem.js). The moon turns red, and the quest that follows is "A Dark Truth"
+ * screens (corruption, shown from act 3 on: characters/corruptionSystem.js). The moon turns red, and the quest that follows is "A Dark Truth"
  * (questDefinitions.js, act2_red_moon).
- * From then on the world is in act 2 (story/actDefinitions.js): every night is a blood moon, the spawn tables hold their act 2 entries and enemies are stronger.
+ * From then on the world is in act 3 (story/actDefinitions.js): every night is a blood moon, the spawn tables hold their act 3 entries and enemies are stronger.
  *
  * Voiced (shared/story/voiceLines.js): the narrator, and Darius's own words (long_dark in the vision, truth as he dies).
  * Pictures are borrowed from the altar's sheet; the stage fields are explained at the top of story/encounters/story/prologue.js.
@@ -16,7 +16,7 @@ import { toStage, next } from '../stageKit.js';
 export const actTwo = {
     id: "act_two",
     title: "A Dark Truth",
-    // every player who beat Darius plays it for themselves: it grants their own act 2 and quest (in a party of players each sees it on their own screen)
+    // every player who beat Darius plays it for themselves: it grants their own act 3 and quest (in a party of players each sees it on their own screen)
     personal: true,
     initialStage: "silence",
     tone: "blood",
@@ -96,7 +96,7 @@ export const actTwo = {
                         weight: 1,
                         results: [
                             { type: "REPLACE_OBJECT", payload: { objectId: "CATACOMBS_STAIRS" } },   // the altar gives way to the hidden staircase into the catacombs
-                            { type: "GRANT_MILESTONE", payload: { id: "act2" } },
+                            { type: "GRANT_MILESTONE", payload: { id: "darius_slain" } },   // act III: the blood moon (story/actDefinitions.js)
                             { type: "START_QUEST", payload: { questId: "act2_red_moon", questName: "A Dark Truth" } },
                             { type: "END_ENCOUNTER", payload: null }
                         ]

@@ -17,7 +17,7 @@ test('the arcane vortex plays behind Arcane Blast, and no longer behind Arcane D
 
 test('the Insights of Wind, Water, Ice and Lightning: new spells as each is raised, every one with its animation, a free icon cell and real effects', () => {
     const want = {
-        insight_of_wind: { 1: ['gust'], 2: ['downwind'], 3: ['tempest'] },
+        insight_of_wind: { 1: ['gust'], 2: ['downwind'], 3: ['tempest'], 4: ['storm_front'] },
         insight_of_water: { 1: ['water_blast'], 2: ['waterfall'], 3: ['tidal_wave'], 4: ['mending_tide'] },
         insight_of_ice: { 1: ['ice_shard'], 2: ['frigid_gale'], 3: ['glacial_spike'], 4: ['frost_ward'] },
         insight_of_lightning: { 1: ['shock'], 2: ['overload'], 3: ['chain_lightning'], 4: ['lightning_strike'] }
@@ -29,7 +29,7 @@ test('the Insights of Wind, Water, Ice and Lightning: new spells as each is rais
         assert.deepEqual(I[item].insight.spells, w, `${item} teaches`);
         assert.ok(Math.max(...Object.keys(w).map(Number)) <= I[item].insight.maxRank, `${item}: reachable`);
     }
-    const fresh = ['gust', 'downwind', 'tempest', 'tidal_wave', 'mending_tide', 'glacial_spike', 'frost_ward', 'chain_lightning', 'lightning_strike'];
+    const fresh = ['gust', 'downwind', 'tempest', 'storm_front', 'tidal_wave', 'mending_tide', 'glacial_spike', 'frost_ward', 'chain_lightning', 'lightning_strike'];
     for (const id of fresh) {
         const a = A[id];
         assert.ok(a && a.cost && a.cost.insight > 0, `${id}: an insight spell`);

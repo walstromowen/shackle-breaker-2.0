@@ -519,7 +519,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             { label: "EVA %", c: cStats.evasion, p: pStats.evasion, isPct: true },
             { label: "INS REC", c: cStats.insightRecovery, p: pStats.insightRecovery },
             { label: "COR %", c: cStats.corruption, p: pStats.corruption, isPct: true }
-        ].filter(stat => (stat.c !== 0 || stat.p !== 0) && (stat.label !== "COR %" || CorruptionSystem.isRevealed()));   // corruption is a secret until act 2
+        ].filter(stat => (stat.c !== 0 || stat.p !== 0) && (stat.label !== "COR %" || CorruptionSystem.isRevealed()));   // corruption is a secret until act 3 (CORRUPTION.REVEAL_ACT: Darius)
 
         if (combatStats.length > 0) {
             currentY = this._drawSectionHeader("Combat Stats", x, currentY, w);

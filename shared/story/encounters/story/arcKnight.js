@@ -7,7 +7,7 @@
    stands in the gate of the Stranger's yard, the only way out (world flag arc_knight_roused; WorldManager arcKnightObjects), and coming near him
    is the meeting: the narrator sees him, he speaks (the fight's music starts), his blade at your throat, and the fight. He is bound to the King's will and has one errand, the player's death; he says no more than
    that. Put down, the voice leaves him, and he is gone for good (arc_knight_slain).
-   From act 2 others like him are abroad, rare, on patrol in the plains (ARC_KNIGHT_PATROL): they say nothing; coming near one is the fight
+   From act 3 others like him are abroad, rare, on patrol in the plains (ARC_KNIGHT_PATROL): they say nothing; coming near one is the fight
    (arcKnightPatrol).
 
    The world's: like Nikoli and Osric, his story belongs to the world being played (story/worldStory.js): in a party everyone meets the same knight.
@@ -60,7 +60,7 @@ export const arcKnight = {
 /* Played when the fight is won (START_BATTLE afterVictory) */
 export const arcKnightFallen = { ...arcKnight, id: "arc_knight_fallen", initialStage: "fallen" };
 
-/* Act 2: an Arc Knight on patrol (ARC_KNIGHT_PATROL, rare in the plains). No words: the music of the hunt starts as he sees you, and the only
+/* Act 3: an Arc Knight on patrol (ARC_KNIGHT_PATROL, rare in the plains). No words: the music of the hunt starts as he sees you, and the only
    thing left is to draw. Beaten, he is gone from the map. */
 export const arcKnightPatrol = {
     id: "arc_knight_patrol",

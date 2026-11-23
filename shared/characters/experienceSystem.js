@@ -6,7 +6,7 @@ export const MAX_LEVEL = 150;
 
 /*
  * THE XP CURVE. The number of fights a level takes is the design knob; XP is just that many fights' worth of XP.
- *   Level 20 (where act 2 starts) comes after about 25 fights, and the last levels take about 3 each: level 150 after about 300
+ *   Level 20 (where act 3 starts) comes after about 25 fights, and the last levels take about 3 each: level 150 after about 300
  *   (it was twice that: levelling felt too slow).
  * A "fight" here is two enemies of the player's own level (enemies are built at the party's highest level: sceneManager START_BATTLE).
  *   XP to the next level = what one such enemy is worth x 2 enemies x FIGHTS_PER_LEVEL(level)

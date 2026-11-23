@@ -11,8 +11,8 @@ import { CorruptionSystem } from '../../shared/characters/corruptionSystem.js';
 import { VoicesPlayer } from '../../frontend/src/engine/voicesPlayer.js';
 
 const quiet = (fn) => { const l = console.log, w = console.warn; console.log = console.warn = () => {}; try { return fn(); } finally { console.log = l; console.warn = w; } };
-const reset = (level = 10) => {
-    gameState.world.changes = {};
+const reset = (level = 10, awake = true) => {
+    gameState.world.changes = awake ? { 'story:arc_knight_slain': true } : {};   // Dolos wakes once the first Arc Knight is dead
     gameState.world.time = 8 * 60;
     gameState.difficulty = 'normal';
     worldSync.ownsWorld = true;
@@ -37,16 +37,17 @@ test('as loud as Dolos makes them: silent in his respite, a murmur while calm, p
     assert.ok(gaze >= 0.8);
 });
 
-test('a blood moon and a corrupted party make them louder; a party he has not noticed hears nothing', () => {
+test('a blood moon and a corrupted party make them louder; a party he has not noticed (the first Arc Knight still alive) hears nothing', () => {
     reset();
     phase('stirring', 60);
     const plain = Voices.level();
     assert.ok(Voices.level(gameState, true) > plain, 'under a blood moon');
     CorruptionSystem.change(gameState.party.members[0], 80);
     assert.ok(Voices.level() > plain, 'the corrupted hear them better');
-    reset(3);
+    reset(30, false);
+    gameState.milestones = [];
     phase('gaze');
-    assert.equal(Voices.level(), 0, 'below level 5 he has not noticed them, and nothing whispers');
+    assert.equal(Voices.level(), 0, 'before the first Arc Knight falls he has not noticed them, and nothing whispers');
 });
 
 test('the louder, the sooner and the plainer: lines by tier, and his name only once the story names him', () => {

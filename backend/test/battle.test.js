@@ -102,7 +102,7 @@ test('a boss cannot be run from: Retreat is refused before and during the turn, 
 
 test('a party that cannot win loses: the defeat banner, then the end of the battle', () => {
     withSeed(4, () => {
-        party(['MAD_MAN', 1]);
+        party(['HUMANOID', 1]);   // an unarmed traveller (a madman now carries a weapon, and its second move may be to run)
         const bc = newBattle([['WOLF', 9], ['WOLF', 9], ['SKELETAL_WARRIOR', 9]]);
         const { ended } = fight(bc);
         assert.equal(ended.length, 1);

@@ -14,7 +14,7 @@ import { ItemDefinitions } from '../items/itemDefinitions.js';
 import { enchantmentStatuses, STATUS_CHANCE_CAP } from '../items/enchantments.js';
 
 /* Effect types that are real but resolved by the battle code itself, not here: they must not trigger the "unknown effect type" warning. */
-const EFFECTS_HANDLED_ELSEWHERE = ['summon', 'switch_self'];
+const EFFECTS_HANDLED_ELSEWHERE = ['summon', 'switch_self', 'transform'];   // summon / transform: battle/summons.js
 
 export class AbilitySystem {
     /* Set by the scene manager. Overworld effects that must change the live scene (leaving an interior...) return `worldAction: { type, ... }`; it is handed to this
@@ -88,7 +88,7 @@ export class AbilitySystem {
         if (def.effects && Array.isArray(def.effects)) {
             for (const effect of def.effects) {
                 if (effect.type === 'damage') {
-                    const calc = this._handleDamage(effect, source, target, def.accuracy, def);
+                    const calc = this._handleDamage(effect, source, target, def.sureHit ? Infinity : def.accuracy, def);   // `sureHit`: it never misses
                     result.success = calc.hit;
                     result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
                     result.delta = -calc.damage;

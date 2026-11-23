@@ -34,10 +34,10 @@ test('a world flag is kept in the world\'s changes, saved with the world and sen
 
 test('ActSystem routes the story\'s flags to the world, and keeps a player\'s other milestones their own', () => {
     clean();
-    for (const id of ['act2', 'act3', 'nikoli_told', 'jaeger_told', 'stranger_met', 'codey_back']) assert.ok(WORLD_FLAGS.has(id), id);
-    ActSystem.grantMilestone('act2');
-    assert.equal(gameState.world.changes['story:act2'], true, 'the act is the world\'s');
-    assert.equal(ActSystem.getAct(), 2);
+    for (const id of ['darius_slain', 'kraken_slain', 'nikoli_told', 'jaeger_told', 'stranger_met', 'codey_back']) assert.ok(WORLD_FLAGS.has(id), id);
+    ActSystem.grantMilestone('darius_slain');
+    assert.equal(gameState.world.changes['story:darius_slain'], true, 'the act is the world\'s');
+    assert.equal(ActSystem.getAct(), 3);
     ActSystem.grantMilestone('some_personal_thing');
     assert.equal(gameState.world.changes['story:some_personal_thing'], undefined, 'not a world flag: the player\'s own');
     assert.ok(gameState.milestones.includes('some_personal_thing'));
@@ -46,7 +46,7 @@ test('ActSystem routes the story\'s flags to the world, and keeps a player\'s ot
 
 test('a guest: the host\'s world decides; the guest\'s own saved story does not leak in, and their choices are not written home', () => {
     clean();
-    gameState.milestones = ['act2', 'nikoli_told'];        // what the guest did in their own world
+    gameState.milestones = ['darius_slain', 'nikoli_told'];        // what the guest did in their own world
     worldSync.ownsWorld = false;
     assert.equal(ActSystem.hasMilestone('nikoli_told'), false, 'not in the host\'s world');
     assert.equal(ActSystem.getAct(), 1, 'the host\'s world is still in act 1');
@@ -60,7 +60,7 @@ test('a guest: the host\'s world decides; the guest\'s own saved story does not 
 
 test('a player\'s own world (single player, or the host): older saves need no migration', () => {
     clean();
-    gameState.milestones = ['act2', 'nikoli_told'];
+    gameState.milestones = ['darius_slain', 'nikoli_told'];
     assert.equal(ActSystem.hasMilestone('nikoli_told'), true);
     gameState.quests.completed = ['shackled_stranger', 'codey3'];
     assert.equal(hasWorldFlag('stranger_met'), true, 'read from the quest it came from');

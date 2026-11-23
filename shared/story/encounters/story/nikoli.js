@@ -4,8 +4,8 @@
 
    Where he is (WorldManager and InteriorFactory put him there, from this player's milestones):
      act 1, or never told        beside the first campfire of the snowy mountains the player came upon (world.nikoliCampfire)
-     act 2 and told              in the Hooded Stranger's old workshop (world.strangerHome), one step behind him: the Stranger has gone to the
-                                 first desert workshop the player walks into in act 2 (world.strangerDesertHome). They are never in one place.
+     act 3 and told              in the Hooded Stranger's old workshop (world.strangerHome), one step behind him: the Stranger has gone to the
+                                 first desert workshop the player walks into in act 3 (world.strangerDesertHome). They are never in one place.
 
    How it goes (milestones: nikoli_met, nikoli_told):
      meet .. meet_2              the first time: starving snow leopards close in on his fire, and he asks you to stand with him (or you
@@ -21,7 +21,7 @@
      beast_waiting               the quest taken, the beast still alive.
      again                       a later visit by the fire while he has not been told: he asks again.
      told_again                  told, still act 1: he is getting ready to leave.
-     workshop .. workshop_3      act 2, told: he stands where the Stranger used to, and has just missed him.
+     workshop .. workshop_3      act 3, told: he stands where the Stranger used to, and has just missed him.
 
    How he talks (docs/story.md, Nikolai Ironson): witty, a boyish gap-toothed grin, speaks of himself in the third person in broken Alterian
    (no articles, a northern cadence, "da", "my friend"), yet now and then a word from his two universities slips out.
@@ -52,7 +52,7 @@ const has = (id) => ActSystem.hasMilestone(id);
 
 /** The stage he opens with, from this player's milestones and quests. */
 function opening() {
-    // act 3, told: he has found Mentoras, in the snowy house (story/heroes.js): the reunion, or his brother's arrival, then the old friends
+    // act 4, told: he has found Mentoras, in the snowy house (story/heroes.js): the reunion, or his brother's arrival, then the old friends
     if (movedNorth() && has('nikoli_told')) {
         if (heroesOutcome() === 'brothers' && !has('brothers_done')) return 'brothers';
         if (heroesOutcome() === 'friends' && !has('friends_met')) return 'reunion';
@@ -61,7 +61,7 @@ function opening() {
     if (!has('nikoli_met')) return 'meet';
     const q = gameState.quests || {};
     if (q.active && q.active[BEAST_QUEST] && QuestModel.checkCompletion(gameState, BEAST_QUEST)) return 'beast_done';
-    if (has('nikoli_told')) return has('act2') ? 'workshop' : 'told_again';
+    if (has('nikoli_told')) return has('darius_slain') ? 'workshop' : 'told_again';
     if (q.active && q.active[BEAST_QUEST]) return 'beast_waiting';
     return 'again';
 }
@@ -144,13 +144,13 @@ const STAGES = {
     told_again: stage("Nikoli is packing a worn saddlebag by the fire. \"Nikoli leave when snow let him. Workshop, you say. Nikoli will find it.\"",
         [askBeast, { text: "Leave him to his packing.", outcomes: end() }], { ambience: "fireCrackle" }),
 
-    // ---- act 2: the Stranger's old workshop, a step too late ----
+    // ---- act 3: the Stranger's old workshop, a step too late ----
     workshop: stage("Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands. \"He was here. Ashes still warm when Nikoli come.\"",
         next("workshop_2"), { ambience: "none" }),
-    workshop_2: stage("\"He leave in hurry, and he leave this.\" He holds up the chain. \"Toward sand, Nikoli think. Always one step ahead of Nikoli, that one. Always he was.\"",
+    workshop_2: stage("\"He leave in hurry, and he leave this.\" He holds up the chain. \"To desert, Nikoli think. Some village with forge, like this one. Always one step ahead of Nikoli, that one.\"",
         [askBeast, { text: "Leave him to his hunt.", outcomes: end() }]),
 
-    // ==== act 3, the snowy house (story/heroes.js). A stage id ending _m1 / _m2 is Mentoras speaking, _j1 / _j2 Jaeger (voiceLines.js SPEAKERS) ====
+    // ==== act 4, the snowy house (story/heroes.js). A stage id ending _m1 / _m2 is Mentoras speaking, _j1 / _j2 Jaeger (voiceLines.js SPEAKERS) ====
     // ---- "Old Friends": only Nikoli was told ----
     reunion: stage("There is a third man in the workshop tonight. A broad Panzerian sits on an upturned crate by the forge, a greatsword across his knees, and he is talking. By the look of things, he has been talking for some time.",
         next("reunion_2"), { ambience: "fireCrackle" }),
@@ -211,7 +211,7 @@ export const nikoli = {
     stages: STAGES
 };
 
-/* Played when the fight against his brother is won (act 3, "Brothers"): the same conversation, from after that fight. */
+/* Played when the fight against his brother is won (act 4, "Brothers"): the same conversation, from after that fight. */
 export const nikoliBrothersWon = {
     ...nikoli,
     id: "brothers_won",

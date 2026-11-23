@@ -140,7 +140,7 @@ test('the Artifact of the Developer grants every ability there is', () => {
 test('the light abilities (not Spite) sound holy: the fairy-dust shimmer and the church bell; the healing items keep the plain purify', () => {
     const sounds = (animId) => (B[animId].audio || B[animId].sounds || []).map(c => c.id || c.soundId || c.sound || c[1]).filter(Boolean);
     const json = (animId) => JSON.stringify(B[animId]);
-    for (const ability of ['cleanse', 'purify', 'bless', 'solar_beam']) {
+    for (const ability of ['cleanse', 'purify', 'bless']) {
         const anim = A[ability].animationId;
         assert.match(json(anim), /lightShimmerSfx/, `${ability} shimmers`);
         assert.match(json(anim), /lightBellSfx/, `${ability} tolls the bell`);

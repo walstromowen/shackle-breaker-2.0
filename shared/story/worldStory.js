@@ -10,9 +10,10 @@ import { gameState } from '../core/gameState.js';
 import { worldSync } from '../core/worldSync.js';
 
 export const WORLD_FLAGS = new Set([
-    'act2', 'act3',                      // the acts: the world's blood moon, its harder enemies
+    'darius_slain', 'kraken_slain',      // the acts (story/actDefinitions.js; act II is arc_knight_slain, below)
+    'act2', 'act3',                      // what older saves called them (OLD_NAMES)
     'stranger_met',                      // someone has met the Hooded Stranger (what Nikoli and Jaeger can be told)
-    'codey_back',                        // Codey has been brought back to Mentoras (act 3: they go north)
+    'codey_back',                        // Codey has been brought back to Mentoras (act 4: they go north)
     'nikoli_met', 'nikoli_told',         // Nikoli
     'jaeger_met', 'jaeger_told',         // Jaeger
     'mentoras_taken', 'pursuer_done',    // "pursuer": Jaeger takes Mentoras; he is freed
@@ -30,12 +31,17 @@ const LEGACY = {
     codey_back: (s) => questDone(s, 'codey3')
 };
 
+/* Before the acts moved (act II at the first Arc Knight), Darius's death was recorded as 'act2' and the Kraken's as 'act3': a world or a save
+   that has the old name has the new one. */
+const OLD_NAMES = { darius_slain: 'act2', kraken_slain: 'act3' };
+
 export const isWorldFlag = (id) => WORLD_FLAGS.has(id);
 
 /** Is this flag set in the world being played? */
 export function hasWorldFlag(id, state = gameState) {
     const changes = state.world && state.world.changes;
     if (changes && changes[KEY(id)] === true) return true;
+    if (OLD_NAMES[id] && hasWorldFlag(OLD_NAMES[id], state)) return true;
     if (!worldSync.ownsWorld) return false;
     if (Array.isArray(state.milestones) && state.milestones.includes(id)) return true;
     return !!(LEGACY[id] && LEGACY[id](state));

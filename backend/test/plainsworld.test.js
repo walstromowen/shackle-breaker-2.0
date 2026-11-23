@@ -1,5 +1,5 @@
 // backend/test/plainsworld.test.js: `npm test`. Watchmen walk the plains (rarely by day, a middling share at night and under the blood moon); old
-// battlefields (the Aftermath) are a little commoner; and the strange obelisks can stand on the top layer of every exterior biome.
+// battlefields (the Aftermath) are a little commoner; and the strange obelisks can stand anywhere in every exterior biome, super rare.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SpawnTableDefinitions } from '../../shared/battle/spawnTableDefinitions.js';
@@ -35,17 +35,16 @@ test('old battlefields (the Aftermath) are a little commoner on the plains, and 
     assert.ok(Math.abs(share('GRAVEYARD') - 0.06) < 0.002, `graveyards stay at about 6% (${(share('GRAVEYARD') * 100).toFixed(1)}%)`);
 });
 
-test('the strange obelisks can stand on the top layer of every exterior biome', () => {
+test('the strange obelisks: anywhere in every exterior biome, super rare, never bunched on the summits', () => {
     // (the ruined castle's biome is only ever a castle's own cells, its levels set by its plan)
-    // the top layer of each: the plains' hills rise three levels (LAYER_5), the desert's mesas two (LAYER_4), the snowy mountains five (LAYER_7)
-    const TOP = { PLAINS: 5, DESERT: 4, SNOWY_MOUNTAINS: 7 };
     const exterior = Object.entries(BIOME_DEFINITIONS).filter(([id, b]) => !/INTERIOR/.test(id) && !b.castleOnly).map(([id]) => id);
-    assert.deepEqual(exterior.sort(), Object.keys(TOP).sort(), 'every exterior biome is covered');
+    assert.deepEqual(exterior.sort(), ['DESERT', 'PLAINS', 'SNOWY_MOUNTAINS']);
     for (const id of exterior) {
-        const rules = (BIOME_DEFINITIONS[id].mapObjects || {})._ALTITUDE || [];
-        const ob = rules.find(r => r.id === 'STRANGE_OBELISK');
-        assert.ok(ob && ob.chance > 0, `${id} has obelisks`);
-        assert.equal(ob.minLevel, TOP[id], `${id}: on its top layer`);
-        assert.equal(ob.maxLevel, TOP[id]);
+        const mo = BIOME_DEFINITIONS[id].mapObjects || {};
+        assert.ok(!(mo._ALTITUDE || []).some(r => r.id === 'STRANGE_OBELISK'), `${id}: no longer only on the top layer`);
+        const ob = (mo._ANYWHERE || []).find(r => r.id === 'STRANGE_OBELISK');
+        assert.ok(ob && ob.region >= 40 && ob.chance > 0 && ob.chance <= 0.15, `${id}: anywhere, at most one per ${ob && ob.region}-cell region`);
+        // about one per 50,000 cells at most (fewer where the ground has no room for it)
+        assert.ok(ob.region * ob.region / ob.chance >= 15000, `${id}: super rare`);
     }
 });

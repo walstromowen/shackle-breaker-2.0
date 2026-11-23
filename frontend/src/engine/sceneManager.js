@@ -1,3 +1,4 @@
+import { forgeEnemyWeapons } from '../../../shared/battle/enemyArms.js';
 import { events } from '../../../shared/core/eventBus.js';
 import { Input } from './input.js';
 import { UIInteractionManager } from './UIInteractionManager.js';
@@ -688,6 +689,8 @@ export class SceneManager {
                     const def = ItemDefinitions[defId];
                     return def ? ItemFactory.createItem(defId, { level: Math.min(def.maxLevel || 1, level) }) : null;
                 };
+                // its weapon grows with it, as a player's does (battle/enemyArms.js: a level 10 legionary carries a level 3 sword; never a boss)
+                forgeEnemyWeapons(enemyEntity, makeItem, ItemDefinitions);
                 // the acts deepen the Insights it knows (actDefinitions.js enemyInsightRanks: a rank-1 fire caster knows rank 2 in act II)
                 ActSystem.scaleEnemyInsights(enemyEntity);
                 // the act may make it stronger still: one more trait, better gear (actDefinitions.js enemyBoosts; never a boss)
@@ -954,7 +957,7 @@ export class SceneManager {
         // A tip card waits for the screen to be fully visible, then eases in. While it is up the screen underneath waits (no controller
         // update, no clock, no weather): only the fade and the card move on. When it has finished easing out, the screen takes over again.
         // A player who has beaten Darius but never saw A Dark Truth (an old save, a party member before every screen played it) sees it now, on the
-        // map, once nothing else has the screen: it grants their act 2 and its quest (ActSystem.owesDarkTruth). Once per loaded game.
+        // map, once nothing else has the screen: it grants their act 3 and its quest (ActSystem.owesDarkTruth). Once per loaded game.
         if (this.currentScene === 'overworld' && this._darkTruthFor !== gameState.quests && !this.transitionRenderer.isActive && !this.tutorial.blocking
             && this.overworldController && !this.overworldController.isLocked && !multiplayerSocial.prompt && ActSystem.owesDarkTruth()) {
             this._darkTruthFor = gameState.quests;

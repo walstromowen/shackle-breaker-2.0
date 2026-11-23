@@ -1,13 +1,20 @@
 /* ACTS: how the world gets harder when a milestone is reached.
  *
- * The game keeps a list of milestones (gameState.milestones: ['act2', ...]). A milestone is granted by the GRANT_MILESTONE result of an encounter
- * (see story/encounters/story/actTwo.js, which plays right after Darius the Groveler falls). The current act is the highest act whose `milestone` has been granted,
+ *   Act I     the start of the game
+ *   Act II    the first of the King's Arc Knights is dead (arc_knight_slain, story/encounters/story/arcKnight.js): Dolos turns his attention to the
+ *             party (story/dolos.js), and the world is a little harder
+ *   Act III   Darius the Groveler is dead (darius_slain, story/encounters/story/actTwo.js "A Dark Truth"): the blood moon
+ *   Act IV    the Dry Kraken is dead (kraken_slain, story/encounters/story/codey.js): the heroes go north
+ * The quests keep their own pace: the acts only say how hard the world is around them.
+ *
+ * The game keeps a list of milestones (gameState.milestones, and the world's story flags: story/worldStory.js). A milestone is granted by the
+ * GRANT_MILESTONE result of an encounter. Saves from before the acts moved recorded Darius as 'act2' and the Kraken as 'act3': worldStory.js reads
+ * those as darius_slain and kraken_slain. The current act is the highest act whose `milestone` has been granted,
  * and every system asks ActSystem (story/actSystem.js) instead of reading this file: the clock colours (TimeSystem), the daytime gloom
  * (LightingRenderer), the spawn tables (SpawnTableFactory, BiomeModel), the enemies themselves (SceneManager when a battle is built) and the encounters
  * (conditions `act_at_least` / `act_below` / `milestone`, and `minAct` / `maxAct` on the pools of a biome's encounters).
  *
- * To add act 3: copy the act 2 block as `3`, give it `milestone: 'act3'` and change what should be worse. Everything an act leaves out is inherited
- * from the act before it, so act 3 only has to list what changes.
+ * Everything an act leaves out is inherited from the act before it, so each act only lists what changes.
  *
  * Fields (all optional except `milestone`; act 1 has none because it is simply the start of the game):
  *   name            shown in logs and the save summary
@@ -34,9 +41,18 @@ export const ACT_DEFINITIONS = {
         name: 'Act I'
     },
 
+    // Act II begins when the first Arc Knight dies: Dolos wakes (story/dolos.js), and the world is a little harder. No blood moon yet.
     2: {
-        name: 'Act II: The Blood Moon',
-        milestone: 'act2',
+        name: 'Act II',
+        milestone: 'arc_knight_slain',
+        enemyLevelOffset: 1,
+        enemyInsightRanks: 1
+    },
+
+    // Act III begins when Darius the Groveler dies ("A Dark Truth"): the blood moon. Levels and Insight ranks stay as act II set them.
+    3: {
+        name: 'Act III: The Blood Moon',
+        milestone: 'darius_slain',
 
         lighting: {
             // The night is the blood moon: black darkness with only a trace of crimson in it. The red is the moonlight below, a pool around the player that
@@ -55,8 +71,6 @@ export const ACT_DEFINITIONS = {
         bloodMoon: true,
         battleRate: 1.25,
         bloodMoonBattleRate: 1.8,
-        enemyLevelOffset: 1,
-        enemyInsightRanks: 1,
         nightByDay: 0.25,
         enemyBoosts: {
             traitChance: 0.35,
@@ -68,38 +82,38 @@ export const ACT_DEFINITIONS = {
         enemies: {
             // --- the shackled ---
             MAD_MAN:          { abilities: ['reckless_charge'], traits: ['quick'] },
-            ROTTER:           { abilities: ['eviscerate'], traits: ['tough', 'acidic'] },   // under the blood moon the remains turn acidic: the acid pool they leave behind
+            ROTTER:           { abilities: ['pounce'], traits: ['tough', 'acidic'] },   // it lunges (no blade moves for the dead either)   // under the blood moon the remains turn acidic: the acid pool they leave behind
             MAGIC_ADDICT:     { abilities: ['drain_life'] },
             HOLLOW_HARVESTER: { abilities: ['drain_life'], traits: ['tough'] },
             LEGIONARY:        { abilities: ['shield_bash', 'cleave'], traits: ['iron_willed'] },
             WATCHMAN:         { abilities: ['shield_bash', 'intimidate'] },
-            SHACKLED_STEED:   { abilities: ['eviscerate'], traits: ['quick'] },
+            SHACKLED_STEED:   { abilities: ['pounce'], traits: ['quick'] },   // rears and comes down (no blade moves for an animal)
             SHACKLED_SPIRIT:  { abilities: ['drain_life'] },
             // --- the dead ---
             SKELETAL_WARRIOR: { abilities: ['cleave'], traits: ['tough'] },
             FLOATING_SKULL:   { abilities: ['magic_missile'] },
             ANCIENT_CULTIST:  { abilities: ['drain_life', 'gravity'] },
             // --- wildlife ---
-            WOLF:             { abilities: ['eviscerate'], traits: ['quick'] },
+            WOLF:             { abilities: ['pounce'], traits: ['quick'] },
             GRIM_STAG:        { abilities: ['howl'], traits: ['tough'] },
             DOG:              { abilities: ['bite'], traits: ['quick'] },
             // --- desert ---
             SAND_STALKER:     { abilities: ['quick_stab', 'hit_and_run'] },
             SCORCHED_VAGRANT: { abilities: ['inferno'] },
-            DUNE_MAW:         { abilities: ['eviscerate'], traits: ['tough'] },
+            DUNE_MAW:         { abilities: ['wrap'], traits: ['tough'] },
             THUNDER_LOCUST:   { traits: ['quick'] },
             CALCIFIED_CRUSADER: { abilities: ['shield_bash', 'cleave'], traits: ['tough'] },
             // --- snowy mountains ---
-            SNOW_LEOPARD:     { abilities: ['flurry'], traits: ['quick'] },
+            SNOW_LEOPARD:     { abilities: ['hit_and_run'], traits: ['quick'] },
             FROZEN_TRAPPER:   { traits: ['quick'] }
         }
     },
 
-    // Act III begins when the Dry Kraken dies (story/encounters/story/codey.js): Mentoras and Codey go north to the snowy mountains, and what the player
-    // told Nikoli and Jaeger comes to bear (story/heroes.js). The world stays as act II left it (everything not set here comes from the acts before).
-    3: {
-        name: 'Act III',
-        milestone: 'act3',
+    // Act IV begins when the Dry Kraken dies (story/encounters/story/codey.js): Mentoras and Codey go north to the snowy mountains, and what the player
+    // told Nikoli and Jaeger comes to bear (story/heroes.js). The world stays as act III left it (everything not set here comes from the acts before).
+    4: {
+        name: 'Act IV',
+        milestone: 'kraken_slain',
         enemyInsightRanks: 2
     }
 };

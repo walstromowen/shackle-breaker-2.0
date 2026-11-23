@@ -1,3 +1,4 @@
+import { fightsNaturally, naturalAttackBonus, naturalDefenseBonus } from '../battle/enemyArms.js';
 import { TRAIT_DEFINITIONS } from '../abilities/traitDefinitions.js'; 
 import { DAMAGE_TYPES, CORRUPTION, MAGIC_DAMAGE_TYPES, DEFENSE_PER_SCALING_POINT, ENEMY_DAMAGE_SCALING, scalingFor } from '../core/constants.js'; 
 import { ActSystem } from '../story/actSystem.js'; 
@@ -108,6 +109,15 @@ export class StatCalculator {
         
         if (combatSource.baseDefense) this.DAMAGE_TYPES.forEach(t => finalStats.defense[t] = combatSource.baseDefense[t] || 0); 
         if (combatSource.baseAttack) this.DAMAGE_TYPES.forEach(t => finalStats.attack[t] = combatSource.baseAttack[t] || 0); 
+        // a natural package (characters/naturalPackages.js): a creature without weapons grows as if it carried one upgraded on the players' curve, from
+        // its level; in the party also as if it wore armour upgraded so
+        if (fightsNaturally(character)) {
+            const lvl = character.level ?? character.state?.level;
+            const bonus = naturalAttackBonus(lvl);
+            if (bonus && combatSource.baseAttack) this.DAMAGE_TYPES.forEach(t => { if ((combatSource.baseAttack[t] || 0) > 1) finalStats.attack[t] += bonus; });
+            const guard = (character.recruited ?? character.state?.recruited) ? naturalDefenseBonus(lvl) : 0;
+            if (guard) ['blunt', 'slash', 'pierce'].forEach(t => { finalStats.defense[t] += guard; });
+        }
         if (combatSource.baseResistance) this.DAMAGE_TYPES.forEach(t => finalStats.resistance[t] = combatSource.baseResistance[t] || 0); 
         
         // --- STEP 1.5: UPGRADE MERGER --- 
@@ -274,7 +284,7 @@ export class StatCalculator {
 
         // Corruption tiers (core/constants.js): while it is high enough, max health shrinks and magical damage grows. Nothing is stored, so they end when it drops. 
         // (the shackled faction's natural corruption, set by SpawnTableFactory, is a stat only: those enemies are tuned already, so no tier applies to them) 
-        // (and none is felt before the story reveals corruption: act 2, CORRUPTION.REVEAL_ACT) 
+        // (and none is felt before the story reveals corruption: act 3, CORRUPTION.REVEAL_ACT) 
         const tier = (combatSource.naturalCorruption || ActSystem.getAct() < CORRUPTION.REVEAL_ACT) ? null : this.corruptionTier(finalStats.corruption); 
         if (tier) { 
             if (tier.maxHpMultiplier !== undefined) finalStats.maxHp = Math.max(1, Math.floor(finalStats.maxHp * tier.maxHpMultiplier)); 

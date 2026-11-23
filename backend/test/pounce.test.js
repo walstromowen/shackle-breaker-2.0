@@ -13,7 +13,7 @@ const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.u
 test('dogs Pounce: a heavy blunt leap with a chance to knock the target down, its own icon, animation and sound', () => {
     const p = A.pounce;
     assert.equal(p.effects[0].damageType, 'blunt');
-    assert.ok(p.effects[0].power > A.bite.effects[0].power, 'harder than a bite');
+    assert.ok(p.effects[0].power > A.claw.effects[0].power && p.statusEffects.some(s => s.id === 'knocked_down'), 'heavier than a claw, and it knocks down (Bite is the strong one)');
     assert.deepEqual(p.statusEffects.map(s => [s.id, s.chance]), [['knocked_down', 0.2]]);
     assert.deepEqual(p.icon, { col: 12, row: 2 });
     assert.ok(!Object.values(A).some(a => a !== p && a.icon && a.icon.col === 12 && a.icon.row === 2), 'a cell of its own');

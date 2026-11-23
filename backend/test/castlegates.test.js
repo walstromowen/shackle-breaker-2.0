@@ -8,10 +8,10 @@ const { WorldManager } = await import('../../shared/world/worldManager.js');
 const { CASTLE_SITES } = await import('../../shared/world/castleSites.js');
 const { MAP_OBJECTS_DEFINITIONS } = await import('../../shared/world/mapObjectDefinitions.js');
 
-test('every castle gate is open for now; shut, a gate shows its closed frame and bars the way (outer: before act 4, inner: until opened)', () => {
+test('every castle gate is open for now; shut, a gate shows its closed frame and bars the way (outer: before act 5, inner: until opened)', () => {
     assert.equal(CASTLE_SITES.GATES_SHUT, false, 'the outer gates open (act 4 is not in the game yet)');
     assert.equal(CASTLE_SITES.INNER_SHUT, false, 'the inner gates open');
-    assert.equal(CASTLE_SITES.OPEN_ACT, 4);
+    assert.equal(CASTLE_SITES.OPEN_ACT, 5);
     for (const id of ['CASTLE_GATEHOUSE', 'CASTLE_GATEHOUSE_INNER']) assert.equal(MAP_OBJECTS_DEFINITIONS[id].frames, 2, `${id}: open and closed`);
     assert.equal(MAP_OBJECTS_DEFINITIONS.CASTLE_GATEHOUSE.castleGate, 'outer');
     assert.equal(MAP_OBJECTS_DEFINITIONS.CASTLE_GATEHOUSE_INNER.castleGate, 'inner');

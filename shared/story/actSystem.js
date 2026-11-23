@@ -68,26 +68,25 @@ export const ActSystem = {
         return this.getActDefinition(state).lighting || {};
     },
 
-    /** True on a night of an act with a blood moon (every night of act 2). `hour` is the clock in hours, 0..24. */
+    /** True on a night of an act with a blood moon (every night from act 3 on). `hour` is the clock in hours, 0..24. */
     isBloodMoon(hour, state = gameState) {
         return !!this.getActDefinition(state).bloodMoon && isNightHour(hour);
     },
 
     /**
      * Has this player beaten Darius the Groveler (the last Shackled quest, finished or waiting to be collected) without having seen A Dark Truth,
-     * the encounter after the fight that grants act 2 and its quest? A save from before the acts existed, or a player of a party whose screen
+     * the encounter after the fight that grants act 3 (darius_slain) and its quest? A save from before the acts existed, or a player of a party whose screen
      * did not play it (before every player's screen did). SceneManager plays it for them as soon as they stand on the map, so every player sees it.
      */
     owesDarkTruth(state = gameState) {
-        const def = ACT_DEFINITIONS[2];
-        if (!def || !def.milestone || this.hasMilestone(def.milestone, state)) return false;
+        if (this.hasMilestone('darius_slain', state)) return false;   // A Dark Truth grants it (act III)
         const quests = state.quests || {};
         const done = Array.isArray(quests.completed) && quests.completed.includes('shackled8');
         const progress = quests.active && quests.active.shackled8 && quests.active.shackled8.progress;
         return done || !!(progress && progress.obj_kill_darius >= 1);
     },
 
-    /** On loading a save: true when it owes A Dark Truth (owesDarkTruth). It is not moved into act 2 here: the encounter does that when it plays. */
+    /** On loading a save: true when it owes A Dark Truth (owesDarkTruth). It is not moved into act 3 here: the encounter does that when it plays. */
     catchUp(state = gameState) {
         const owed = this.owesDarkTruth(state);
         if (owed) console.log('[Act] This save has beaten Darius but not seen A Dark Truth: it plays on the map.');

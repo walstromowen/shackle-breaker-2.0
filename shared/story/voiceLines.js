@@ -19,10 +19,10 @@ export const VOICED = {
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
     act_two: [[/^long_dark$|^truth$/, 'DARIUS']],
-    nikoli: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],   // act 3: _m1 / _m2 stages are Mentoras, _j1 / _j2 Jaeger
+    nikoli: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],   // act 4: _m1 / _m2 stages are Mentoras, _j1 / _j2 Jaeger
     nikoli_after_battle: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],   // the same stages as nikoli: the same clips
     brothers_won: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
-    codey: [], stranger_mark: [], brothers_sword: [],   // the narrator only
+    codey: [], stranger_mark: [], stranger_note: [], brothers_sword: [],   // the narrator only (his note is read by the narrator)
     pursuer: [[/^captive_3$|^freed/, 'STRANGER'], [/./, 'JAEGER']],
     pursuer_won: [[/./, 'STRANGER']],
     dry_kraken_ambush: [],   // the narrator only: Codey speaks with his hands

@@ -1,3 +1,4 @@
+import { revertExpiredForms } from '../../../../shared/battle/summons.js';
 import { AbilityFactory } from '../../../../shared/abilities/abilityFactory.js';
 import { events } from '../../../../shared/core/eventBus.js';
 import { gameState } from '../../../../shared/core/gameState.js';
@@ -235,7 +236,7 @@ export class BattleController extends BaseController {
         s.message = `Too late to change ${pick.actor.name}'s action: the round had already begun.`;
         // on to the first of my fighters still without a pick, or wait for the others
         const picked = new Set(this._myPicks.map(p => p.actor));
-        const next = s.activeParty.findIndex(c => c && !c.isDead() && this._isMine(c) && !picked.has(c));
+        const next = s.activeParty.findIndex(c => c && !c.isDead() && this._isMine(c) && !picked.has(c) && !c._charging);
         if (next >= 0) { s.activePartyIndex = next; s.phase = PHASE.SELECT_ACTION; s.selectedAction = null; }
         else this._waitForOthers();
     }
@@ -410,7 +411,7 @@ export class BattleController extends BaseController {
             this.state.activePartyIndex++;
         } while (
             this.state.activePartyIndex < this.state.activeParty.length &&
-            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead() || !this._isMine(this.state.activeParty[this.state.activePartyIndex]))
+            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead() || !this._isMine(this.state.activeParty[this.state.activePartyIndex]) || this.state.activeParty[this.state.activePartyIndex]._charging)
         );
 
         if (this.state.activePartyIndex < this.state.activeParty.length) {
@@ -489,10 +490,16 @@ export class BattleController extends BaseController {
         this.state.showAbilityDetails = true;
 
         if (this.state.mp) this._beginSharedRound();
+        // a shapeshift that has run out turns back before anyone picks (battle/summons.js), its own moves returned
+        for (const message of revertExpiredForms(this.state)) this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message, speedOverride: 999 });
+        // a fighter gathering a charged attack (Storm Front) picks nothing this round: its release goes in the queue, on every screen alike
+        for (const c of [...this.state.activeParty, ...this.state.activeEnemies]) {
+            if (c && !c.isDead() && c._charging) this.state.turnQueue.push({ actor: c, action: c._charging.action, target: c._charging.target });
+        }
 
         while (
             this.state.activePartyIndex < this.state.activeParty.length &&
-            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead() || !this._isMine(this.state.activeParty[this.state.activePartyIndex]))
+            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead() || !this._isMine(this.state.activeParty[this.state.activePartyIndex]) || this.state.activeParty[this.state.activePartyIndex]._charging)
         ) {
             this.state.activePartyIndex++;
         }
@@ -574,7 +581,7 @@ export class BattleController extends BaseController {
         const field = s.mp.kind === 'duel' ? [...s.activeParty, ...s.activeEnemies] : s.activeParty;
         // (a fighter whose player is not in the fight, busy elsewhere or gone, has nobody to pick for it: it holds its ground)
         const here = new Set(multiplayerSocial.partyHere(s.mp.players));
-        return field.filter(c => c && !c.isDead() && c.netOwner && c.netOwner !== s.mp.me && (s.mp.kind === 'duel' || here.has(c.netOwner)));
+        return field.filter(c => c && !c.isDead() && !c._charging && c.netOwner && c.netOwner !== s.mp.me && (s.mp.kind === 'duel' || here.has(c.netOwner)));   // (a charging fighter's turn is its release)
     }
 
     _beginSharedRound() {

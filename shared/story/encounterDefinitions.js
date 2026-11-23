@@ -18,7 +18,7 @@ import { dryKrakenAmbush, codeyFreed } from './encounters/story/codey.js';
 import { jaeger } from './encounters/story/jaeger.js';
 import { amputatorOsric, amputatorGarrick, amputatorGarrickFallen } from './encounters/story/amputators.js';
 import { arcKnight, arcKnightFallen, arcKnightPatrol } from './encounters/story/arcKnight.js';
-import { codey, strangerMark, brothersSword, pursuer, pursuerWon } from './encounters/story/heroesNorth.js';
+import { codey, strangerMark, strangerNote, brothersSword, pursuer, pursuerWon } from './encounters/story/heroesNorth.js';
 import { ruinedCarriage, ruinedCarriageCleared } from './encounters/ruinedCarriage.js';
 import { quicksand, cyclone, cycloneHeart } from './encounters/desertHazards.js';
 import { prologue } from './encounters/story/prologue.js';
@@ -53,15 +53,16 @@ export const encounterDefinitions = {
     [amputatorOsric.id]: amputatorOsric,   // the Amputators' Senior Surgeon Osric, in the first small graveyard of act 1 (story/encounters/story/amputators.js)
     [arcKnight.id]: arcKnight,   // an Arc Knight, act 1's mini boss, outside the Hooded Stranger's workshop (story/encounters/story/arcKnight.js)
     [arcKnightFallen.id]: arcKnightFallen,
-    [arcKnightPatrol.id]: arcKnightPatrol,   // act 2: Arc Knights on patrol in the plains, rare
+    [arcKnightPatrol.id]: arcKnightPatrol,   // act 3: Arc Knights on patrol in the plains, rare
     [amputatorGarrick.id]: amputatorGarrick,   // Surgeon Garrick, going mad: Osric's quest
     [amputatorGarrickFallen.id]: amputatorGarrickFallen,
-    [dryKrakenAmbush.id]: dryKrakenAmbush,   // act 2: the Dry Kraken rises out of the desert, holding Codey (story/encounters/story/codey.js, story/storyAmbush.js)
+    [dryKrakenAmbush.id]: dryKrakenAmbush,   // act 3: the Dry Kraken rises out of the desert, holding Codey (story/encounters/story/codey.js, story/storyAmbush.js)
     [codeyFreed.id]: codeyFreed,
     [jaeger.id]: jaeger,
-    // act 3: the three heroes' stories come together (story/heroes.js, story/encounters/story/heroesNorth.js)
+    // act 4: the three heroes' stories come together (story/heroes.js, story/encounters/story/heroesNorth.js)
     [codey.id]: codey,
     [strangerMark.id]: strangerMark,
+    [strangerNote.id]: strangerNote,
     [brothersSword.id]: brothersSword,
     [pursuer.id]: pursuer,
     [pursuerWon.id]: pursuerWon,

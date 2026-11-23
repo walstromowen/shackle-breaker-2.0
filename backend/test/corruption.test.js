@@ -134,50 +134,26 @@ test('the fallen meteorite frees a shackled character (and is kept for anyone el
     assert.equal(down.hp, down.maxHp, 'and can be healed again');
 });
 
-test('a party member who uses magic gains corruption; physical moves, enemies and strangers do not', () => {
-    const mage = hero('Mage');
-    const other = hero('Other');
-    gameState.party.members = [mage];
-    const fireball = { id: 'fireball', config: AbilityDefinitions.fireball };
-    const punch = { id: 'punch', config: AbilityDefinitions.punch };
-    assert.equal(CorruptionSystem.corruptionOfAbility(fireball), CORRUPTION.PER_MAGIC_USE);
-    assert.equal(CorruptionSystem.corruptionOfAbility(punch), 0);
-    assert.equal(CorruptionSystem.corruptionOfAbility({ tags: ['magical'], corruption: 3 }), 3, 'an ability can set its own');
-    assert.equal(CorruptionSystem.corruptionOfAbility({ tags: ['magical'], corruption: -1 }), -1);
-
-    CorruptionSystem.onAbilityUsed(mage, fireball);
-    assert.equal(CorruptionSystem.valueOf(mage), CORRUPTION.PER_MAGIC_USE);
-    assert.equal(CorruptionSystem.onAbilityUsed(mage, punch), null);
-    assert.equal(CorruptionSystem.onAbilityUsed({ team: 'enemy', originalEntity: mage }, fireball), null, 'enemies never gain it');
-    assert.equal(CorruptionSystem.onAbilityUsed(other, fireball), null, 'someone who is not in the party does not');
-    // a combatant wraps the real character
-    CorruptionSystem.onAbilityUsed({ team: 'party', originalEntity: mage }, fireball);
-    assert.equal(CorruptionSystem.valueOf(mage), CORRUPTION.PER_MAGIC_USE * 2);
-});
-
-test('casting in a real battle raises the caster\'s corruption once per cast, and the 100th point shackles them mid-fight', () => {
+test('casting a spell costs no corruption, in a real battle or out of it: only Insights and choices move it', () => {
+    assert.equal(CORRUPTION.PER_MAGIC_USE, undefined, 'no per-cast knob');
+    assert.equal(CorruptionSystem.onAbilityUsed, undefined, 'no per-cast hook');
     const real = Math.random;
     quiet(() => {
         const mage = EntityFactory.create('HUMANOID', { name: 'Mage', level: 8, abilities: ['fireball', 'punch'], attributes: { vigor: 14, strength: 8, dexterity: 12, intelligence: 18, attunement: 16 } });
         const ally = EntityFactory.create('HUMANOID', { name: 'Ally', level: 8 });
         mage.hp = mage.maxHp; mage.insight = mage.maxInsight; ally.hp = ally.maxHp;
         gameState.party.members = [mage, ally];
-        const start = CorruptionSystem.valueOf(mage);
         const bc = new BattleController({}, { TILE_SIZE: 64 }, {});
         bc.start([EntityFactory.create('WOLF', 1)], { maxActive: 3 });
         const caster = bc.state.partyRoster.find(c => c.originalEntity === mage);
         const fireball = caster.abilities.find(a => a.id === 'fireball');
         assert.ok(fireball, 'the mage has Fireball');
-        const wolf = bc.state.activeEnemies[0];
-        const mageCombatant = caster;
-
         mage.state.baseStats.corruption = CORRUPTION.SHACKLE_AT - 1;
+        const before = CorruptionSystem.valueOf(mage);
         bc.state.turnQueue = [];
-        bc.turnManager._applyAbilityEffects({ actor: mageCombatant, action: fireball, targets: [wolf], isFirstTarget: true, ignoreCost: false });
-        assert.equal(mage.shackled, true, 'the cast that pushes corruption to 100 shackles the caster');
-        assert.equal(mageCombatant.isDead(), true, 'who falls like a fainted member');
-        assert.ok(bc.state.turnQueue.some(t => t.message && /shackle/i.test(t.message)), 'and the battle says so');
-        assert.ok(start >= 0);
+        bc.turnManager._applyAbilityEffects({ actor: caster, action: fireball, targets: [bc.state.activeEnemies[0]], isFirstTarget: true, ignoreCost: false });
+        assert.equal(CorruptionSystem.valueOf(mage), before, 'the cast leaves it where it was');
+        assert.ok(!mage.shackled, 'and never shackles the caster');
     });
     Math.random = real;
 });
@@ -323,9 +299,10 @@ test('START_BATTLE with betrayer: true sends the shackled member out of the part
     assert.equal(model.context.betrayerName, 'Bound');
 });
 
-test('the corruption stat card lists what magic costs and what the tiers do, from the same table', () => {
+test('the corruption stat card lists what an Insight costs and what the tiers do, from the same table', () => {
     const d = getStatDescription('corruption');
-    assert.ok(d.rows.some(r => r.label === 'Each magical ability used' && r.value === `+${CORRUPTION.PER_MAGIC_USE}%`));
+    assert.ok(d.rows.some(r => r.label === 'Each Insight read' && r.value === '+5% to +10%'));
+    assert.ok(!d.rows.some(r => /magical ability/i.test(r.label)), 'casting is not on it');
     assert.ok(d.rows.some(r => r.label === 'At 50%' && /max health halved/.test(r.value) && /magic damage \+25%/.test(r.value)));
     assert.ok(d.rows.some(r => r.label === 'At 100%' && r.value === 'Shackled'));
     assert.match(d.note, /meteorite/i);

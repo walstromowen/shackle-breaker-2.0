@@ -30,7 +30,7 @@ function queueFoeActions(state) {
     if (livingParty.length === 0) return;
 
     state.activeEnemies.forEach(enemy => {
-        if (!enemy || enemy.isDead()) return;
+        if (!enemy || enemy.isDead() || enemy._charging) return;   // gathering a charged attack: its release is queued already (BattleController)
 
         const validAbilities = enemy.abilities.filter(a =>
             a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id) && (typeof a.usableIn !== 'function' || a.usableIn('battle')) && worthUsing(a, enemy)
@@ -65,7 +65,7 @@ export function queueAllyActions(state) {
     if (foes.length === 0) return;
     const friends = state.activeParty.filter(p => p && !p.isDead());
     for (const ally of state.activeParty) {
-        if (!ally || !ally.isAlly || ally.isDead()) continue;
+        if (!ally || !ally.isAlly || ally.isDead() || ally._charging) continue;   // gathering a charged attack: its release is queued already
         const usable = ally.abilities.filter(a =>
             a.canPayCost(ally, InventorySystem) && !['rest', 'punch'].includes(a.id) && !(typeof a.isFlee === 'function' && a.isFlee())   // an ally never runs && (typeof a.usableIn !== 'function' || a.usableIn('battle')) && worthUsing(a, ally)
         );

@@ -104,7 +104,7 @@ test('the Panzerian War Beast: asking starts it, killing a Panzerkamfer complete
     story({ milestones: ['nikoli_met'], active: { panzerian_war_beast: { progress: { obj_kill_panzerkamfer: 0 } } } });
     assert.equal(N.initialStage(), 'beast_waiting');
     assert.ok(!offered(N.stages.again).some(t => /war beast/.test(t)), 'not offered again once taken');
-    story({ milestones: ['nikoli_met', 'nikoli_told', 'act2'], active: { panzerian_war_beast: { progress: { obj_kill_panzerkamfer: 1, obj_beast_level: 1 } } } });
+    story({ milestones: ['nikoli_met', 'nikoli_told', 'darius_slain'], active: { panzerian_war_beast: { progress: { obj_kill_panzerkamfer: 1, obj_beast_level: 1 } } } });
     assert.equal(N.initialStage(), 'beast_done', 'the beast dead: handed in wherever he is');
     assert.ok(results(N.stages.beast_done.decisions[0]).some(x => x.type === 'COMPLETE_QUEST' && x.payload.questId === 'panzerian_war_beast'));
     assert.equal(ENTITY_DEFINITIONS.NIKOLI.properName, true, '"Return to Nikoli"');
@@ -126,9 +126,9 @@ test('from visit to visit: by the fire until told; in act 2, told, he is in the 
     assert.equal(N.initialStage(), 'again');
     story({ milestones: ['nikoli_met', 'nikoli_told'] });
     assert.equal(N.initialStage(), 'told_again');
-    story({ milestones: ['nikoli_met', 'nikoli_told', 'act2'] });
+    story({ milestones: ['nikoli_met', 'nikoli_told', 'darius_slain'] });
     assert.equal(N.initialStage(), 'workshop');
-    assert.match(N.stages.workshop_2.text, /sand/, 'one step behind: the trail points to the desert');
+    assert.match(N.stages.workshop_2.text, /desert/, 'one step behind: the trail points to the desert');
     // the biomes can lie in any direction, so nobody gives one
     assert.ok(!/\b(north|south|east|west)\b/i.test(Object.values(N.stages).map(st => st.text).join(' ')), 'no compass directions');
 });
@@ -139,13 +139,13 @@ test('the workshops: act 1 the Stranger; act 2 he moves to the first desert work
     story();
     assert.equal(InteriorFactory.workshopResident('10_10', 'PLAINS'), 'HOODED_STRANGER_NPC', 'the first workshop is his');
     assert.equal(InteriorFactory.workshopResident('20_20', 'DESERT'), null, 'only one of him');
-    story({ milestones: ['act2'] });
-    assert.equal(InteriorFactory.workshopResident('10_10', 'PLAINS'), null, 'act 2, Nikoli never told: the old workshop stands empty');
+    story({ milestones: ['darius_slain'] });
+    assert.equal(InteriorFactory.workshopResident('10_10', 'PLAINS'), 'STRANGER_NOTE', 'act 2, Nikoli never told: only the note he left');
     assert.equal(InteriorFactory.workshopResident('30_30', 'PLAINS'), null, 'not a desert village: nobody');
     assert.equal(InteriorFactory.workshopResident('20_20', 'DESERT'), 'HOODED_STRANGER_NPC', 'the first desert workshop entered in act 2');
     assert.equal(w.strangerDesertHome, '20_20');
     assert.equal(InteriorFactory.workshopResident('40_40', 'DESERT'), null, 'and only that one');
-    story({ milestones: ['act2', 'nikoli_told'] });
+    story({ milestones: ['darius_slain', 'nikoli_told'] });
     assert.equal(InteriorFactory.workshopResident('10_10', 'PLAINS'), 'NIKOLI_NPC', 'Nikoli, a step behind');
     assert.equal(InteriorFactory.workshopResident('20_20', 'DESERT'), 'HOODED_STRANGER_NPC', 'never in the same place');
     w.strangerHome = null; w.strangerDesertHome = null;
@@ -153,7 +153,7 @@ test('the workshops: act 1 the Stranger; act 2 he moves to the first desert work
 
 test('the Stranger and Nikoli have not met: the Stranger never speaks of him, however far the player has taken Nikoli\'s story', () => {
     const S = encounterDefinitions.hooded_stranger;
-    story({ milestones: ['act2', 'nikoli_met', 'nikoli_told'], completed: ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'] });
+    story({ milestones: ['darius_slain', 'nikoli_met', 'nikoli_told'], completed: ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'] });
     assert.equal(S.initialStage(), 'desert_meet', 'in act 2 he is in the desert, after someone else');
     assert.ok(!/Nikoli/.test(JSON.stringify(S.stages)), 'not a word about him');
     // the one exception is act 3's cold campfire (story/heroes.js "ashes"): shown the sword, he knows the steel, and still does not say the name
@@ -201,9 +201,9 @@ test('his camp: the first snowy campfire the player comes upon (just before it i
     story({ milestones: ['nikoli_met'] });
     assert.equal(at(40, 59), 'NIKOLI_NPC', 'met: he faces you, nothing starts by itself');
     assert.equal(at(40, 55), null, 'and the cats are gone');
-    story({ milestones: ['nikoli_met', 'act2'] });
+    story({ milestones: ['nikoli_met', 'darius_slain'] });
     assert.equal(at(40, 59), 'NIKOLI_NPC', 'act 2 but never told: he stays');
-    story({ milestones: ['nikoli_met', 'act2', 'nikoli_told'] });
+    story({ milestones: ['nikoli_met', 'darius_slain', 'nikoli_told'] });
     assert.equal(at(40, 59), null, 'told, act 2: gone to the workshop');
     w.nikoliCampfire = null;
 });
@@ -263,7 +263,7 @@ test('an ally fights on the party\'s side, picked for by the dice, earns nothing
 
 test('in the controller nobody picks for the ally: the party picks, then the round resolves with his move queued', () => {
     withSeed(4, () => {
-        gameState.party.members = [EntityFactory.create('MAD_MAN', 10)];
+        gameState.party.members = [EntityFactory.create('HUMANOID', { level: 10 })];
         const bc = new BattleController({}, { TILE_SIZE: 64 }, {});
         bc.start([EntityFactory.create('SNOW_LEOPARD', 10)], { maxActive: 3, allies: [EntityFactory.create('NIKOLI', 10)] });
         let guard = 0;

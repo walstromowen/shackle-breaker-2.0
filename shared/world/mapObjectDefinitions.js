@@ -255,14 +255,14 @@ export const MAP_OBJECTS_DEFINITIONS = {
     ARC_KNIGHT_NPC: { ...npcBody('ARC_KNIGHT', 'UP'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },
     ARC_KNIGHT_NPC_LEFT: { ...npcBody('ARC_KNIGHT', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },     // a gate in the east fence
     ARC_KNIGHT_NPC_RIGHT: { ...npcBody('ARC_KNIGHT', 'RIGHT'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },   // a gate in the west fence
-    // act 2: Arc Knights on patrol, rare, out in the plains (biomeDefinitions.js, minAct 2): they walk with a purpose, and coming within 3 tiles of
+    // act 3: Arc Knights on patrol, rare, out in the plains (biomeDefinitions.js, minAct 3): they walk with a purpose, and coming within 3 tiles of
     // one is the fight (story/encounters/story/arcKnight.js arcKnightPatrol)
     ARC_KNIGHT_PATROL: { ...npcBody('ARC_KNIGHT', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'arc_knight_patrol', triggerRadius: 3 },
         wander: { radius: 6, stepMs: [800, 1000], pauseChance: 0.1, pauseMs: [900, 2200], straight: 0.75, waypoints: 4 } },
     GARRICK_NPC: { ...npcBody('AMPUTATOR_GARRICK', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'amputator_garrick', triggerRadius: 2 } },
     // Jaeger, posing as his brother Nikoli: in the hoard of the first catacombs the player walks into, until he has been met (InteriorFactory, CatacombGenerator)
     JAEGER_NPC: { ...npcBody('JAEGER'), interaction: { type: 'ENCOUNTER', id: 'jaeger' } },
-    // ---- act 3 (story/heroes.js, story/encounters/story/heroesNorth.js): each player's own story puts these where they are ----
+    // ---- act 4 (story/heroes.js, story/encounters/story/heroesNorth.js): each player's own story puts these where they are ----
     // Codey, with Mentoras in the snowy house; wounded, the house wrecked, when Jaeger has taken Mentoras (coming near starts it)
     CODEY_NPC: { ...npcBody('CODEY'), interaction: { type: 'ENCOUNTER', id: 'codey' } },
     CODEY_NPC_WOUNDED: { ...npcBody('CODEY'), interaction: { type: 'ENCOUNTER', id: 'codey', triggerRadius: 3 } },
@@ -271,6 +271,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // Jaeger in the catacombs' hoard with his prisoner: coming near starts the fight; Mentoras in chains beside him
     JAEGER_CAPTOR: { ...npcBody('JAEGER'), interaction: { type: 'ENCOUNTER', id: 'pursuer', triggerRadius: 3 } },
     MENTORAS_CHAINED: { ...npcBody('HOODED_STRANGER'), interaction: { type: 'ENCOUNTER', id: 'pursuer' } },
+    // his old workshop in act 3, when Nikoli is not there (InteriorFactory.workshopResident): a crate with his note nailed to it (tools/art/strangerNote.py)
+    STRANGER_NOTE: { sheet: 'objStrangerNote', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'stranger_note' } },
     // the desert workshop once Mentoras has gone north: an anvil with Codey's mark scratched into it, and a drawing of mountains under snow
     STRANGER_MARK: { sheet: 'objAnvil', spriteX: 6, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'stranger_mark' } },
     // Nikoli's greatsword planted in the snow by his cold campfire ("ashes"): take it
@@ -362,7 +364,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
         interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'CAVE', isRepeatable: true, walkIn: true }
     },
-    /* The hidden staircase: what the mysterious altar gives way to once Darius the Groveler is beaten (the act_two encounter, or searching any altar in act 2:
+    /* The hidden staircase: what the mysterious altar gives way to once Darius the Groveler is beaten (the act_two encounter, or searching any altar in act 3:
        REPLACE_OBJECT). The altar's 3 x 3 cells; the stairwell runs down the middle column and its top step (the middle of the bottom row) leads into the
        catacombs under the cave. walkIn: stepping onto it goes down. */
     CATACOMBS_STAIRS: {

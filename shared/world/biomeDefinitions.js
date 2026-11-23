@@ -40,6 +40,14 @@ const HILL_TIERS = { plains: [0.3, 0.8, 1.25], desert: [0.3, 0.85], snowy: [-0.2
    in the middle of the GLOBAL_ELEVATION_MAP bands. The tiers are read on the massif field (TerrainGenerator.getMassifValue, about [-1.3, 1.3]),
    not the ridge-and-ring hill field. Move a tier down to make that level more common, up to make it rarer. */
 const _lift = (hill, tiers, k = 0.27, w = 0.06) => tiers.reduce((sum, t) => sum + k * _step(hill, t, t + w), 0);
+/* `_ANYWHERE` (WorldManager._getRawProceduralId): objects that may stand on any open ground or plateau top of a biome, before the ordinary lists.
+   A rule is { id, chance } (its own roll per cell), or { id, region, chance }: the world is cut into region x region squares, each has one cell
+   picked for it (away from its edges), and that cell holds the object with `chance` if the ground there has room. So two are never closer than
+   half a region.
+   The strange obelisks: anywhere in any exterior biome, super rare (about one per 50,000 cells), and never bunched (at least 24 cells apart). They
+   used to stand only on the top layer, where the small summits bunched them together. */
+const OBELISKS = [{ id: 'STRANGE_OBELISK', region: 48, chance: 0.1 }];
+
 export const BIOME_DEFINITIONS = {
     PLAINS: {
         id: 'PLAINS',
@@ -103,7 +111,7 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.211, rangeStart: 0.206, id: 'TIN_ORE_DEPOSIT' } /* tin: 0.5% of the ground, its own band [0.206, 0.211) in the same gap. Mined with a pickaxe */,
                 { chance: 0.22012, rangeStart: 0.22, id: 'DOG_NPC' } /* a wounded dog lying by the road, 0.012% of the ground (a third of what it was, 0.035%) (was 0.05%): its own band [0.22, 0.22035), in the free gap between the tin and the grass. It used to be the "wounded mutt" random encounter; now it is found in the world (mapObjectDefinitions.js NPCS) */,
                 { chance: 0.23035, rangeStart: 0.23, id: 'MADMAN_NPC' } /* a madman standing in the grass, 0.035% of the ground (was 0.05%): band [0.23, 0.23035). Coming within 2 tiles of him starts "A Disturbing Sight" (it used to be a random encounter) */,
-                { chance: 0.27012, rangeStart: 0.27, id: 'ARC_KNIGHT_PATROL', minAct: 2 } /* act 2: an Arc Knight on patrol, rare (0.012% of the ground, a third as common as a madman): its own band [0.27, 0.27012), from act 2 on (story/encounters/story/arcKnight.js) */,
+                { chance: 0.27012, rangeStart: 0.27, id: 'ARC_KNIGHT_PATROL', minAct: 3 } /* act 3 (the blood moon): an Arc Knight on patrol, rare (0.012% of the ground, a third as common as a madman): its own band [0.27, 0.27012), from act 2 on (story/encounters/story/arcKnight.js) */,
                 { chance: 0.244, rangeStart: 0.24, id: 'COTTON_PLANT' } /* wild cotton, 0.4% of the ground (as common as a herb): its own band [0.24, 0.244), in the free gap between the madman and the shady merchant. Walk over it to pick it up, like the cotton of the village fields */,
                 { chance: 0.7, rangeStart: 0.3, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] },
                 { chance: 0.1, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
@@ -113,10 +121,8 @@ export const BIOME_DEFINITIONS = {
             _ALTITUDE: [
                 { id: 'COAL_DEPOSIT', chance: 0.008, minLevel: 4 },
                 { id: 'COPPER_ORE_DEPOSIT', chance: 0.002, minLevel: 4 },
-                // the strange obelisks stand on the top layer of every exterior biome: here the highest hilltops (LAYER_5, about 0.6% of the plains).
-                // 0.01 per top cell: about one per 20,000 tiles of plains, rarer than on the mountains (one per 7,000), where they belong
-                { id: 'STRANGE_OBELISK', chance: 0.01, minLevel: 5, maxLevel: 5 },
             ],
+            _ANYWHERE: OBELISKS,
             [CONFIG.TILE_TYPES.LAYER_1]: [
                 { chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.04, rangeStart: 0.01, id: 'FLINT_ROCK' } /* flint: 3% of the dirt (the shores and the dry ravine floors), its own band [0.01, 0.04) so the rocks' share does not move. Walk over it to pick it up */,
@@ -219,11 +225,7 @@ export const BIOME_DEFINITIONS = {
         structures: { rate: 0.08, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE_DESERT' }] },
         landmarks: { rate: 0.08, pools: [{ chance: 1.0, id: 'GRAVEYARD_DESERT' }] },
         mapObjects: {
-            /* `_ALTITUDE` (see the snowy mountains below): the strange obelisks stand on the top layer of every exterior biome: here the mesa tops (LAYER_4,
-               about 2.4% of the desert, though most are too narrow for one). 0.004 per top cell: about one per 50,000 tiles of desert. */
-            _ALTITUDE: [
-                { id: 'STRANGE_OBELISK', chance: 0.004, minLevel: 4, maxLevel: 4 },
-            ],
+            _ANYWHERE: OBELISKS,
             [CONFIG.TILE_TYPES.LAYER_3]: [{ chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
             [CONFIG.TILE_TYPES.LAYER_2]: [
                 { chance: 0.001, id: 'DESERT_SKULL' },
@@ -299,13 +301,12 @@ export const BIOME_DEFINITIONS = {
             ],
             /* `_ALTITUDE`: rules for the plateau levels only (WorldManager._getRawProceduralId). Each rule has its OWN roll per cell and wins before the
                ordinary `_WALLS` list: { id, chance, minLevel, maxLevel } with the level a LAYER_n number (3 = the first cliff level, 7 = the summit).
-               Iron lies bare on the high slopes. The strange obelisks stand on the summits (LAYER_7), as they do on the top layer of every exterior
-               biome (the plains' highest hilltops, the desert's mesa tops): raise their chance for more of them. Keep new rules AFTER the existing ones: each rule's roll depends on its position in this list, so inserting one
-               above would re-roll where the iron lies. */
+               Iron lies bare on the high slopes. Keep new rules AFTER the existing ones: each rule's roll depends on its position in this list, so
+               inserting one above would re-roll where the iron lies. */
             _ALTITUDE: [
                 { id: 'IRON_ORE_DEPOSIT', chance: 0.01, minLevel: 5 },
-                { id: 'STRANGE_OBELISK', chance: 0.003, minLevel: 7, maxLevel: 7 },
             ],
+            _ANYWHERE: OBELISKS,
             [CONFIG.TILE_TYPES.LAYER_3]: [
                 { chance: 0.008, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.012, pool: ['SNOWY_BOULDER_1', 'SNOWY_BOULDER_2'] },

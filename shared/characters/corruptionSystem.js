@@ -1,8 +1,9 @@
-// shared/characters/corruptionSystem.js: corruption, the price of magic and of cruelty. Browser-free.
+// shared/characters/corruptionSystem.js: corruption, the price of what is learned and of what is chosen. Browser-free.
 //
 // Every character carries a corruption from 0 to 100 (baseStats.corruption; the stat the screens show is that plus anything gear and traits add).
-//   - Using a magical ability raises it (onAbilityUsed). So does a cruel choice in an encounter; a kind one lowers it (the MODIFY_CORRUPTION result and the
-//     `corruption` field of a decision, in the encounter files).
+//   - Two things move it: reading an Insight raises it by that rank's cost (abilities/insights.js INSIGHT_CORRUPTION; forgetting one with the Shmindolyn's
+//     Draught gives it back), and choices in encounters: a cruel one raises it, a kind one lowers it (the MODIFY_CORRUPTION result and the `corruption`
+//     field of a decision, in the encounter files). Casting a spell costs nothing of it.
 //   - High corruption has tiers (core/constants.js CORRUPTION.TIERS): at 50 max health is halved and magical damage grows, until it drops below 50 again.
 //     StatCalculator applies the tiers every time it runs, so nothing here has to undo them.
 //   - At 100 the character is shackled: health 0 and kept there (EntityModel), like a fainted member who cannot be revived. Only the item named by
@@ -40,15 +41,6 @@ export const CorruptionSystem = {
 
     isShackled(entity) {
         return !!(entity && (entity.shackled || entity.state?.shackled));
-    },
-
-    /** Is this ability magic? Anything tagged 'magical' is; an ability's own `corruption` number counts too (it decides how much). */
-    corruptionOfAbility(ability) {
-        if (!ability) return 0;
-        const cfg = ability.config || ability;
-        if (typeof cfg.corruption === 'number') return cfg.corruption;
-        const tags = cfg.tags || ability.tags || [];
-        return tags.includes('magical') ? CORRUPTION.PER_MAGIC_USE : 0;
     },
 
     /**
@@ -108,20 +100,6 @@ export const CorruptionSystem = {
         state.baseStats.corruption = CORRUPTION.UNSHACKLE_TO;
         entity.hp = Math.max(1, Math.floor(entity.maxHp * 0.25));
         return true;
-    },
-
-    /**
-     * A party member used an ability. Magic adds corruption. `actor` is a party member or a battle combatant wrapping one (enemies never gain corruption).
-     * Returns the change() result, or null when nothing happened.
-     */
-    onAbilityUsed(actor, ability) {
-        if (!actor || actor.team === 'enemy') return null;
-        const entity = actor.originalEntity || actor;
-        const members = gameState.party?.members || [];
-        if (!members.includes(entity)) return null;
-        const amount = this.corruptionOfAbility(ability);
-        if (!amount) return null;
-        return this.change(entity, amount);
     },
 
     /** An enemy of the shackled faction who joins the party is no longer born cursed: their natural corruption is taken off (they start clean). */

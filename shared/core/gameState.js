@@ -95,10 +95,10 @@ export function resetWorldForNewGame() {
     w.waypoints = [];
     w.mapMarkers = [];   // the player's own pins on the map (world/mapMarkers.js)
     w.strangerHome = null;   // a new world: the Hooded Stranger has not chosen his workshop yet
-    w.strangerDesertHome = null;   // nor where he goes in act 2
+    w.strangerDesertHome = null;   // nor where he goes in act 3
     w.nikoliCampfire = null;       // and Nikoli has not made camp
     w.jaegerCatacomb = null;       // nor has Jaeger found his catacombs
-    w.strangerSnowHome = null;     // nor have Mentoras and Codey gone north (act 3)
+    w.strangerSnowHome = null;     // nor have Mentoras and Codey gone north (act 4)
     w.amputatorGraveyard = null;   // nor has Senior Surgeon Osric sat down among the graves (the Amputators)
     w.amputatorQuarry = null;      // nor has Surgeon Garrick been found
     w.strangerGrave = null;        // nor where the Stranger buried his stone

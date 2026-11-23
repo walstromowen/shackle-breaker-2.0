@@ -200,11 +200,11 @@ test('the hidden staircase leads down into the catacombs and their stairway lead
 });
 
 test('the altar gives way to the staircase only after Darius: at the end of the Red Moon, or searched in act 2', () => {
-    const last = actTwo.stages[Object.keys(actTwo.stages).find(id => JSON.stringify(actTwo.stages[id]).includes('"act2"'))];
+    const last = actTwo.stages[Object.keys(actTwo.stages).find(id => JSON.stringify(actTwo.stages[id]).includes('"darius_slain"'))];
     const res = last.decisions[0].outcomes[0].results;
     assert.ok(res.some(r => r.type === 'REPLACE_OBJECT' && r.payload.objectId === 'CATACOMBS_STAIRS'));
     const search = mysteriousAltar.stages.approach.decisions.find(d => d.outcomes && JSON.stringify(d.outcomes).includes('hidden_stair'));
-    assert.ok(search.conditions.some(c => c.type === 'has_milestone' && c.id === 'act2'), 'only once Darius is beaten');
+    assert.ok(search.conditions.some(c => c.type === 'has_milestone' && c.id === 'darius_slain'), 'only once Darius is beaten');
     assert.ok(JSON.stringify(mysteriousAltar.stages.hidden_stair).includes('CATACOMBS_STAIRS'));
 });
 

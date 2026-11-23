@@ -45,7 +45,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "blunt", "shield"],
         battleMessage: "{user} slams into {target} with a {ability}!",
-        icon: { col: 2, row: 1 },
+        icon: { col: 20, row: 15 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.90,
@@ -64,7 +64,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 15 },
         accuracy: 0.80,
         animationId: "reckless_charge",
-        effects: [{ type: "damage", damageType: "blunt", power: 2.5, recoil: 0.25 }]
+        effects: [{ type: "damage", damageType: "blunt", power: 2.0, recoil: 0.25 }]   // twice a blow's damage
     },
     // A blow meant for a raised guard: against a Fortified target it shatters the guard (the status is gone) and lands far harder.
     "guard_break": {
@@ -103,7 +103,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "magical", "contact", "blunt", "fire"],
         battleMessage: "{user} delivers a blazing {ability} to {target}!",
-        icon: { col: 0, row: 9 },
+        icon: { col: 21, row: 15 },
         speedModifier: 1.0,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 12, insight: 8 },
@@ -119,6 +119,11 @@ export const AbilityDefinitions = {
     // =========================================================================
     // 2. PHYSICAL - SLASH
     // =========================================================================
+    /* The four plain cuts and bites, each with its own job (backend/test/ambushers.test.js keeps them apart):
+         Slash         a weapon's steady stroke: the baseline (power 1.25, 10 stamina, ordinary speed)
+         Claw          fast and cheap, the lightest blow, but it opens wounds: strikes early, bleeds most
+         Bite          a beast's Thrust: as fast and as dear as Slash, a little harder (1.35) and a little less sure (90%), so on par with them
+         Talon Strike  the sure one: the dive never misses (sureHit), whatever the target's evasion, for a lighter blow */
     "slash": {
         id: "slash",
         name: "Slash",
@@ -173,7 +178,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "slash", "tactical"],
         battleMessage: "{user} performs a {ability} on {target} and falls back!",
-        icon: { col: 0, row: 2 },
+        icon: { col: 22, row: 15 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 20 },
         speedModifier: 1.2,
@@ -208,7 +213,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "slash", "beast", "aoe"],
         battleMessage: "{user} rampages through the line!",
-        icon: { col: 5, row: 0 },   // Claw's: the same claws, through every one of them
+        icon: { col: 23, row: 15 },   // Claw's: the same claws, through every one of them
         animationId: "whirlwind_slash",
         speedModifier: 0.9,
         targeting: { scope: "all_enemies", select: "auto" },
@@ -283,18 +288,18 @@ export const AbilityDefinitions = {
     "claw": {
         id: "claw",
         name: "Claw",
-        description: "Rake the target with sharp claws. May cause bleeding.",
+        description: "A quick rake of the claws: light, fast and cheap, and the likeliest of any blow to open a bleeding wound.",
         range: "melee",
         tags: ["physical", "contact", "slash", "beast"],
-        battleMessage: "{user} slashes at {target} with a vicious {ability}!",
+        battleMessage: "{user} rakes {target} with a vicious {ability}!",
         icon: { col: 5, row: 0 },
-        speedModifier: 1.1,
+        speedModifier: 1.3,
         targeting: { scope: "enemy", select: "single" },
-        cost: { stamina: 8 },
-        accuracy: 0.95,
+        cost: { stamina: 6 },
+        accuracy: 1.0,
         animationId: "claw",
-        effects: [{ type: "damage", damageType: "slash", power: 1.0 }],
-        statusEffects: [{ id: "bleed", chance: 0.2, duration: 3 }]
+        effects: [{ type: "damage", damageType: "slash", power: 0.8 }],
+        statusEffects: [{ id: "bleed", chance: 0.35, duration: 3 }]
     },
     "eviscerate": {
         id: "eviscerate",
@@ -334,7 +339,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["support", "sound", "debuff", "fear", "aoe"],
         battleMessage: "{user} turns its gaze on them all. Dread takes hold!",
-        icon: { col: 4, row: 11 },
+        icon: { col: 1, row: 16 },
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { stamina: 22 },
         accuracy: 1.0,
@@ -410,17 +415,18 @@ export const AbilityDefinitions = {
     "bite": {
         id: "bite",
         name: "Bite",
-        description: "Tear at the target with sharp fangs.",
+        description: "Sink the fangs in: a beast's Thrust, a little harder but a little easier to dodge, and it may draw blood.",
         range: "melee",
         tags: ["physical", "contact", "beast", "pierce"],
         battleMessage: "{user} sinks their teeth into {target} with a vicious {ability}!",
         icon: { col: 4, row: 2 },
+        speedModifier: 1,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
-        accuracy: 1.0,
+        accuracy: 0.9,   // on par with Slash and Thrust (1.25 at 100%): a bit harder, a bit less sure
         animationId: "bite",
-        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }],
-        statusEffects: [{ id: "bleed", chance: 0.15, duration: 3 }]
+        effects: [{ type: "damage", damageType: "pierce", power: 1.35 }],
+        statusEffects: [{ id: "bleed", chance: 0.1, duration: 3 }]
     },
     // A dog's leap (the Dog): it throws its whole weight at the target. Blunt, a little slow to wind up, and it can bowl the target over.
     "pounce": {
@@ -443,16 +449,18 @@ export const AbilityDefinitions = {
     "talon_strike": {
         id: "talon_strike",
         name: "Talon Strike",
-        description: "Drop on the target talons first. Pierce damage, with a chance to make them bleed.",
+        description: "Drop on the target talons first: a dive that never misses, however nimble the target, and may draw blood.",
         range: "melee",
         tags: ["physical", "contact", "beast", "pierce"],
         battleMessage: "{user} drops on {target} talons first!",
         icon: { col: 0, row: 13 },   // the artist's talons
+        speedModifier: 1.1,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
-        accuracy: 0.95,
+        accuracy: 1.0,
+        sureHit: true,
         animationId: "talon_strike",
-        effects: [{ type: "damage", damageType: "pierce", power: 1.1 }],
+        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }],
         statusEffects: [{ id: "bleed", chance: 0.25, duration: 3 }]
     },
     "quick_stab": {
@@ -492,7 +500,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["physical", "projectile", "weapon", "pierce", "item"],
         battleMessage: "{user} throws a {ability} at {target}!",
-        icon: { col: 11, row: 2 },
+        icon: { col: 16, row: 16 },
         animationId: "throw_poison_dagger",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
@@ -528,7 +536,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["physical", "projectile", "utility", "item"],
         battleMessage: "{user} tosses a {ability} at {target}!",
-        icon: { col: 3, row: 8 },
+        icon: { col: 2, row: 16 },
         animationId: "item_throw_net",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
@@ -544,7 +552,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "blunt", "utility"],
         battleMessage: "{user} throws a sack over {target}'s head!",
-        icon: { col: 3, row: 8 },
+        icon: { col: 3, row: 16 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 14 },
         speedModifier: 1.1,
@@ -680,7 +688,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["magical", "aoe", "water"],
         battleMessage: "{user} brings down a {ability}!",
-        icon: { col: 8, row: 8 },
+        icon: { col: 3, row: 8 },
         animationId: "tidal_wave",
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { insight: 26 },
@@ -1049,7 +1057,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "blade", "slash", "ice", "aoe", "heavy"],
         battleMessage: "{user} brings the Brother's Sword round in a {ability}!",
-        icon: { col: 1, row: 0 },
+        icon: { col: 24, row: 15 },
         animationId: "cleave",
         targeting: { scope: "enemy", select: "multiple", count: 2 },
         cost: { stamina: 22 },
@@ -1067,7 +1075,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "blunt", "beast"],
         battleMessage: "{user} wraps round {target} and crushes!",
-        icon: { col: 3, row: 6 },
+        icon: { col: 10, row: 16 },
         speedModifier: 1.0,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 12 },
@@ -1084,7 +1092,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "blunt", "earth", "heavy", "leech"],
         battleMessage: "{user} brings down a {ability} on {target}!",
-        icon: { col: 0, row: 6 },
+        icon: { col: 7, row: 16 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 18 },
         speedModifier: 0.9,
@@ -1115,23 +1123,27 @@ export const AbilityDefinitions = {
     // =========================================================================
     // 11. MAGICAL - LIGHT
     // =========================================================================
-    "solar_beam": {
-        id: "solar_beam",
-        name: "Solar Beam",
-        description: "Gather light on turn 1, fire on turn 2.",
+    /* Storm Front: the heaviest wind spell (the Insight of Wind, rank 4). Like Arcane Blast, a slow, devastating blow, but surer (it hardly misses)
+       and its cost comes first: the turn it is chosen it only gathers (`behavior: 'charge_attack'`, turnManager), and while it gathers the user is
+       wrapped in the Eye of the Storm (half damage from fire, ice, lightning, earth, water and wind); the next turn it breaks on the same target. */
+    "storm_front": {
+        id: "storm_front",
+        name: "Storm Front",
+        description: "Gather a storm on the first turn, safe in its eye (half damage from fire, ice, lightning, earth, water and wind); on the next, it breaks on the target: a devastating blast of wind that rarely misses.",
         range: "ranged",
-        tags: ["magical", "projectile", "light", "heavy"],
-        battleMessage: "{user} unleashes the stored light in a {ability} at {target}!",
-        icon: { col: 3, row: 4 },
+        tags: ["magical", "projectile", "wind", "heavy"],
+        battleMessage: "The Storm Front breaks on {target}!",
+        icon: { col: 3, row: 14 },   // a storm cloud, wind and a bolt (tools/art/stormFrontAssets.py)
         targeting: { scope: "enemy", select: "single" },
-        cost: { insight: 15 },
-        accuracy: 1.0,
+        cost: { insight: 16 },
+        speedModifier: 0.85,
+        accuracy: 1.0,   // surer than Arcane Blast (95%)
         behavior: "charge_attack",
-        animationId: "solar_beam",
-        chargeConfig: {
-            statusId: "charging_solar",
-            damageEffect: { type: "damage", damageType: "light", power: 2.0 }
-        }
+        chargeStatus: "eye_of_the_storm",
+        chargeMessage: "{user} gathers a Storm Front!",
+        chargeAnimationId: "downwind",
+        animationId: "storm_front",
+        effects: [{ type: "damage", damageType: "wind", power: 2.5 }]
     },
     "spite": {
         id: "spite",
@@ -1159,7 +1171,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["magical", "dark", "gravity"],
         battleMessage: "{user} attempts to crush {target} with intense {ability}!",
-        icon: { col: 1, row: 4 },
+        icon: { col: 4, row: 16 },
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 25 },
         accuracy: 0.90,
@@ -1188,7 +1200,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["magical", "dark", "leech"],
         battleMessage: "{user} attempts to {ability} from {target}!",
-        icon: { col: 0, row: 5 },
+        icon: { col: 5, row: 16 },
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 15 },
         accuracy: 1.0,
@@ -1237,7 +1249,7 @@ export const AbilityDefinitions = {
         range: "self",
         tags: ["magical", "support", "light"],
         battleMessage: "{user} uses {ability}!",
-        icon: { col: 0, row: 10 },
+        icon: { col: 11, row: 16 },
         targeting: { scope: "self", select: "auto" },
         cost: { insight: 12 },
         accuracy: 1.0,
@@ -1251,7 +1263,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["magical", "support", "healing", "light"],
         battleMessage: "{user} casts {ability} on {target}!",
-        icon: { col: 0, row: 10 },
+        icon: { col: 12, row: 16 },
         targeting: { scope: "ally", select: "single" },
         cost: { insight: 10 },
         accuracy: 1.0,
@@ -1268,7 +1280,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["support", "healing", "item"],
         battleMessage: "{user} binds the wound of {target} with a bandage.",
-        icon: { col: 0, row: 10 },
+        icon: { col: 13, row: 16 },
         animationId: "purify",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
@@ -1282,7 +1294,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["support", "healing", "item"],
         battleMessage: "{user} gives {target} an antidote.",
-        icon: { col: 0, row: 10 },
+        icon: { col: 14, row: 16 },
         animationId: "purify",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
@@ -1296,7 +1308,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["support", "healing", "item"],
         battleMessage: "{user} soothes the burns of {target} with aloe.",
-        icon: { col: 0, row: 10 },
+        icon: { col: 15, row: 16 },
         animationId: "purify",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
@@ -1322,6 +1334,7 @@ export const AbilityDefinitions = {
     "brew_of_madness": {
         id: "brew_of_madness",
         name: "Madness Brew",
+        icon: { col: 13, row: 15 },   // tools/art/missingAbilityIcons.py
         range: "self",
         tags: ["utility", "item", "buff"],
         battleMessage: "{user} chugs a {ability}!",
@@ -1388,7 +1401,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
-        icon: { col: 5, row: 8 },
+        icon: { col: 0, row: 15 },
         animationId: "moderate_heal",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
@@ -1403,7 +1416,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
-        icon: { col: 6, row: 8 },
+        icon: { col: 1, row: 15 },
         animationId: "moderate_recover",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
@@ -1417,7 +1430,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
-        icon: { col: 7, row: 8 },
+        icon: { col: 2, row: 15 },
         animationId: "moderate_channel",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
@@ -1435,7 +1448,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["magical", "leech", "arcane"],
         battleMessage: "{user} uses {ability} to drain insight from {target}!",
-        icon: { col: 1, row: 5 },
+        icon: { col: 6, row: 16 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 1.0,
@@ -1444,31 +1457,31 @@ export const AbilityDefinitions = {
     },
     "raise_skeleton": {
         id: "raise_skeleton",
-        name: "Raise Dead",
-        description: "Summon a skeleton warrior to fight for you.",
+        name: "Raise Skeleton",
+        description: "Raise a skeleton warrior at your side. It fights right after each of your turns and sometimes takes a blow meant for you, until it is destroyed. One summon at a time: casting again replaces it with a fresh one.",
         range: "self",
         tags: ["magical", "summon", "dark"],
         battleMessage: "{user} uses {ability} to summon an undead ally!",
-        icon: { col: 0, row: 6 },
-        targeting: { scope: "space", select: "auto" },
+        icon: { col: 8, row: 16 },
+        targeting: { scope: "self", select: "auto" },
         cost: { insight: 30 },
         accuracy: 1.0,
         animationId: "raise_skeleton",
-        effects: [{ type: "summon", entityId: "skeleton_warrior", levelScale: 1.0, maxActive: 2 }]
+        effects: [{ type: "summon", familiar: true, entityId: "SKELETAL_WARRIOR", levelScale: 1.0, hpShare: 0.4 }]   // a familiar (battle/summons.js): no slot of its own
     },
     "bear_form": {
         id: "bear_form",
         name: "Bear Form",
-        description: "Transform into a bear.",
+        description: "Shift into a great bear for 4 turns: slash, blunt and pierce attacks 60% stronger, physical hits hurt a third less, a quarter of your health back, and you fight with claw, bite, pounce and rampage until you turn back.",
         range: "self",
         tags: ["magical", "summon", "shapeshift"],
         battleMessage: "{user} shifts into a fierce {ability}!",
-        icon: { col: 1, row: 6 },
+        icon: { col: 9, row: 16 },
         targeting: { scope: "self", select: "auto" },
         cost: { insight: 20 },
         accuracy: 1.0,
         animationId: "bear_form",
-        effects: [{ type: "summon", entityId: "dire_bear", replaceUser: true, revertOnDeath: true }]
+        effects: [{ type: "transform", form: "bear", duration: 4 }]   // in its own slot (battle/summons.js FORMS)
     },
 
     // =========================================================================
@@ -1529,7 +1542,7 @@ export const AbilityDefinitions = {
         range: "self",
         tags: ["utility", "tactical"],
         battleMessage: "{user} uses {ability} to switch out and pass effects!",
-        icon: { col: 1, row: 2 },
+        icon: { col: 0, row: 16 },
         targeting: { scope: "self", select: "auto" },
         cost: { insight: 15 },
         speedModifier: 1.0,
@@ -1654,6 +1667,7 @@ export const AbilityDefinitions = {
     "torchlight": {
         id: "torchlight",
         name: "Torchlight",
+        icon: { col: 15, row: 15 },   // tools/art/missingAbilityIcons.py
         description: "Light a torch. It throws a wide, warm orange light around you for 8 hours.",
         context: "overworld",                       // never offered in a battle
         range: "self",
@@ -1671,6 +1685,7 @@ export const AbilityDefinitions = {
     "meteorite_unshackle": {
         id: "meteorite_unshackle",
         name: "Break the Shackles",
+        icon: { col: 12, row: 15 },   // tools/art/missingAbilityIcons.py
         description: "Press the meteorite to a shackled companion. Its glow burns the iron away.",
         context: "overworld",                       // never offered in a battle
         range: "self",
@@ -1687,6 +1702,7 @@ export const AbilityDefinitions = {
     "shmindolyns_draught": {
         id: "shmindolyns_draught",
         name: "Shmindolyn's Draught",
+        icon: { col: 14, row: 15 },   // tools/art/missingAbilityIcons.py
         description: "The drinker forgets the Insight they learned last (one rank of it), and the corruption it cost them eases.",
         context: "overworld",                       // never offered in a battle
         range: "self",
@@ -1704,6 +1720,7 @@ export const AbilityDefinitions = {
     "escape_rope": {
         id: "escape_rope",
         name: "Escape Rope",
+        icon: { col: 16, row: 15 },   // tools/art/missingAbilityIcons.py
         description: "Haul yourself out of a cave or other interior, back to its entrance.",
         context: "overworld",                       // never offered in a battle
         range: "self",
@@ -1720,6 +1737,7 @@ export const AbilityDefinitions = {
     "read_interior_map": {
         id: "read_interior_map",
         name: "Read Map",
+        icon: { col: 17, row: 15 },   // tools/art/missingAbilityIcons.py
         description: "Unfold a map of the cave or building you are in. Its layout shows on the minimap, and on the map screen (M), until you leave.",
         context: "overworld",                       // never offered in a battle
         range: "self",
@@ -1737,6 +1755,7 @@ export const AbilityDefinitions = {
     "place_waypoint": {
         id: "place_waypoint",
         name: "Plant Waypoint",
+        icon: { col: 19, row: 15 },   // tools/art/missingAbilityIcons.py
         description: "Plant a banner on the ground in front of you. Open the world map to return to it later, for a price.",
         context: "overworld",
         range: "self",
@@ -1752,6 +1771,7 @@ export const AbilityDefinitions = {
     "use_bedroll": {
         id: "use_bedroll",
         name: "Make Camp",
+        icon: { col: 18, row: 15 },   // tools/art/missingAbilityIcons.py
         description: "Spread out the bedroll and sleep for twelve hours. The day turns to night, or the night to day.",
         context: "overworld",
         range: "self",
@@ -1770,10 +1790,13 @@ export const AbilityDefinitions = {
 // (AbilitySystem._world_learn_insight, abilities/insights.js). One per element, so the item's useAbility alone says which. With the rank already at its
 // most, or the reader's attributes short of what the next rank asks, nothing happens and the Insight is kept.
 const INSIGHT_READING = { fire: 'Fire', water: 'Water', earth: 'Earth', lightning: 'Lightning', ice: 'Ice', wind: 'Wind', arcane: 'Arcane', light: 'Light', dark: 'Darkness' };
+// each shows its Insight's own picture (copied into the ability sheet by tools/art/missingAbilityIcons.py)
+const INSIGHT_READING_ICON = { fire: { col: 3, row: 15 }, water: { col: 4, row: 15 }, earth: { col: 5, row: 15 }, lightning: { col: 6, row: 15 }, ice: { col: 7, row: 15 }, wind: { col: 8, row: 15 }, arcane: { col: 9, row: 15 }, light: { col: 10, row: 15 }, dark: { col: 11, row: 15 } };
 for (const [element, name] of Object.entries(INSIGHT_READING)) {
     AbilityDefinitions[`read_insight_${element}`] = {
         id: `read_insight_${element}`,
         name: `Read the Insight of ${name}`,
+        icon: INSIGHT_READING_ICON[element],
         description: `Learn of ${name.toLowerCase()}: the first teaches its first spell, each one after deepens the understanding. Each costs corruption.`,
         context: "overworld",                       // never offered in a battle
         range: "self",

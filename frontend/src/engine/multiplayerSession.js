@@ -99,7 +99,7 @@ class MultiplayerSession {
         worldSync.onLocalChange = (key, value) => multiplayer.relay({ k: 'change', key, value });
         // the host picks the Hooded Stranger's workshop for the whole world, and tells everyone
         InteriorFactory.onStrangerHome = (id) => { if (this.role === 'host') multiplayer.relay({ k: 'stranger_home', id }); };
-        // and the other story homes (Nikoli's campfire, the Stranger's act 2 workshop) the same way
+        // and the other story homes (Nikoli's campfire, the Stranger's act 3 workshop) the same way
         InteriorFactory.onHomeClaim = (key, id) => { if (this.role === 'host') multiplayer.relay({ k: 'story_home', key, id }); };
         if (!gameState.multiplayer || !gameState.multiplayer.guests) gameState.multiplayer = { guests: {} };
         this._say('Your world is open to your friends.');

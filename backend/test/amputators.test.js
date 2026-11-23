@@ -183,8 +183,8 @@ test('in act 1 the first graveyard the player comes upon becomes Osric\'s; Garri
 
 test('after act 1 no graveyard is claimed: Osric is only ever met in act 1', () => {
     quiet(() => {
-        story({ milestones: ['act2'] });
-        gameState.world.changes['story:act2'] = true;
+        story({ milestones: ['darius_slain'] });
+        gameState.world.changes['story:darius_slain'] = true;
         Object.assign(gameState.world, { amputatorGraveyard: null, amputatorQuarry: null, isInterior: false, structureChunks: {} });
         gameState.seed = 4242;
         const wm = new WorldManager();
@@ -206,7 +206,7 @@ test('the Amputators call each other by the old surgical ranks, never "brother":
     assert.ok(!/brother/i.test(Q.amputators_trial.name + Q.amputators_trial.description));
 });
 
-test('Osric keeps a shop once Garrick is at rest: a plain club and mace in act 1, the Amputators\' own armor set from act 2', () => {
+test('Osric keeps a shop once Garrick is at rest: a plain club and mace until Darius falls, the Amputators\' own armor set from act 3 (the blood moon)', () => {
     const shopIn = (sid) => (OSRIC.stages[sid].decisions || []).find(d => d.type === 'open_shop');
     for (const sid of ['meet_5', 'task_3', 'again', 'waiting', 'return']) assert.ok(!shopIn(sid), `${sid}: no shop before Garrick is at rest`);
     for (const sid of ['joined_2', 'member', 'rejoined']) assert.ok(shopIn(sid), `${sid}: his shop`);
@@ -215,10 +215,11 @@ test('Osric keeps a shop once Garrick is at rest: a plain club and mace in act 1
     assert.ok(shopIn('offer_again') && shopIn('offer_again').conditions.some(c => c.type === 'in_covenant'), 'a stranger sees no shop');
     assert.deepEqual(Covenants.waresFor('amputators', 1).map(w => w.id), ['wooden_club', 'mace']);
     const set = ['amputators_hood', 'amputators_apron', 'amputators_gloves', 'amputators_trousers', 'amputators_boots'];
-    assert.deepEqual(Covenants.waresFor('amputators', 2).map(w => w.id), set);
-    assert.deepEqual(Covenants.waresFor('amputators', 3).map(w => w.id), set, 'act 3 keeps the act 2 stock');
+    assert.deepEqual(Covenants.waresFor('amputators', 2).map(w => w.id), ['wooden_club', 'mace'], 'act 2 (after the first Arc Knight) still the plain stock');
+    assert.deepEqual(Covenants.waresFor('amputators', 3).map(w => w.id), set);
+    assert.deepEqual(Covenants.waresFor('amputators', 4).map(w => w.id), set, 'act 4 keeps the act 3 stock');
     // the shop's stock follows the act it is opened in
-    story({ milestones: ['act2'] });
+    story({ milestones: ['darius_slain'] });
     assert.deepEqual(shopIn('member').wares.map(w => w.id), Covenants.waresFor('amputators', ActSystem.getAct()).map(w => w.id));
     story({});
     assert.deepEqual(shopIn('member').wares.map(w => w.id), ['wooden_club', 'mace']);

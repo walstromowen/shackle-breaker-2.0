@@ -316,6 +316,29 @@ export const StatusEffectDefinitions = {
             { trigger: 'ON_TURN_END', modify: 'insight', recovery: true, battleMessage: "{target} draws insight and regains {amount} insight!" }
         ]
     },
+    // Bear Form (abilityDefinitions bear_form, battle/summons.js FORMS.bear): the caster is a great bear while this lasts; when it runs out it turns back
+    bear_form: {
+        id: 'bear_form',
+        name: 'Bear Form',
+        description: "A great bear: slash, blunt and pierce attacks 60% stronger, and physical hits hurt a third less. Turns back when this ends.",
+        icon: { col: 1, row: 1 },
+        defaultCharges: 4,
+        maxStacks: 1,
+        modifiers: [
+            ...['slash', 'blunt', 'pierce'].map(t => ({ type: 'percent', target: `attack.${t}`, value: 0.6 })),
+            ...['slash', 'blunt', 'pierce'].map(t => ({ type: 'flat', target: `resistance.${t}`, value: 0.33 }))
+        ]
+    },
+    // Storm Front's charge (abilityDefinitions storm_front): while the storm gathers, its eye turns the other elements aside. Cleared when it breaks.
+    eye_of_the_storm: {
+        id: 'eye_of_the_storm',
+        name: 'Eye of the Storm',
+        description: "Gathering a storm: takes half damage from fire, ice, lightning, earth, water and wind until it breaks.",
+        icon: { col: 2, row: 1 },
+        defaultCharges: 2,
+        maxStacks: 1,
+        modifiers: ['fire', 'ice', 'lightning', 'earth', 'water', 'wind'].map(t => ({ type: 'flat', target: `resistance.${t}`, value: 0.5 }))
+    },
     evasive: {
         id: 'evasive',
         name: 'Evasive',

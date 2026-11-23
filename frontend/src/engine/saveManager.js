@@ -337,10 +337,10 @@ export const SaveManager = {
                 waypoints: clone(world.waypoints || []),
                 mapMarkers: clone(world.mapMarkers || []),   // the player's pins on the map (world/mapMarkers.js)
                 strangerHome: world.strangerHome || null,   // the workshop the Hooded Stranger lives in (InteriorFactory)
-                strangerDesertHome: world.strangerDesertHome || null,   // where he goes in act 2 (InteriorFactory.workshopResident)
+                strangerDesertHome: world.strangerDesertHome || null,   // where he goes in act 3 (InteriorFactory.workshopResident)
                 nikoliCampfire: world.nikoliCampfire || null,           // Nikoli's camp, "col,row" of the campfire (WorldManager)
                 jaegerCatacomb: world.jaegerCatacomb || null,           // the catacombs Jaeger waits in (InteriorFactory)
-                strangerSnowHome: world.strangerSnowHome || null,       // act 3: the snowy house Mentoras and Codey go to (story/heroes.js)
+                strangerSnowHome: world.strangerSnowHome || null,       // act 4: the snowy house Mentoras and Codey go to (story/heroes.js)
                 amputatorGraveyard: world.amputatorGraveyard || null,   // Senior Surgeon Osric's seat among the graves, "col,row" (WorldManager)
                 amputatorQuarry: world.amputatorQuarry || null,         // where Surgeon Garrick is (WorldManager.pickAmputatorQuarry)
                 strangerGrave: world.strangerGrave || null,             // where the Stranger buried his stone (WorldManager.noticeStrangerGrave)
@@ -439,7 +439,7 @@ export const SaveManager = {
             trackedIds: data.quests?.trackedIds || []
         };
         retireQuests(gameState);       // a save on a quest that was cut picks up from the one that replaced it
-        ActSystem.catchUp(gameState);   // a save that beat Darius but never saw A Dark Truth: it plays on the map (SceneManager), and grants act 2 there
+        ActSystem.catchUp(gameState);   // a save that beat Darius but never saw A Dark Truth: it plays on the map (SceneManager), and grants act 3 there
         Covenants.migrate(gameState);   // an oath kept as the player's milestone (older saves) goes to the party's lead
 
         replaceContents(gameState.player, {

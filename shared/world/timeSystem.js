@@ -62,7 +62,7 @@ export class TimeSystem {
         ];
     }
 
-    /** The keyframes of the current act: act 2 swaps the black night for the red sky of the blood moon (story/actDefinitions.js `lighting`). Rebuilt only when the act changes. */
+    /** The keyframes of the current act: act 3 swaps the black night for the red sky of the blood moon (story/actDefinitions.js `lighting`). Rebuilt only when the act changes. */
     getKeyframes() {
         const act = ActSystem.getAct();
         if (act !== this._keyframeAct) {
@@ -334,4 +334,4 @@ export class TimeSystem {
         // 6. New weather: saves it and syncs the audio (the AudioManager crossfades)
         TimeSystem.setWeather(selectedWeatherId);
     }
-}
+}

@@ -120,7 +120,9 @@
         "Years pass. The king does not come back. One night the stone is gone, and still he kneels before the empty hollow.": "[slow, mournful] Years pass. The king does not come back. [pause] One night the stone is gone, and still he kneels before the empty hollow.",
         "The robe rots. His back bends until it will not straighten. The quick smile becomes a grin he cannot stop, until all that is left is the kneeling, and the waiting.": "[slow, grim, mournful] The robe rots. His back bends until it will not straighten. The quick smile becomes a grin he cannot stop, [pause] until all that is left is the kneeling, and the waiting.",
         "The light gutters out. Behind you, Darius draws one more breath.": "[low, hushed] The light gutters out. [pause] Behind you, Darius draws one more breath.",
-        "Your shackles are warm. They have never been warm before. Far above, through a mile of stone, many voices begin to laugh at once.": "[low, dread building] Your shackles are warm. [pause] They have never been warm before. [long pause] Far above, through a mile of stone, many voices begin to laugh at once."
+        "Your shackles are warm. They have never been warm before. Far above, through a mile of stone, many voices begin to laugh at once.": "[low, dread building] Your shackles are warm. [pause] They have never been warm before. [long pause] Far above, through a mile of stone, many voices begin to laugh at once.",
+        "The forge is cold, and the hooded man is gone. A scrap of paper is nailed to a crate beside it. The hand is shaky, the ink smudged with soot.": "[quiet, still] The forge is cold, and the hooded man is gone. [pause] A scrap of paper is nailed to a crate beside it. [low] The hand is shaky, the ink smudged with soot.",
+        "Gone to the sand. Someone I owe walked in and did not walk out. Find the forge in a desert village if you want me. If I am mad by then, be polite about it.": "[reading a note aloud, dry and tired, a hint of grim humor] Gone to the sand. Someone I owe walked in and did not walk out. [pause] Find the forge in a desert village if you want me. [pause] [deadpan] If I am mad by then, be polite about it."
       }
     },
     "STRANGER": {
@@ -269,11 +271,11 @@
         "Nikoli leave when snow let him. Workshop, you say. Nikoli will find it.": "[calm, busy packing] Nikoli leave when snow let him. Workshop, you say. Nikoli will find it.",
         "He was here. Ashes still warm when Nikoli come.": "[low, quiet] He was here. Ashes still warm when Nikoli come.",
         "He leave in hurry, and he leave this.": "[quiet] He leave in hurry, and he leave this.",
-        "Toward sand, Nikoli think. Always one step ahead of Nikoli, that one. Always he was.": "[rueful, low] Toward sand, Nikoli think. [soft half-laugh] Always one step ahead of Nikoli, that one. Always he was.",
         "...and Nikoli say to colonel, is not bad arithmetic, is Panzerian arithmetic. Ah! Is you!": "[mid-story, booming, then delighted] ...and Nikoli say to colonel, is not bad arithmetic, is Panzerian arithmetic. Ah! Is you!",
         "You find him for Nikoli. Tired eyes, sharp tongue, da? Exactly as Nikoli say.": "[warm, laughing] You find him for Nikoli. Tired eyes, sharp tongue, da? Exactly as Nikoli say.",
         "Take. For finding him. Ice remember what rest of us forget.": "[warm, sincere] Take. For finding him. Ice remember what rest of us forget.",
-        "Nikoli lead you here.": "[quiet, stricken] Nikoli lead you here."
+        "Nikoli lead you here.": "[quiet, stricken] Nikoli lead you here.",
+        "To desert, Nikoli think. Some village with forge, like this one. Always one step ahead of Nikoli, that one.": "[rueful, low] To desert, Nikoli think. [thoughtful] Some village with forge, like this one. [soft half-laugh] Always one step ahead of Nikoli, that one."
       }
     },
     "JAEGER": {

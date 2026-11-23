@@ -8,8 +8,8 @@ import { queueDeath, queueFlee } from './battleQueue.js';
 import { getActivePool, registerAbilityUse, registerStatusApplication, registerDeath, noEscapeMessage } from './battleState.js';
 import { StatusEffectFactory } from '../abilities/statusEffectFactory.js';
 import { InventorySystem } from '../items/inventorySystem.js';
-import { CorruptionSystem } from '../characters/corruptionSystem.js';
 import { rng } from '../core/random.js';
+import { summonFamiliar, familiarTurn, guardFor, transform } from './summons.js';
 
 /* Plays a battle's turn queue (`state.turnQueue`) one turn at a time: abilities, damage, status effects, deaths, messages and animations.
    It needs a `host` for the few things only the screen can do:
@@ -82,6 +82,9 @@ export class TurnManager {
             case TURN_TYPES.END_ACTOR_TURN:
                 if (!turn.actor.isDead() && !this.state.fled) {
                     this.queueStatusEffects(turn.actor, 'ON_TURN_END');
+                    // a familiar (battle/summons.js) acts right after its caster, by itself
+                    const ft = !turn.actor.isFamiliar && familiarTurn(this.state, turn.actor, (c) => this._bagOf(c));
+                    if (ft) this.state.turnQueue.unshift({ type: TURN_TYPES.EXECUTE_ACTION, ...ft });
                 }
                 return this.processNextTurnInQueue();
             case TURN_TYPES.PROMPT_REINFORCEMENT:
@@ -138,9 +141,12 @@ export class TurnManager {
         
         if (actor.isDead()) return this.processNextTurnInQueue();
         actor._skipAction = false;
+        // a charged attack gathered last turn (`behavior: 'charge_attack'`, Storm Front): whatever was queued, this turn looses it, already paid for
+        const charged = actor._charging;
+        if (charged) { action = charged.action; target = charged.target; }
         
         this.state.turnQueue.unshift({ type: TURN_TYPES.END_ACTOR_TURN, actor: actor });
-        this.state.turnQueue.unshift({ type: TURN_TYPES.EXECUTE_ACTION, actor, action, target });
+        this.state.turnQueue.unshift({ type: TURN_TYPES.EXECUTE_ACTION, actor, action, target, release: !!charged, ignoreCost: !!charged });
         
         this.queueStatusEffects(actor, 'ON_TURN_START');
         this.processNextTurnInQueue();
@@ -157,8 +163,6 @@ export class TurnManager {
         if (isFirstTarget && !ignoreCost) {
             action.payCost(actor, this._bagOf(actor));
         }
-        const queuedBefore = this.state.turnQueue.length;
-        const actorWasDownAtStart = actor.isDead();
 
         for (let target of targets) {
             const actualTarget = this.getValidTarget(target, canTargetDead, canTargetBench);
@@ -247,20 +251,6 @@ export class TurnManager {
             }
         }
 
-        // Magic costs the caster a little of themselves (CorruptionSystem). It is told after the spell's own lines, and a caster pushed to the top falls.
-        if (isFirstTarget && !ignoreCost) {
-            const corruption = CorruptionSystem.onAbilityUsed(actor, action);
-            if (corruption) {
-                const added = this.state.turnQueue.length - queuedBefore;
-                corruption.messages.forEach((message, i) => {
-                    this.state.turnQueue.splice(added + i, 0, { type: TURN_TYPES.MESSAGE_STATUS, message });
-                });
-                if (corruption.shackled && !actorWasDownAtStart) {
-                    registerDeath(this.state, actor, actor);
-                    queueDeath(this.state, actor);
-                }
-            }
-        }
         this.processNextTurnInQueue();
     }
 
@@ -272,6 +262,23 @@ export class TurnManager {
         // Last line of defence: an overworld-only ability can never resolve inside a battle.
         if (action && typeof action.usableIn === 'function' && !action.usableIn('battle')) {
             this.state.message = `${action.name} can't be used in battle!`;
+            return this.processNextTurnInQueue();
+        }
+
+        // A summon or a shapeshift (battle/summons.js): it takes no slot and no target, only the caster
+        const special = (action.config?.effects || []).find(e => (e.type === 'summon' && e.familiar) || e.type === 'transform');
+        if (special) {
+            if (!ignoreCost && !action.canPayCost(actor, this._bagOf(actor))) {
+                this.state.message = `${actor.name} has not the strength for ${action.name}.`;
+                return this.processNextTurnInQueue();
+            }
+            const pay = () => { if (!ignoreCost) action.payCost(actor, this._bagOf(actor)); };
+            const said = special.type === 'transform' ? { message: transform(actor, special, pay), summoned: true } : summonFamiliar(this.state, actor, special, pay);
+            this.state.message = said.message;
+            if (said.summoned && action.animationId) {
+                this.state.turnQueue.unshift({ type: TURN_TYPES.ANIMATION, animationId: action.animationId, actor, message: said.message, duration: 1.4 });
+            }
+            registerAbilityUse(this.state, action, actor, actor);
             return this.processNextTurnInQueue();
         }
 
@@ -312,6 +319,37 @@ export class TurnManager {
             resolvedTargets = [actor];
         }
 
+        // One blow at one foe: a familiar standing by that foe may take it instead (battle/summons.js), and the striker's familiar follows its lead
+        let guardedBy = null;
+        if (resolvedTargets.length === 1 && action.targeting?.scope === 'enemy' && resolvedTargets[0] && resolvedTargets[0].team !== actor.team) {
+            guardedBy = guardFor(resolvedTargets[0], actor);
+            if (guardedBy) { primaryTarget = guardedBy; resolvedTargets = [guardedBy]; }
+            if (!actor.isFamiliar) actor._lastTarget = guardedBy ? guardedBy.familiarOf : resolvedTargets[0];
+        }
+
+        // A charged attack (`behavior: 'charge_attack'`): the turn it is chosen it only gathers, paid for then, with its `chargeStatus` on the user
+        // (Storm Front's Eye of the Storm); the user's next turn looses it at the same target (_unpackBaseTurn). The release clears the status.
+        if (action.config?.behavior === 'charge_attack') {
+            const cfg = action.config;
+            if (!turn.release) {
+                action.payCost(actor, this._bagOf(actor));
+                const leadPick = (primaryTarget && !Array.isArray(primaryTarget) && resolvedTargets.includes(primaryTarget)) ? primaryTarget : resolvedTargets[0];
+                actor._charging = { action, target: leadPick };
+                if (cfg.chargeStatus && !(actor.statusEffects || []).some(st => st.id === cfg.chargeStatus)) {
+                    const st = StatusEffectFactory.createEffect(cfg.chargeStatus, 2, actor);
+                    if (st) actor.applyStatusEffect(st);
+                }
+                this.state.message = (cfg.chargeMessage || '{user} gathers its strength!').replace(/{user}/g, actor.name).replace(/{ability}/g, action.name);
+                if (cfg.chargeAnimationId) {
+                    this.state.turnQueue.unshift({ type: TURN_TYPES.ANIMATION, animationId: cfg.chargeAnimationId, actor, message: this.state.message, duration: 1.2 });
+                }
+                return this.processNextTurnInQueue();
+            }
+            delete actor._charging;
+            if (cfg.chargeStatus && typeof actor.removeStatusEffect === 'function') actor.removeStatusEffect(cfg.chargeStatus);
+            ignoreCost = true;
+        }
+
         let messageTemplate = action.battleMessage;
         if (action.id === 'rest') messageTemplate = "{user} recovers!";
         
@@ -327,6 +365,7 @@ export class TurnManager {
             .replace(/{user}/g, actor.name)
             .replace(/{ability}/g, action.name)
             .replace(/{target}/g, targetName);
+        if (guardedBy) this.state.message += ` ${guardedBy.name} steps in front of ${guardedBy.familiarOf.name}!`;
 
         // Splash multi-target (Flamethrower...) plays ONE shared animation like an AoE, hitting only the chosen targets.
         const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.targeting?.scope) || action.targeting?.isAoE || action.isSplash;

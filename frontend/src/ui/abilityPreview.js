@@ -176,6 +176,7 @@ export class AbilityPreview {
         const rollsToHit = effects.some(e => e.type === 'damage') ||
             (effects.length === 0 && ability.power !== undefined);
         if (!rollsToHit) return null;
+        if (ability.sureHit) return { chance: 1, raw: Infinity, capped: false, sure: true, text: 'Sure hit' };   // it never misses
 
         // AbilitySystem passes def.accuracy straight through; undefined falls back to 1.0
         const abilityAcc = ability.accuracy !== undefined ? ability.accuracy : 1.0;

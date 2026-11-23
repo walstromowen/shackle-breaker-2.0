@@ -19,7 +19,7 @@
                            switch party member to choose (story/covenants.js).
    His shop ("What have you to trade?", for the sworn only: joined_2, member, rejoined; a stranger is told he does not trade with strangers,
    offer_again): the Amputators' wares for the act
-   (COVENANTS.amputators.wares: act 1 a plain club and mace, act 2 on the Amputators' own armor set, sold nowhere else).
+   (COVENANTS.amputators.wares: act 1 a plain club and mace, act 3 on the Amputators' own armor set, sold nowhere else).
    Garrick: g_meet .. g_3, then the fight (afterVictory amputator_garrick_fallen: his last clear moment, garrick_slain).
 
    How Osric talks: a Bloodborne hunter at the end of a long night. Courteous, weary, dry, a little unhinged at the edges; archaic now and then

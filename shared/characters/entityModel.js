@@ -1,3 +1,4 @@
+import { packageOf, packageAbilitiesAt } from './naturalPackages.js';
 import { StatCalculator } from './statCalculator.js';
 import { isImmuneToStatus } from '../abilities/statusImmunity.js';
 import { AbilityFactory } from '../abilities/abilityFactory.js';
@@ -167,6 +168,15 @@ export class EntityModel {
             AbilityFactory.createAbilities(spells).forEach(move => {
                 if (!move || activeList.find(a => a.id === move.id)) return;
                 move.source = 'insight';
+                activeList.push(move);
+            });
+        }
+        // a natural package's moves, one every 5 levels (characters/naturalPackages.js)
+        const learned = packageAbilitiesAt(packageOf(this), this.level ?? this.state.level);
+        if (learned.length) {
+            AbilityFactory.createAbilities(learned).forEach(move => {
+                if (!move || activeList.find(a => a.id === move.id)) return;
+                move.source = 'Innate';   // built in: the abilities screen shows it as innate, like its own
                 activeList.push(move);
             });
         }

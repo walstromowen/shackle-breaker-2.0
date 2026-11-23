@@ -58,7 +58,7 @@ export class SpawnTableFactory {
         }
 
         // 1. Roll to see which Faction we are fighting. A pool (or a member) can be limited to some acts with `minAct` / `maxAct` (story/actDefinitions.js):
-        //    act 2 adds its own enemies to the same tables. A table that leaves nothing for the current act is used whole, so it can never come up empty.
+        //    act 3 adds its own enemies to the same tables. A table that leaves nothing for the current act is used whole, so it can never come up empty.
         const actPools = table.pools.filter(p => ActSystem.isAvailable(p) && p.members.some(m => ActSystem.isAvailable(m)));
         const factionPool = this._rollWeighted(actPools.length ? actPools : table.pools);
         if (!factionPool) return new SpawnTableModel([]);
@@ -170,4 +170,4 @@ export class SpawnTableFactory {
     static _getRandomInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-}
+}

@@ -1,4 +1,4 @@
-/* The Dry Kraken, and Codey (act 2, "Behind the Mirage", questDefinitions.js codey3; the Hooded Stranger's desert search: story/encounters/story/hoodedStranger.js).
+/* The Dry Kraken, and Codey (act 3, "Behind the Mirage", questDefinitions.js codey3; the Hooded Stranger's desert search: story/encounters/story/hoodedStranger.js).
 
    dry_kraken_ambush   once the miragewrights are dead, any step on the open sand may wake it (story/storyAmbush.js): the desert goes still, a dune
                        breathes in, and the Dry Kraken rises, Codey held high in one of its tentacles. No way round it: the fight (a boss, no
@@ -76,8 +76,8 @@ export const codeyFreed = {
             image: KRAKEN_IMG,
             bgm: "none",
             text: "The Dry Kraken sinks back into the sand it came from, and the desert closes over it like water.",
-            // its death begins act 3 (story/actDefinitions.js, story/heroes.js)
-            decisions: [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "act3" } }, { type: "ADVANCE_STAGE", payload: { stageId: "landed" } }] }] }]
+            // its death begins act 4 (story/actDefinitions.js, story/heroes.js)
+            decisions: [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "kraken_slain" } }, { type: "ADVANCE_STAGE", payload: { stageId: "landed" } }] }] }]
         },
         landed: {
             displayText: "Codey",
