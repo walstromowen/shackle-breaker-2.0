@@ -15,6 +15,16 @@ export const MARKER_COLORS = [
 ];
 export const MARKER_MAX = 50;
 
+/* Names the player gives a marker or a waypoint (the world map's Rename, or R): up to MAP_NAME_MAX characters of the keys MAP_NAME_KEY_PATTERN lets
+   through while typing. A name left empty gives the place back its own ("Marker 3", "Waypoint 2 · Plains"). */
+export const MAP_NAME_MAX = 24;
+export const MAP_NAME_KEY_PATTERN = /^[A-Za-z0-9 '\-_.,!?:()#&]$/;
+
+/** A typed name made fit to keep: its spaces squeezed, trimmed, cut to MAP_NAME_MAX; '' when nothing is left. */
+export function cleanMapName(name) {
+    return String(name ?? '').replace(/[^A-Za-z0-9 '\-_.,!?:()#&]/g, '').replace(/\s+/g, ' ').trim().slice(0, MAP_NAME_MAX).trim();
+}
+
 export function markerColor(m) {
     return MARKER_COLORS.find(c => c.id === (m && m.color)) || MARKER_COLORS[0];
 }
@@ -53,6 +63,14 @@ export function removeMarker(id, world = gameState.world) {
     if (i < 0) return false;
     list.splice(i, 1);
     return true;
+}
+
+/** Names a marker; an empty name gives it back its own ("Marker 3"). The marker, or null. */
+export function renameMarker(id, name, world = gameState.world) {
+    const m = findMarker(id, world);
+    if (!m) return null;
+    m.label = cleanMapName(name) || `Marker ${m.id}`;
+    return m;
 }
 
 /** The marker's next colour (round MARKER_COLORS); the marker, or null. */

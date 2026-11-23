@@ -88,6 +88,9 @@ const FX = {
     // helm: a voice inside a great iron helm (an Arc Knight): a close metallic ring (three very short reflections), the low end thinned and a nasal
     // ring brought up, no room echo
     helm: 'aecho=0.8:0.6:6|11|17:0.35|0.25|0.15,highpass=f=90,lowpass=f=6500,equalizer=f=1200:t=q:w=1:g=4',
+    // ominous: an old hunter at the far end of a blood-soaked cathedral (Osric): the voice two semitones lower and a little slower, a faint rumble an
+    // octave beneath it (its top cut off), and a dark, cavernous echo that trails after each line
+    ominous: 'asetrate=44100*0.89,aresample=44100,atempo=1.067,asplit=2[v][d];[d]asetrate=44100*0.5,aresample=44100,atempo=2.0,lowpass=f=420,volume=0.3[sub];[v][sub]amix=inputs=2:normalize=0,aecho=0.8:0.8:85|190|330|520:0.26|0.18|0.12|0.07,highpass=f=40,lowpass=f=7000',
     possessed: 'asplit=2[v][d];[d]asetrate=44100*0.79,aresample=44100,atempo=1.2658,adelay=28|28,lowpass=f=1800,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.5:25|55:0.18|0.1,highpass=f=60,lowpass=f=8500',
     nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.85:80|190|340|520:0.32|0.23|0.16|0.09,highpass=f=60,lowpass=f=7000,volume=1.0'
 };

@@ -618,6 +618,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     dariusCry: './assets/audio/sfx/cries/darius_cry.mp3',   // Darius the Groveler's own cry (and his death)
     sandStalkerCry: './assets/audio/sfx/cries/sand_stalker_cry.mp3',
     dogDeath: './assets/audio/sfx/deaths/dog_death.mp3',
+    bearCry: './assets/audio/sfx/cries/bear_cry.mp3',       // the Bear: a deep, ferocious roar (tools/voice/makeBearSounds.sh)
     unsheathSwordSfx: './assets/audio/sfx/unsheath_sword.mp3',
     grimStagCry: './assets/audio/sfx/cries/grim_stag_cry.mp3',
     poachersNightmareCry: './assets/audio/sfx/cries/poachers_nightmare_cry.mp3',

@@ -36,6 +36,8 @@ const MASK_DIRECTIONS = [
    of 32 px on the 1920 x 1080 canvas: 30 to either side, 17 above and below), so the scene is in place, Nikoli at his fire and the cats
    5 tiles north of it, a little before it scrolls into view, and he never pops in where the player can see. */
 export const NIKOLI_CAMP_SIGHT = { cols: 30 + 6, rows: 17 + 6 + 5 };
+/* Surgeon Garrick's graveyard (pickAmputatorQuarry): the nearest other small graveyard at least MIN cells from Osric's, looked for within CHUNKS chunks */
+export const GARRICK_GRAVEYARD = { MIN: 40, CHUNKS: 10 };
 
 /* The Amputators (story/encounters/story/amputators.js): Senior Surgeon Osric on his seat among the graves (world.amputatorGraveyard), once claimed, for
    good; Surgeon Garrick where Osric sent you (world.amputatorQuarry), until he has been put to rest. */
@@ -556,14 +558,21 @@ export class WorldManager {
         const D = [[0, 1, 'UP'], [0, -1, 'DOWN'], [1, 0, 'LEFT'], [-1, 0, 'RIGHT']];
         return D.some(([dc, dr, dir]) => this.canMove(c + dc, r + dr, c, r, dir));
     }
-    /** Where Surgeon Garrick is (world.amputatorQuarry, the world's, picked once when Osric's quest starts): a free cell out of sight of Osric's graveyard
-     *  (18 to 30 cells from it) that can be walked to from where the player stands, picked from the world's seed. [col, row], or null. */
+    /** Where Surgeon Garrick is (world.amputatorQuarry, the world's, picked once when Osric's quest starts): beside the stones of the nearest OTHER small
+     *  graveyard at least GARRICK_GRAVEYARD.MIN cells from Osric's (_farGraveyardSpot); with none within GARRICK_GRAVEYARD.CHUNKS chunks, a free cell out
+     *  of sight of Osric's graveyard (18 to 30 cells from it) that can be walked to from where the player stands, picked from the world's seed.
+     *  [col, row], or null. */
     pickAmputatorQuarry() {
         const w = gameState.world;
         const parse = (s) => { const [c, r] = String(s || '').split(',').map(Number); return Number.isFinite(c) && Number.isFinite(r) ? [c, r] : null; };
         const have = parse(w.amputatorQuarry);
         if (have) return have;
         const seat = parse(w.amputatorGraveyard) || [gameState.player.col, gameState.player.row];
+        const far = this._farGraveyardSpot(seat);
+        if (far) {
+            InteriorFactory.claimHome('amputatorQuarry', `${far[0]},${far[1]}`);
+            return parse(w.amputatorQuarry) || far;
+        }
         const start = [gameState.player.col, gameState.player.row];
         const seen = new Map([[`${start[0]},${start[1]}`, 0]]), q = [start], cands = [];
         const D = [[0, -1, 'UP'], [0, 1, 'DOWN'], [-1, 0, 'LEFT'], [1, 0, 'RIGHT']];
@@ -587,6 +596,34 @@ export class WorldManager {
         const pick = pool[Math.floor(this.pseudoRandom(seat[0] * 7 + 911, seat[1] * 13 + 377) * pool.length) % pool.length];
         InteriorFactory.claimHome('amputatorQuarry', `${pick[0]},${pick[1]}`);
         return parse(w.amputatorQuarry) || pick;
+    }
+    /* The nearest small graveyard (structures.js GRAVEYARD*) at least GARRICK_GRAVEYARD.MIN cells from `from`, within GARRICK_GRAVEYARD.CHUNKS chunks:
+       a free cell beside its stones, or null. The chunks whose seeded roll gives a graveyard are looked at nearest first, and each one's structure is
+       built now if the world has not built it yet (the same, once-only step the world takes when the player walks up to it), so its stones are where
+       they will always be. */
+    _farGraveyardSpot(from, { min = GARRICK_GRAVEYARD.MIN, chunks = GARRICK_GRAVEYARD.CHUNKS } = {}) {
+        const CS = this.CHUNK_SIZE, fx = Math.floor(from[0] / CS), fy = Math.floor(from[1] / CS);
+        const castles = this.terrain && this.terrain.castles;
+        const cands = [];
+        for (let dy = -chunks; dy <= chunks; dy++) for (let dx = -chunks; dx <= chunks; dx++) {
+            const cx = fx + dx, cy = fy + dy;
+            const d = Math.hypot(cx * CS + CS / 2 - from[0], cy * CS + CS / 2 - from[1]);
+            if (d < min - CS || d > (chunks + 0.5) * CS) continue;
+            if (castles && castles.sitesIn(cx * CS, cy * CS, cx * CS + CS - 1, cy * CS + CS - 1).length) continue;
+            const id = this._chunkStructureId(cx, cy);
+            if (id && /^GRAVEYARD/.test(id)) cands.push({ cx, cy, d });
+        }
+        cands.sort((a, b) => a.d - b.d);
+        for (const { cx, cy } of cands) {
+            this._ensureStructuresSpawned(cx, cy);
+            const stones = this._graveyardStonesIn(cx, cy);
+            if (stones.length < 3) continue;   // its roll found no flat, free ground in the chunk
+            const mc = Math.round(stones.reduce((t, p) => t + p[0], 0) / stones.length), mr = Math.round(stones.reduce((t, p) => t + p[1], 0) / stones.length);
+            if (Math.hypot(mc - from[0], mr - from[1]) < min) continue;
+            const spot = this._freeNear(mc, mr, 5);
+            if (spot) return spot;
+        }
+        return null;
     }
     /** The grave the Hooded Stranger buried his stone under (world.strangerGrave, the world's, picked once): asked on every return to the overworld
      *  while a player has his quest (shackled7). A free cell of open country, away from every village and road (no structure wrote there), 18 to 32

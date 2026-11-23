@@ -219,3 +219,20 @@ test('bears roam the plains by day and the snowy mountains at every hour, and le
     for (const d of drops.items) assert.ok(I[d.id], `${d.id} is a real item`);
     assert.ok(drops.items.some(d => d.id === 'fur'));
 });
+
+test('the Bear roars with a bear\'s voice, as it attacks and as it dies, and so does Bear Form', async () => {
+    const fs = await import('node:fs');
+    const root = new URL('../../', import.meta.url);
+    const { ENTITY_DEFINITIONS: E } = await import('../../shared/characters/entityDefinitions.js');
+    const main = fs.readFileSync(new URL('frontend/src/main.js', root), 'utf8');
+    assert.equal(E.BEAR.crySound, 'bearCry');
+    assert.equal(E.BEAR.deathSound, 'bearCry', 'the same roar when it dies');
+    for (const [key, file] of [['bearCry', 'cries/bear_cry.mp3']]) {
+        assert.ok(main.includes(`${key}: './assets/audio/sfx/${file}'`), `${key} registered`);
+        assert.ok(fs.statSync(new URL(`frontend/src/assets/audio/sfx/${file}`, root)).size > 10000, `${file} on disk`);
+    }
+    const anims = fs.readFileSync(new URL('shared/battle/animation/battleAnimationDefinition.js', root), 'utf8');
+    const bearForm = anims.slice(anims.indexOf('"bear_form": anim('), anims.indexOf('"bear_form": anim(') + 400);
+    assert.match(bearForm, /sfx\([^)]*'bearCry'/, 'Bear Form roars like the bear');
+    assert.doesNotMatch(bearForm, /wolfCry/);
+});

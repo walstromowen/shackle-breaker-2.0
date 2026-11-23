@@ -3,8 +3,9 @@ import { events } from '../../../../shared/core/eventBus.js';
 import { ExploredMap, BLOCK } from '../../../../shared/world/exploredMap.js';
 import { layerIndex } from '../../../../shared/world/biomeDefinitions.js';
 import { gameState } from '../../../../shared/core/gameState.js';
-import { allWaypoints, findWaypoint, planFastTravel, chargeFastTravel, waypointName } from '../../../../shared/world/waypoints.js';
-import { markersOn, findMarker, addMarker, removeMarker, cycleMarkerColor, markerColor, MARKER_MAX } from '../../../../shared/world/mapMarkers.js';
+import { allWaypoints, findWaypoint, planFastTravel, chargeFastTravel, waypointName, renameWaypoint } from '../../../../shared/world/waypoints.js';
+import { markersOn, findMarker, addMarker, removeMarker, cycleMarkerColor, markerColor, renameMarker, MARKER_MAX, MAP_NAME_MAX, MAP_NAME_KEY_PATTERN } from '../../../../shared/world/mapMarkers.js';
+import { TextEntry } from '../../../../shared/core/textEntry.js';
 
 /* WorldMapController - the world map screen (opened from the overworld menu, key N): the land the party has SEEN, north up, which can be panned and zoomed.
  * Nothing that has not been seen is on it (shared/world/exploredMap.js decides what has), the party's own spot is.
@@ -12,7 +13,9 @@ import { markersOn, findMarker, addMarker, removeMarker, cycleMarkerColor, marke
  * Keys:   arrow keys / W A S D pan (hold Shift to go faster), + / - (also Q / E) or the wheel zoom, F fits everything seen, C or Space centres on the party,
  *         T (or a click on a banner) picks a waypoint, Enter (or the Fast Travel button) pays and goes to it, Esc / N / right-click leaves.
  *         Markers (world/mapMarkers.js): K, or the Add Marker button and then a click on the map, pins the tile under the pointer (with the keys, the middle of
- *         the map); a click on a pin picks it, and its Colour / Remove buttons (or Delete) change or take it away. The mouse can drag the map, too, and the buttons at the bottom right do the same as the keys.
+ *         the map); a click on a pin picks it, and its Colour / Remove buttons (or Delete) change or take it away.
+ *         Names: R (or the Rename button) names the picked pin or one of your own waypoints; type, Enter keeps it, Esc leaves it as it was, and an
+ *         empty name gives it back its own ("Marker 3"). While the name box is open it takes every key, so W A S D type instead of panning. The mouse can drag the map, too, and the buttons at the bottom right do the same as the keys.
  * Zoom:   a list of scales (pixels per tile); the picture eases to the chosen one, keeping the point under the mouse (or the middle of the map) where it is.
  *
  * The screen is 1920 x 1080 like the others (the canvas is that size; see UITheme.backButtonBox). VIEW is the map's window. */
@@ -75,7 +78,7 @@ export class WorldMapController extends BaseController {
             Equal: 'ZOOM_IN', NumpadAdd: 'ZOOM_IN', KeyE: 'ZOOM_IN',
             Minus: 'ZOOM_OUT', NumpadSubtract: 'ZOOM_OUT', KeyQ: 'ZOOM_OUT',
             KeyF: 'FIT', KeyC: 'CENTER', Space: 'CENTER', Enter: 'CENTER', KeyT: 'NEXT_WAYPOINT',
-            KeyK: 'ADD_MARKER', Delete: 'REMOVE_MARKER'
+            KeyK: 'ADD_MARKER', Delete: 'REMOVE_MARKER', KeyR: 'RENAME'
         };
         this.worldManager = null;
         this.player = { x: 0, y: 0, direction: 'down' };
@@ -90,6 +93,7 @@ export class WorldMapController extends BaseController {
         this.notice = null;                       // { text, until } a line the map shows for a moment ("not enough currency")
         this.placing = false;                     // after Add Marker: the next click on the map puts a pin there
         this.markerId = null;                     // the pin picked on the map (its id), or null
+        this.naming = null;                       // { kind: 'marker' | 'waypoint', id, input: TextEntry } while a name is being typed
     }
 
     init(data = {}) {
@@ -106,6 +110,7 @@ export class WorldMapController extends BaseController {
         this.notice = null;
         this.placing = false;
         this.markerId = null;
+        this.naming = null;
         this.centerOnParty();
         this.startInKeyboardMode();
         console.log('[WorldMapController] Initialized');
@@ -159,6 +164,7 @@ export class WorldMapController extends BaseController {
     }
 
     _held(...codes) {
+        if (this.naming) return false;   // typing a name: the keys type, they do not pan
         const keys = this.input && this.input.heldKeys;
         return !!keys && codes.some(c => keys.has(c));
     }
@@ -223,6 +229,7 @@ export class WorldMapController extends BaseController {
     }
 
     select(id) {
+        this.finishRename(true);
         this.selectedId = id;
         this.markerId = null;   // a waypoint or a pin, not both
         const wp = this.selectedWaypoint();
@@ -272,6 +279,7 @@ export class WorldMapController extends BaseController {
     }
 
     pickMarker(id) {
+        this.finishRename(true);
         this.markerId = id;
         this.selectedId = null;
         this.placing = false;
@@ -285,6 +293,29 @@ export class WorldMapController extends BaseController {
         this.playCancelSound();
         this.say(`${m.label} removed.`);
         return true;
+    }
+
+    // ---- names ---------------------------------------------------------------------------------------------------------------------------------
+
+    /** R / Rename: a name box for the picked pin, or for one of my own waypoints, filled with its name now. */
+    startRename() {
+        const m = this.selectedMarker(), wp = this.selectedWaypoint();
+        if (m) this.naming = { kind: 'marker', id: m.id, input: new TextEntry(m.label || '', MAP_NAME_MAX, MAP_NAME_KEY_PATTERN) };
+        else if (wp && !wp.owner) this.naming = { kind: 'waypoint', id: wp.id, input: new TextEntry(wp.name || '', MAP_NAME_MAX, MAP_NAME_KEY_PATTERN) };
+        else { this.playErrorSound(); this.say(wp ? 'Only your own waypoints can be renamed.' : 'Pick a marker or a waypoint first.'); return false; }
+        this.playConfirmSound();
+        return true;
+    }
+
+    /** Close the name box: keep what was typed (an empty name gives the place back its own), or leave the name as it was. */
+    finishRename(keep) {
+        const n = this.naming;
+        if (!n) return false;
+        this.naming = null;
+        if (!keep) { this.playCancelSound(); return false; }
+        const done = n.kind === 'marker' ? renameMarker(n.id, n.input.value) : renameWaypoint(n.id, n.input.value);
+        if (done) { this.playConfirmSound(); this.say(`Named ${n.kind === 'marker' ? done.label : waypointName(done)}.`); }
+        return !!done;
     }
 
     say(text) {
@@ -312,6 +343,11 @@ export class WorldMapController extends BaseController {
     }
 
     onClick(hitboxId) {
+        if (this.naming) {
+            if (hitboxId === 'name_box') return;                      // a click in the box: keep typing
+            this.finishRename(hitboxId !== 'btn_rename');             // anywhere else keeps the name (Rename again closes it, as it was)
+            if (hitboxId === 'btn_rename') return;
+        }
         if (hitboxId && hitboxId.startsWith('mk_')) {
             this.playConfirmSound();
             this.pickMarker(Number(hitboxId.slice(3)));
@@ -337,6 +373,7 @@ export class WorldMapController extends BaseController {
                 break;
             case 'btn_marker_color': { const m = this.selectedMarker(); if (m) { cycleMarkerColor(m.id); this.playNavSound(); } break; }
             case 'btn_marker_remove': this.removePicked(); break;
+            case 'btn_rename': this.startRename(); break;
             case 'btn_zoom_in': if (this.zoomStep(1)) this.playConfirmSound(); else this.playErrorSound(); break;
             case 'btn_zoom_out': if (this.zoomStep(-1)) this.playConfirmSound(); else this.playErrorSound(); break;
             case 'btn_center': this.playConfirmSound(); this.centerOnParty(); break;
@@ -347,11 +384,21 @@ export class WorldMapController extends BaseController {
     }
 
     onRightClick() {
+        if (this.naming) { this.finishRename(false); return; }
         if (this.placing) { this.placing = false; this.playCancelSound(); this.notice = null; return; }   // first, the right button only stops the placing
         this.exit();
     }
 
     handleKeyDown(code, e) {
+        // while the name box is open it takes every key (W A S D type, they do not pan)
+        if (this.naming) {
+            this.noteKeyboardInput && this.noteKeyboardInput();
+            const k = (e && e.code) || code;
+            if (k === 'Enter' || k === 'NumpadEnter') this.finishRename(true);
+            else if (k === 'Escape') this.finishRename(false);
+            else if (e) { if (e.key === ' ' && e.preventDefault) e.preventDefault(); this.naming.input.handleEvent(e); }
+            return;
+        }
         const intent = this.resolveIntent(code, e);
         switch (intent) {
             case 'CANCEL':
@@ -359,6 +406,7 @@ export class WorldMapController extends BaseController {
                 this.exit(); break;
             case 'ADD_MARKER': this.markHere(); break;
             case 'REMOVE_MARKER': this.removePicked(); break;
+            case 'RENAME': this.startRename(); break;
             case 'ZOOM_IN': if (this.zoomStep(1)) this.playNavSound(); break;
             case 'ZOOM_OUT': if (this.zoomStep(-1)) this.playNavSound(); break;
             case 'FIT': this.playConfirmSound(); this.fit(); break;
@@ -412,6 +460,11 @@ export class WorldMapController extends BaseController {
         const marker = this.selectedMarker();
         const panel = { x: VIEW.x + 20, y: VIEW.y + VIEW.h - 150, w: 660, h: 130 };
         if (picked) hitboxes.push({ id: 'btn_fast_travel', x: panel.x + panel.w - 210, y: panel.y + panel.h - 72, w: 190, h: 56, zIndex: 11, label: 'Fast Travel' });
+        // Rename, top right of the panel: for a pin, or for one of my own waypoints (not a party member's); and the name box while it is open
+        const renamable = marker || (picked && !picked.owner);
+        if (renamable) hitboxes.push({ id: 'btn_rename', x: panel.x + panel.w - 190, y: panel.y + 10, w: 170, h: 42, zIndex: 11, label: this.naming ? 'Cancel' : 'Rename' });
+        const nameBox = this.naming ? { x: panel.x + (this.naming.kind === 'marker' ? 56 : 20), y: panel.y + 12, w: 380, h: 40 } : null;
+        if (nameBox) hitboxes.push({ id: 'name_box', ...nameBox, zIndex: 11 });
         if (marker) {
             hitboxes.push({ id: 'btn_marker_remove', x: panel.x + panel.w - 190, y: panel.y + panel.h - 72, w: 170, h: 56, zIndex: 11, label: 'Remove' });
             hitboxes.push({ id: 'btn_marker_color', x: panel.x + panel.w - 376, y: panel.y + panel.h - 72, w: 170, h: 56, zIndex: 11, label: 'Colour' });
@@ -438,6 +491,7 @@ export class WorldMapController extends BaseController {
             placing: this.placing,
             selectedMarker: marker ? { ...marker, fill: markerColor(marker).fill, colorName: markerColor(marker).label, tiles: Math.round(Math.hypot(marker.col - this.player.x, marker.row - this.player.y)) } : null,
             selectedWaypoint: picked ? { ...picked, name: waypointName(picked) } : null,
+            naming: this.naming ? { kind: this.naming.kind, id: this.naming.id, text: this.naming.input.value, box: nameBox } : null,
             travelPlan: plan,
             currency: gameState.party.currency || 0,
             panel,

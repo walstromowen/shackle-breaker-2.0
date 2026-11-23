@@ -384,11 +384,12 @@
     },
     "OSRIC": {
       "id": "Ygax3iFZ8IXgqvvoIyL5",
-      "name": "Senior Surgeon Osric, \"Osric of the Saw\" (Shackle Breaker): designed for him, an old, weathered hunter of a gothic Victorian city at the end of a long night, like a Bloodborne character: deep, gravelly and worn, an old-world courtly cadence, slow and measured, wry, weary and politely menacing, with a hollow, joyless chuckle now and then",
+      "name": "Senior Surgeon Osric, \"Osric of the Saw\" (Shackle Breaker): designed for him, an old, weathered hunter of a gothic Victorian city at the end of a long night, like a Bloodborne character: deep, gravelly and worn, an old-world courtly cadence, slow and measured, wry, weary and politely menacing, with a hollow, joyless chuckle now and then; the ominous treatment takes him deeper and slower still, a faint rumble an octave beneath him and a dark cavernous echo, like a voice from the far end of a blood-soaked cathedral",
       "model": "eleven_v3",
       "settings": {
         "stability": 0.5
       },
+      "fx": "ominous",
       "directions": {
         "Ah. Another soul on the old road. Mind the graves, friend. The dead here have suffered enough of us.": "[weary, courtly, unhurried] Ah. Another soul on the old road. [dry, a touch of warning] Mind the graves, friend. The dead here have suffered enough of us. [a hollow, joyless chuckle]",
         "And there it is: the iron, still shut tight. No rot in your eyes yet. Lucky, or only early.": "[slow, appraising, low] And there it is: the iron, still shut tight. [measured] No rot in your eyes yet. [wry] Lucky, or only early. [a hollow, joyless chuckle]",
@@ -429,12 +430,13 @@
       }
     },
     "GARRICK": {
-      "id": "GCDIRtNQtXaSk3U3wvYf",
-      "name": "Surgeon Garrick (Shackle Breaker): designed for him, a thin unhinged English man, sing-song, breathy and giggling, soft then shrill",
+      "id": "ZjDHfsZevqh1uofWe33d",
+      "name": "Surgeon Garrick (Shackle Breaker): the Anguished Madman's voice and ghoul treatment (MADMAN): a surgeon going the way of the iron, the curse already in his throat, giggling, sing-song and shrill between the growls",
       "model": "eleven_v3",
       "settings": {
-        "stability": 0.5
+        "stability": 0.0
       },
+      "fx": "ghoul",
       "directions": {
         "Osric sent you. Hah! Doctor Osric, Doctor Osric. Thinks I'm going the way of the iron.": "[giggling] Osric sent you. Hah! [sing-song, mocking] Doctor Osric, Doctor Osric. Thinks I'm going the way of the iron.",
         "But listen. Listen! Can you hear it? The chain sings when you cut it. Every link, a little song.": "[whispering, excited] But listen. [shrill] Listen! Can you hear it? [dreamy] The chain sings when you cut it. Every link, a little song.",

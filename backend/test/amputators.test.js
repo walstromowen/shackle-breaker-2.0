@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { gameState } from '../../shared/core/gameState.js';
 import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
 import { QuestDefinitions as Q, STORY_QUESTS } from '../../shared/story/questDefinitions.js';
-import { WorldManager } from '../../shared/world/worldManager.js';
+import { WorldManager, GARRICK_GRAVEYARD } from '../../shared/world/worldManager.js';
 import { MAP_OBJECTS_DEFINITIONS as M } from '../../shared/world/mapObjectDefinitions.js';
 import { ENTITY_DEFINITIONS as E } from '../../shared/characters/entityDefinitions.js';
 import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
@@ -167,10 +167,17 @@ test('in act 1 the first graveyard the player comes upon becomes Osric\'s; Garri
             assert.equal(wm.noticeAmputatorGraveyard(gc, gr), false, 'claimed once');
             // the errand, taken standing beside him
             gameState.player.col = oc; gameState.player.row = or + 1;
+            const t0 = Date.now();
             const q = wm.pickAmputatorQuarry();
+            const took = Date.now() - t0;
             assert.ok(q, `seed ${seed}: somewhere for Garrick`);
             const d = Math.hypot(q[0] - oc, q[1] - or);
-            assert.ok(d >= 18 && d <= 30, `out of sight of the graveyard (${d.toFixed(1)})`);
+            // at another small graveyard, the nearest one at least GARRICK_GRAVEYARD.MIN cells from Osric's: gravestones round him
+            const gstones = Object.entries(gameState.world.changes).filter(([k, id]) => /TOMBSTONE|OLD_GRAVESTONE/.test(String(id))).map(([k]) => k.split(',').map(Number))
+                .filter(([c, r]) => Math.abs(c - q[0]) <= 7 && Math.abs(r - q[1]) <= 7);
+            assert.ok(d >= GARRICK_GRAVEYARD.MIN, `seed ${seed}: farther than before, ${d.toFixed(1)} cells from Osric`);
+            assert.ok(gstones.length >= 3, `seed ${seed}: in another graveyard (${gstones.length} stones round him, ${took} ms to find)`);
+            assert.ok(took < 4000, `found quickly enough (${took} ms)`);
             assert.deepEqual(wm.pickAmputatorQuarry(), q, 'picked once');
             wm.refreshStoryObjects();
             assert.equal(wm.getObjectAt(q[0], q[1]).id, 'GARRICK_NPC');

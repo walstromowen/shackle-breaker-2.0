@@ -88,9 +88,7 @@ export class StructureSpawner {
             }
         }
         const biome = this.getBiomeAt(centerCol, centerRow);
-        const structureRng = this.pseudoRandom(cx * 137, cy * 193);
-        /* a chunk with no village may get a landmark (a graveyard), on its own roll */
-        const structureId = biome.getStructureId(structureRng) || biome.getLandmarkId(this.pseudoRandom(cx * 271 + 19, cy * 313 + 23));
+        const structureId = this._chunkStructureId(cx, cy);
         if (!structureId) return;
         const prefabOrBlueprint = STRUCTURES[structureId];
         if (!prefabOrBlueprint) return;
@@ -121,6 +119,26 @@ export class StructureSpawner {
                 if (warm && ++tried % 8 === 0) yield;
             }
         }
+    }
+    /* The structure a chunk's roll gives it, from the world's seed alone (a village, else perhaps a landmark: a graveyard), or null. Whether it then
+       finds flat, free ground in the chunk is another matter (_spawnStructuresSteps). A chunk a castle reaches builds the castle instead. */
+    _chunkStructureId(cx, cy) {
+        const biome = this.getBiomeAt(cx * this.CHUNK_SIZE + Math.floor(this.CHUNK_SIZE / 2), cy * this.CHUNK_SIZE + Math.floor(this.CHUNK_SIZE / 2));
+        /* a chunk with no village may get a landmark (a graveyard), on its own roll */
+        return biome.getStructureId(this.pseudoRandom(cx * 137, cy * 193)) || biome.getLandmarkId(this.pseudoRandom(cx * 271 + 19, cy * 313 + 23)) || null;
+    }
+    /* The gravestones a small graveyard (structures.js GRAVEYARD*) has written into the chunk (cx, cy): [[col, row], ...]. A graveyard's 7 x 7 box always
+       lies inside its chunk. */
+    _graveyardStonesIn(cx, cy) {
+        if (!this._graveStoneIds) {
+            this._graveStoneIds = new Set();
+            for (const p of Object.values(STRUCTURES)) if (p && p.graveyard) { this._graveStoneIds.add(p.graveyard.stone); this._graveStoneIds.add(p.graveyard.encounterStone); }
+        }
+        const changes = gameState.world.changes || {}, out = [];
+        for (let r = cy * this.CHUNK_SIZE; r < (cy + 1) * this.CHUNK_SIZE; r++)
+            for (let c = cx * this.CHUNK_SIZE; c < (cx + 1) * this.CHUNK_SIZE; c++)
+                if (this._graveStoneIds.has(changes[this._s(c, r)])) out.push([c, r]);
+        return out;
     }
     /* A castle's map objects written into the world's changes, once per world (gameState.world.castlesBuilt): its towers, keep and gatehouse, its
        houses and their doors, its clutter. Whatever the plains had put on those cells goes. */

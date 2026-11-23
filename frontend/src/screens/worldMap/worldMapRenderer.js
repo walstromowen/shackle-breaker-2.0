@@ -175,8 +175,9 @@ export class WorldMapRenderer {
             const cantPay = b.id === 'btn_fast_travel' && state.travelPlan && !state.travelPlan.affordable;
             ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, state.hoveredHitboxId, cantPay ? { disabled: true } : {}));
         }
-        const hint = state.placing ? 'Click the map to place the marker  ·  Esc or right-click stops'
-            : `Arrows pan  ·  Wheel zooms  ·  F fits  ·  C centers  ·  K marks${state.interior ? '' : '  ·  T waypoints'}`;
+        const hint = state.naming ? 'Type a name  ·  Enter keeps it  ·  Esc leaves it as it was  ·  empty: its own name'
+            : state.placing ? 'Click the map to place the marker  ·  Esc or right-click stops'
+            : `Arrows pan  ·  Wheel zooms  ·  F fits  ·  C centers  ·  K marks${state.selectedMarker || (state.selectedWaypoint && !state.selectedWaypoint.owner) ? '  ·  R renames' : ''}${state.interior ? '' : '  ·  T waypoints'}`;
         ui.drawStyled('hint', hint, 684, H - 48 - 28, { maxWidth: 630 });   // between the Back button (ends at 348) and the row of buttons (starts at 1020)
     }
 
@@ -202,6 +203,11 @@ export class WorldMapRenderer {
                 ctx.fillRect(x - w / 3, y - h, w * 2 / 3, h * 0.6);
                 ctx.fillStyle = '#6a4828';
                 ctx.fillRect(x - 1.5, y - h, 3, h);
+            }
+            if (picked) {   // its name over it, like a picked pin's
+                ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+                ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'; ctx.fillStyle = '#ffe9a8';
+                ctx.strokeText(state.selectedWaypoint.name, x, y - h - 8); ctx.fillText(state.selectedWaypoint.name, x, y - h - 8);
             }
             ctx.restore();
         }
@@ -261,8 +267,9 @@ export class WorldMapRenderer {
         ctx.beginPath(); ctx.arc(p.x + 36, p.y + 34, 10, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'; ctx.stroke();
         ctx.restore();
-        ui.drawStyled('subtitle', m.label, p.x + 56, p.y + 40, { align: 'left', maxWidth: 240 });
-        ui.drawStyled('label', `${m.tiles} tiles away`, p.x + 24, p.y + 78, { align: 'left' });
+        if (state.naming && state.naming.kind === 'marker') this._nameBox(ctx, ui, state.naming);
+        else ui.drawStyled('subtitle', m.label, p.x + 56, p.y + 40, { align: 'left', maxWidth: p.w - 56 - 210 });
+        ui.drawStyled('label', `${m.tiles} tile${m.tiles === 1 ? '' : 's'} away`, p.x + 24, p.y + 78, { align: 'left' });
         ui.drawStyled('label', `${m.colorName}  ·  ${m.col}, ${m.row}`, p.x + 24, p.y + 108, { align: 'left' });
     }
 
@@ -314,6 +321,25 @@ export class WorldMapRenderer {
         }
     }
 
+    /* The name being typed for a pin or a waypoint (the controller's naming): a box with a blinking caret, a greyed hint while it is empty. */
+    _nameBox(ctx, ui, naming) {
+        const b = naming.box;
+        if (!b) return;
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.strokeStyle = '#e8c04a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2);
+        ctx.restore();
+        const blink = Math.floor(performance.now() / 500) % 2 === 0;
+        const empty = !naming.text;
+        const text = empty ? (blink ? '|' : (naming.kind === 'marker' ? 'Marker name' : 'Waypoint name')) : naming.text + (blink ? '|' : '');
+        ui.startClip(b.x, b.y, b.w, b.h);
+        ui.drawStyled('body', text, b.x + 14, b.y + b.h / 2, { align: 'left', baseline: 'middle', ...(empty && !blink ? { color: UITheme.colors.textMuted } : {}) });
+        ui.endClip();
+    }
+
     /* Bottom left of the window, while a waypoint is picked: where it is, what the trip costs in currency and time, and the Fast Travel button (drawn with the other buttons). */
     _travelPanel(ctx, ui, state) {
         const wp = state.selectedWaypoint, plan = state.travelPlan, p = state.panel;
@@ -326,7 +352,8 @@ export class WorldMapRenderer {
         ctx.lineWidth = 2;
         ctx.strokeRect(p.x + 1, p.y + 1, p.w - 2, p.h - 2);
         ctx.restore();
-        ui.drawStyled('subtitle', wp.name, p.x + 24, p.y + 40, { align: 'left', maxWidth: p.w - 48 });
+        if (state.naming && state.naming.kind === 'waypoint') this._nameBox(ctx, ui, state.naming);
+        else ui.drawStyled('subtitle', wp.name, p.x + 24, p.y + 40, { align: 'left', maxWidth: wp.owner ? p.w - 48 : p.w - 24 - 210 });   // (Rename sits top right for my own)
         ui.drawStyled('label', `${plan.tiles} tiles away  ·  ${formatDuration(plan.minutes)}`, p.x + 24, p.y + 74, { align: 'left' });
         ui.drawStyled('label', `Cost: ${plan.cost}  (you have ${state.currency})`, p.x + 24, p.y + 106, plan.affordable ? { align: 'left' } : { align: 'left', color: '#e8806a' });
     }

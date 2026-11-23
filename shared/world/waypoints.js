@@ -1,6 +1,7 @@
 import { gameState } from '../core/gameState.js';
 import { MAP_OBJECTS_DEFINITIONS } from './mapObjectDefinitions.js';
 import { isPlateau } from './biomeDefinitions.js';
+import { cleanMapName } from './mapMarkers.js';
 
 /* WAYPOINTS - banners the party plants in the world (the Waypoint item) and fast-travels back to from the world map.
  *
@@ -67,7 +68,7 @@ export function allWaypoints(world = gameState.world) {
     for (const o of others) {
         for (const wp of o.waypoints || []) {
             if (!wp || !Number.isFinite(wp.col) || !Number.isFinite(wp.row)) continue;
-            list.push({ ...wp, id: `${o.owner}:${wp.id}`, owner: o.owner, ownerName: o.ownerName });
+            list.push({ ...wp, id: `${o.owner}:${wp.id}`, owner: o.owner, ownerName: o.ownerName, name: cleanMapName(wp.name) || undefined });   // their name, kept to what a name may hold
         }
     }
     return list;
@@ -153,9 +154,20 @@ export function placeWaypoint(wm, col, row, fromElevation) {
 
 /** A name for a waypoint on the map: "Waypoint 3 · Snowy Mountains". */
 export function waypointName(wp) {
+    // the name the player gave it (renameWaypoint), with whose it is when it is another player's
+    if (wp && wp.name) return `${wp.ownerName ? wp.ownerName + "'s " : ''}${wp.name}`;
     const biome = wp.biome ? String(wp.biome).toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
     const num = wp.owner ? String(wp.id).split(':').pop() : wp.id;
     return `${wp.ownerName ? wp.ownerName + "'s " : ''}Waypoint ${num}${biome ? ' · ' + biome : ''}`;
+}
+
+/** Names one of this player's own waypoints (another player's cannot be renamed here); an empty name gives it back its own. The waypoint, or null. */
+export function renameWaypoint(id, name, world = gameState.world) {
+    const wp = getWaypoints(world).find((w) => String(w.id) === String(id));
+    if (!wp) return null;
+    const clean = cleanMapName(name);
+    if (clean) wp.name = clean; else delete wp.name;
+    return wp;
 }
 
 /** Pay for the fast travel and move the clock; returns the plan, or null when the party cannot pay. (Moving the party is the scene manager's job.) */

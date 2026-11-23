@@ -49,7 +49,7 @@ export const ItemDefinitions = {
     type: "weapon",
     description: "A plain iron mace with a flanged head. No edge to keep, and it finds the bone through any armor.",
     value: 150,
-    icon: { col: 16, row: 0 },           // (a blank cell of the weapons sheet until it is painted)
+    icon: { col: 9, row: 0 },            // the flanged mace on the weapons sheet ((10, 0) beside it is a spiked morning star)
     attack: { blunt: 5, pierce: 1 },     // the club's weight, and the flanges bite
     requirements: { strength: 10, vigor: 6 },
     requirementGrowth: { strength: 2, vigor: 1 },

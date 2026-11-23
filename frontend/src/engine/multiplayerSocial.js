@@ -752,7 +752,7 @@ class MultiplayerSocial {
             if (this._t.party >= PARTY_SEND_EVERY) {
                 this._t.party = 0;
                 const members = gameState.party.members.map(serializeEntity);
-                const waypoints = getWaypoints().map(w => ({ id: w.id, col: w.col, row: w.row, biome: w.biome, origin: w.origin }));
+                const waypoints = getWaypoints().map(w => ({ id: w.id, col: w.col, row: w.row, biome: w.biome, origin: w.origin, name: w.name }));
                 const json = JSON.stringify([members, waypoints]);
                 const newcomer = others.some(id => !this._partySentTo.has(id));
                 if (json !== this._lastPartyJson || newcomer) {

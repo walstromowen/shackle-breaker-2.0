@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# The Bear's roar (frontend/src/assets/audio/sfx/cries/bear_cry.mp3; bearCry in frontend/src/main.js, the BEAR entity's crySound and deathSound
+# both, and Bear Form's roar): ElevenLabs sound effects, cut to 2.04 s like every other cry, faded out and levelled to -10 LUFS.
+#   ELEVENLABS_API_KEY=... bash tools/voice/makeBearSounds.sh      (in a cloud session the network proxy supplies the key)
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+TMP=$(mktemp -d)
+KEY=${ELEVENLABS_API_KEY:-proxy-injected}
+# out file | prompt
+SOUNDS=(
+  "frontend/src/assets/audio/sfx/cries/bear_cry.mp3|a huge grizzly bear rearing up and letting out one deep, ferocious, guttural roar, close up, powerful and aggressive, no music"
+)
+for entry in "${SOUNDS[@]}"; do
+  out="${entry%%|*}"; prompt="${entry#*|}"
+  curl -sS -f -o "$TMP/raw.mp3" -X POST https://api.elevenlabs.io/v1/sound-generation \
+    -H "xi-api-key: $KEY" -H "Content-Type: application/json" \
+    -d "{\"text\": \"$prompt\", \"duration_seconds\": 2.5, \"prompt_influence\": 0.6}"
+  ffmpeg -hide_banner -loglevel error -y -i "$TMP/raw.mp3" \
+    -af "silenceremove=start_periods=1:start_threshold=-45dB,atrim=0:2.04,afade=t=out:st=1.7:d=0.34,loudnorm=I=-10:TP=-1:LRA=11" \
+    -ar 44100 -ac 2 -b:a 128k "$out"
+  echo "$out"
+done
+rm -rf "$TMP"

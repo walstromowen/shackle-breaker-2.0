@@ -677,7 +677,7 @@ export const QuestDefinitions = {
         id: "amputators_trial",
         name: "The Laughing Surgeon",
         turnIn: "AMPUTATOR_OSRIC",
-        description: "Senior Surgeon Osric, an Amputator with a hook for a hand, keeps watch over a small graveyard. One of his order, Surgeon Garrick, has begun to hear the chain sing. He wears no iron yet, but the rot needs none to get in. Osric cannot bring himself to do it. Find Garrick where Osric marked your map, put him to rest, and return to Osric.",
+        description: "Senior Surgeon Osric, an Amputator with a hook for a hand, keeps watch over a small graveyard. One of his order, Surgeon Garrick, has begun to hear the chain sing. He wears no iron yet, but the rot needs none to get in. Osric cannot bring himself to do it. Garrick keeps to another graveyard, farther off: find him where Osric marked your map, put him to rest, and return to Osric.",
         objectives: [
             { id: "obj_garrick", type: "kill_enemy", targetId: "AMPUTATOR_GARRICK", amount: 1, description: "Put Surgeon Garrick to rest" }
         ],

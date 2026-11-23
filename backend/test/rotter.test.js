@@ -18,6 +18,6 @@ test('once the blood moon is up (act 2) rotters are made acidic', () => {
     assert.ok(rotter.traits.includes('acidic'));
 });
 
-test('other acidic creatures are unchanged', () => {
-    assert.ok(ENTITY_DEFINITIONS.CAVE_SPIDER.traits.includes('acidic'));
+test('the cave spider is still acidic, from Act II on (backend/test/mapnames.test.js checks the acts)', () => {
+    assert.ok((ENTITY_DEFINITIONS.CAVE_SPIDER.actTraits || []).some(t => t.id === 'acidic' && t.minAct === 2));
 });

@@ -795,6 +795,8 @@ export const ENTITY_DEFINITIONS = {
         level: 1,
         spriteOverworld: "bearSprite",
         spritePortrait: "bearPortrait",
+        crySound: "bearCry",      // a deep, ferocious roar (not the beasts' dog bark), for its death too
+        deathSound: "bearCry",
         attributes: { ...BEAST_TEMPLATE.attributes, vigor: 14, strength: 14, dexterity: 8 },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
@@ -874,7 +876,7 @@ export const ENTITY_DEFINITIONS = {
             intelligence: 2,
             attunement: 4
         },
-        traits: ['acidic'],
+        actTraits: [{ id: 'acidic', minAct: 2 }],   // its acid pool on death comes with Act II (Dolos awake), not in the first act (EntityFactory)
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
             maxHp: 10,

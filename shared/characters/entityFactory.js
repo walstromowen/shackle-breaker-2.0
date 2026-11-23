@@ -8,6 +8,7 @@ import { ENEMY_DAMAGE_SCALING, DAMAGE_SCALING, scalingFor } from '../core/consta
 import { ItemDefinitions } from '../items/itemDefinitions.js';
 import { ItemFactory } from '../items/itemFactory.js';
 import { unforgeWeapons } from '../battle/enemyArms.js';
+import { ActSystem } from '../story/actSystem.js';
 
 // BALANCE KNOB: base max HP an enemy gets per level above 1 on top of (or, below 0, taken from) the +2 per level that every level-up gives
 // (ExperienceSystem.applyLevelUpStats). 0 = an enemy grows like a player does (it was -1 while enemies outgrew fully upgraded weapons; with the attack
@@ -90,6 +91,10 @@ export class EntityFactory {
             config.equipment.mainHand = config.armedWith[Math.floor(Math.random() * config.armedWith.length) % config.armedWith.length];
         }
         if (!config.traits) config.traits = [];
+        // `actTraits`: traits a creature has only from some act on (a cave spider's Acidic from Act II): [{ id, minAct?, maxAct? }]
+        for (const t of config.actTraits || []) {
+            if (t && ActSystem.isAvailable(t) && !config.traits.includes(t.id)) config.traits = [...config.traits, t.id];
+        }
 
         if (finalOverrides.traits && Array.isArray(finalOverrides.traits)) {
             config.traits.push(...finalOverrides.traits);

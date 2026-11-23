@@ -197,7 +197,7 @@ export const BattleAnimationDefinitions = {
     "bear_form": anim(2.2, {
         seconds: true,
         audio: [
-            sfx(0.1, 'wolfCry', { volume: 0.8, pitch: 0.5 }),
+            sfx(0.1, 'bearCry', { volume: 0.9 }),   // the Bear's own roar (it was a wolf's howl slowed down)
             sfx(0.6, 'crunchSfx', { volume: 1, pitch: 0.5 })
         ],
         actor: wobble(0.1, 1.0, 16, { flash: flash(0, 1.6, 'brightness(70%) sepia(100%) hue-rotate(10deg) saturate(300%)') }),
