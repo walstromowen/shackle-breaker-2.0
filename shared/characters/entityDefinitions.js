@@ -797,13 +797,13 @@ export const ENTITY_DEFINITIONS = {
         spritePortrait: "bearPortrait",
         crySound: "bearCry",      // a deep, ferocious roar (not the beasts' dog bark), for its death too
         deathSound: "bearCry",
-        attributes: { ...BEAST_TEMPLATE.attributes, vigor: 14, strength: 14, dexterity: 8 },
+        attributes: { ...BEAST_TEMPLATE.attributes, vigor: 13, strength: 11, dexterity: 8 },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 24, maxStamina: 16, speed: 4, critical: 0.08,
+            maxHp: 20, maxStamina: 16, speed: 4, critical: 0.08,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 6, slash: 4, pierce: 3, ice: 2 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, ice: 0.2 },
-            baseAttack: { blunt: 8, slash: 8, pierce: 6 }
+            baseAttack: { blunt: 6, slash: 6, pierce: 5 }
         },
         abilities: [...BEAST_TEMPLATE.abilities, 'claw', 'pounce'],
         lootTableId: "bear_drops",
@@ -822,17 +822,17 @@ export const ENTITY_DEFINITIONS = {
         attributes: {
             ...BEAST_TEMPLATE.attributes,
             vigor: 10,
-            strength: 12,
-            dexterity: 16,
+            strength: 9,
+            dexterity: 14,
             intelligence: 3,
             attunement: 6
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 14,
+            maxHp: 12,
             maxStamina: 20,
-            speed: 12,
-            critical: 0.15,
+            speed: 9,
+            critical: 0.10,
             baseDefense: {
                 ...BEAST_TEMPLATE.baseStats.baseDefense,
                 ice: 5,
@@ -1030,14 +1030,14 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "duneMawCry",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 11, strength: 8, dexterity: 7, intelligence: 13, attunement: 6   // tools/playthroughSim.mjs MATCHUP: players win ~63% at level 4, ~75% at 8
+            vigor: 11, strength: 8, dexterity: 7, intelligence: 9, attunement: 6   // tools/playthroughSim.mjs MATCHUP: players win ~41% at level 4, ~83% at 10 (a tougher, rarer foe)
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 19, maxStamina: 12, maxInsight: 30, speed: 6,
-            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, slash: 4, pierce: 4, ice: 6, water: 3, fire: -3 },
+            maxHp: 16, maxStamina: 12, maxInsight: 20, speed: 6,
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, slash: 3, pierce: 3, ice: 6, water: 3, fire: -3 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, ice: 0.5, water: 0.2 },
-            baseAttack: { pierce: 5, ice: 6 }
+            baseAttack: { pierce: 4, ice: 4 }
         },
         currencyReward: { min: 8, max: 18 },
         lootTableId: "icecoil_drops",

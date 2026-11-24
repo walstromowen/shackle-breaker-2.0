@@ -8,7 +8,7 @@ export const SpawnTableDefinitions = {
         pools: [
             {
                 factionId: "wildlife",
-                weight: 30,
+                weight: 23,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 2 },
                     normal: { minSize: 1, maxSize: 2 },
@@ -16,8 +16,21 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 1, maxSize: 3 }
                 },
                 members: [
-                    { id: 'WOLF', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
-                    { id: 'BEAR', weight: 30, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }   // about 1 in 4 of the plains' beasts by day
+                    { id: 'WOLF', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
+                ]
+            },
+            {
+                // bears keep to themselves: a fight with one is that bear alone, or bears together, never mixed with other beasts
+                factionId: "wildlife",
+                weight: 7,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 1 },
+                    hard: { minSize: 1, maxSize: 2 },
+                    nightmare: { minSize: 1, maxSize: 2 }
+                },
+                members: [
+                    { id: 'BEAR', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
                 ]
             },
             {
@@ -272,7 +285,7 @@ export const SpawnTableDefinitions = {
         type: "faction_pool",
         pools: [{
             factionId: "wildlife",
-            weight: 50,
+            weight: 40,
             difficultySettings: {
                 easy: { minSize: 1, maxSize: 1 },
                 normal: { minSize: 1, maxSize: 2 },
@@ -281,8 +294,20 @@ export const SpawnTableDefinitions = {
             },
             members: [
                 { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } },   // as common as the Dune Maw in the desert
-                { id: 'BEAR', weight: 40, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }   // the mountain bears: about 1 in 5 of its beasts
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert
+            ]
+        }, {
+            // bears keep to themselves: a fight with one is that bear alone, or bears together, never mixed with other beasts
+            factionId: "wildlife",
+            weight: 10,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 1 },
+                normal: { minSize: 1, maxSize: 1 },
+                hard: { minSize: 1, maxSize: 2 },
+                nightmare: { minSize: 1, maxSize: 2 }
+            },
+            members: [
+                { id: 'BEAR', weight: 100, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }
             ]
         }, {
             // the trappers of the peaks hunt the roads: about half of the mountain's ambushes
@@ -307,7 +332,7 @@ export const SpawnTableDefinitions = {
         type: "faction_pool",
         pools: [{
             factionId: "cursedwildlife",
-            weight: 50,
+            weight: 40,
             difficultySettings: {
                 easy: { minSize: 1, maxSize: 2 },
                 normal: { minSize: 1, maxSize: 2 },
@@ -316,8 +341,20 @@ export const SpawnTableDefinitions = {
             },
             members: [
                 { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } },   // as common as the Dune Maw in the desert
-                { id: 'BEAR', weight: 40, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }   // the mountain bears: about 1 in 5 of its beasts
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert
+            ]
+        }, {
+            // bears keep to themselves: a fight with one is that bear alone, or bears together, never mixed with other beasts
+            factionId: "wildlife",
+            weight: 10,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 1 },
+                normal: { minSize: 1, maxSize: 1 },
+                hard: { minSize: 1, maxSize: 2 },
+                nightmare: { minSize: 1, maxSize: 2 }
+            },
+            members: [
+                { id: 'BEAR', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
             ]
         }, {
             // the trappers work by night too, half of the mountain's ambushes
@@ -443,7 +480,7 @@ export const SpawnTableDefinitions = {
         pools: [
             {
                 factionId: "cursedwildlife",
-                weight: 50,
+                weight: 40,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 2 },
                     normal: { minSize: 2, maxSize: 3 },
@@ -452,8 +489,21 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } },   // as common as the Dune Maw in the desert
-                { id: 'BEAR', weight: 40, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }   // the mountain bears: about 1 in 5 of its beasts
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert
+                ]
+            },
+            {
+                // bears keep to themselves: a fight with one is that bear alone, or bears together, never mixed with other beasts
+                factionId: "wildlife",
+                weight: 10,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 1 },
+                    hard: { minSize: 1, maxSize: 2 },
+                    nightmare: { minSize: 1, maxSize: 2 }
+                },
+                members: [
+                    { id: 'BEAR', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
                 ]
             },
             {

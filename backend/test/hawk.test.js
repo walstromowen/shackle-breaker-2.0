@@ -74,10 +74,10 @@ test('the hawk starts every fight in the air: Airborne casts Take Flight for fre
     assert.ok(take && take.ignoreCost && take.actor === state.activeParty[0], 'the opening flight is free');
 });
 
-test('dogs a little sturdier, snow leopards a little softer', () => {
+test('dogs a little sturdier, snow leopards softer still', () => {
     const D = ENTITY_DEFINITIONS.DOG, L = ENTITY_DEFINITIONS.SNOW_LEOPARD;
     assert.equal(D.baseStats.maxHp, 10); assert.equal(D.baseStats.baseAttack.slash, 5); assert.equal(D.attributes.vigor, 8);   // (buffed again with Pounce)
-    assert.equal(L.baseStats.maxHp, 14); assert.equal(L.baseStats.critical, 0.15); assert.equal(L.baseStats.baseAttack.slash, 6);
+    assert.equal(L.baseStats.maxHp, 12); assert.equal(L.baseStats.critical, 0.10); assert.equal(L.baseStats.baseAttack.slash, 6);
 });
 
 test('Flying has its own icon (wings over wind), not the speed buff\'s', async () => {

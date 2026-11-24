@@ -80,3 +80,25 @@ test('placed on the map, it wanders a step or two about its home and no further'
         assert.ok(seen.size >= 2, `it shifts about (${seen.size} cells)`);
     });
 });
+
+test('bears fight alone or with other bears, never beside other beasts, in every table they roam (ambushes too)', async () => {
+    const { SpawnTableFactory } = await import('../../shared/battle/spawnTableFactory.js');
+    const { seedRandom, unseedRandom } = await import('../../shared/core/random.js');
+    const realRandom = Math.random;
+    let r = 777; Math.random = () => ((r = (r * 1103515245 + 12345) >>> 0) / 4294967296);
+    seedRandom(77);
+    try {
+        let bearFights = 0;
+        for (const id of ['plains_battles_day', 'snowy_mountains_battles_day', 'snowy_mountains_battles_night', 'snowy_mountains_battles_blood_moon']) {
+            for (let i = 0; i < 600; i++) {
+                for (const opts of [{}, { ambush: true, fighters: 3 }]) {
+                    const ids = quiet(() => SpawnTableFactory.generateBattle(id, 'normal', opts)).enemies.map(e => e.id);
+                    if (!ids.includes('BEAR')) continue;
+                    bearFights++;
+                    assert.ok(ids.every(x => x === 'BEAR'), `${id}: ${ids.join(', ')}`);
+                }
+            }
+        }
+        assert.ok(bearFights > 100, `bears still turn up (${bearFights} fights)`);
+    } finally { unseedRandom(); Math.random = realRandom; }
+});
