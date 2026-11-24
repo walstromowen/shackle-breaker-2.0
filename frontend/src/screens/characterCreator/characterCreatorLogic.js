@@ -89,12 +89,15 @@ export const CREATION_DATA = {
         { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people who communicate only through a form of sign language. Little is known about them beyond rumors, many of which speak of a great tragedy that befell the Namuh and left them a shadow of their former selves." }
     ],
     // Each look has a male and a female version: the sprites on the entry are the male's, `female` holds the female's (the SEX row, under LOOK,
-    // picks between them). The female sheets are blank placeholders for now, the same size as the male ones, to be painted.
+    // picks between them). The Shadow Caster, shrouded, names its own sheets for both.
     APPEARANCES: [
         { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite", female: { spritePortrait: "legionaryHeroFemalePortrait", spriteOverworld: "legionaryHeroFemaleSprite" } },
         { label: "Warlord", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite", female: { spritePortrait: "warlordHeroFemalePortrait", spriteOverworld: "warlordHeroFemaleSprite" } },
         { label: "Nightblade", spritePortrait: "nightbladeHeroPortrait", spriteOverworld: "nightbladeHeroSprite", female: { spritePortrait: "nightbladeHeroFemalePortrait", spriteOverworld: "nightbladeHeroFemaleSprite" } },
         { label: "Avalancher", spritePortrait: "avalancherHeroPortrait", spriteOverworld: "avalancherHeroSprite", female: { spritePortrait: "avalancherHeroFemalePortrait", spriteOverworld: "avalancherHeroFemaleSprite" } },
+        { label: "Artificer", spritePortrait: "artificerHeroPortrait", spriteOverworld: "artificerHeroSprite", female: { spritePortrait: "artificerHeroFemalePortrait", spriteOverworld: "artificerHeroFemaleSprite" } },
+        // a Namuh spellsword, shrouded head to foot: the same sheets whichever the SEX row says
+        { label: "Shadow Caster", spritePortrait: "shadowCasterHeroPortrait", spriteOverworld: "shadowCasterHeroSprite", female: { spritePortrait: "shadowCasterHeroPortrait", spriteOverworld: "shadowCasterHeroSprite" } },
     ],
     SEXES: [
         { id: "male", label: "Male" },

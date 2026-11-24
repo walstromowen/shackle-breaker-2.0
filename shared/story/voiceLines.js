@@ -39,7 +39,7 @@ export const VOICED = {
     madman_spots_you: [[/./, 'MADMAN']],            // one who sees you coming
     suspicious_merchant: [[/./, 'MERCHANT']],       // the mad peddler (and the giggling of his friends)
     aftermath: [[/./, 'SURVIVOR']],                 // the legionary left standing
-    wounded_mutt: [], bonfire: [], wild_hunt: [], treasure_chest: [], strange_obelisk: [], iron_chest: [], tracks_in_the_snow: [],
+    wounded_mutt: [], bear_patrol: [], bonfire: [], wild_hunt: [], treasure_chest: [], strange_obelisk: [], iron_chest: [], tracks_in_the_snow: [],
     quicksand: [], cyclone: [], cyclone_heart: [], ruined_carriage: [], ruined_carriage_cleared: [], peculiar_scarecrow: [], old_gravestone: [],
     cave_in: [], arrow_trap: [], pit_trap: [], swinging_axes: [], catacomb_vault_door: [], infernus_sentinel: [], infernus_sentinel_fallen: [],
     shackled_betrayal: [], shackled_betrayal_end: []   // the narrator only (the carriage's journal and the sentinel's last whisper are read by him)

@@ -300,10 +300,14 @@ ui_icons: './assets/icons/ui_icons.png',
     infernusSentinelSprite: './assets/sprites/infernus_sentinel/infernus_sentinel_sprite.png',   // the catacombs' boss as its map object draws it (128 px frames, a still statue)
     hoodedStrangerSprite: './assets/sprites/hooded_stranger/hooded_stranger_sprite.png',   // the quest giver in a village workshop (one front frame; tools/art/overworldSheetFromFrame.py)
     snowLeopardSprite: './assets/sprites/snow_leopard/snow_leopard_sprite.png',
-    artificerHeroPortrait: './assets/sprites/artificer_hero/artificer_hero_portrait.png',
+    artificerHeroPortrait: './assets/sprites/artificer_hero/artificer_hero_portrait.png',   // the Artificer look: battle sheet (rows 0-1 facing, 4-5 back; made with PixelLab)
+    artificerHeroSprite: './assets/sprites/artificer_hero/artificer_hero_sprite.png',
+    artificerHeroFemalePortrait: './assets/sprites/artificer_hero/artificer_hero_female_portrait.png',
+    artificerHeroFemaleSprite: './assets/sprites/artificer_hero/artificer_hero_female_sprite.png',
     avalancherHeroPortrait: './assets/sprites/avalancher_hero/avalancher_hero_portrait.png',
     avalancherHeroSprite: './assets/sprites/avalancher_hero/avalancher_hero_sprite.png',   // made from its 8-direction idle frames (idle, walk and run rows like every hero sheet)
-    shadowCasterHeroPortrait: './assets/sprites/shadow_caster_hero/shadow_caster_hero_portrait.png',
+    shadowCasterHeroPortrait: './assets/sprites/shadow_caster_hero/shadow_caster_hero_portrait.png',   // the Shadow Caster look, a Namuh spellsword (one shrouded sheet for both sexes)
+    shadowCasterHeroSprite: './assets/sprites/shadow_caster_hero/shadow_caster_hero_sprite.png',
 
     legionaryPortrait: './assets/sprites/legionary/legionary_portrait.png',
     watchmanPortrait: './assets/sprites/watchman/watchman_portrait.png',

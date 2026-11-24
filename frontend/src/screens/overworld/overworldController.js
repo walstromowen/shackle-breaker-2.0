@@ -792,8 +792,10 @@ export class OverworldController extends BaseController {
                 return;
             }
 
-            // Default interaction dispatch
-            events.emit('INTERACT', { ...obj.interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
+            // Default interaction dispatch. One with eyes and a 'seen' encounter (a madman: `sight`, seenId): walked up to from behind, it is its own
+            // (A Disturbing Sight); from in front of it, it has seen you, and it is the other (the fight)
+            const seenBy = obj.interaction.seenId && obj.interaction.sight && this.seesPlayer(obj, 'ahead');
+            events.emit('INTERACT', { ...obj.interaction, ...(seenBy ? { id: obj.interaction.seenId } : {}), context: { col: obj.col, row: obj.row, objectId: obj.id } });
         }
     }
 
@@ -990,6 +992,17 @@ export class OverworldController extends BaseController {
                 if (radius && Math.max(Math.abs(dx), Math.abs(dy)) <= radius) zones.set(`${obj.col},${obj.row}`, obj);
             }
         }
+        /* Eyes (`sight` on an ENCOUNTER: the madmen, the Arc Knights on patrol, the bears): it sees that many tiles ahead, in a half circle the way it
+           faces (seesPlayer, `ahead`), and nothing behind it. In that half circle, the player is in its zone: seen. */
+        const MAX_SIGHT = 10;
+        if (wm.ensureChunkLoaded) for (const [ex, ey] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) wm.ensureChunkLoaded(col + ex * MAX_SIGHT, row + ey * MAX_SIGHT);
+        for (let dy = -MAX_SIGHT; dy <= MAX_SIGHT; dy++) {
+            for (let dx = -MAX_SIGHT; dx <= MAX_SIGHT; dx++) {
+                const obj = wm.getObject(col + dx, row + dy);
+                const sight = obj && !obj.isFading && obj.interaction && obj.interaction.type === 'ENCOUNTER' && obj.interaction.sight;
+                if (sight && Math.hypot(dx, dy) <= sight && this.seesPlayer(obj, 'ahead') && this.sightClear(obj, col, row)) zones.set(`${obj.col},${obj.row}`, obj);
+            }
+        }
         for (const [direction, [dx, dy]] of Object.entries(LOOKING)) {
             if (wm.ensureChunkLoaded) wm.ensureChunkLoaded(col - dx * MAX_LINE_LENGTH, row - dy * MAX_LINE_LENGTH);
             for (let k = 1; k <= MAX_LINE_LENGTH; k++) {
@@ -1018,9 +1031,9 @@ export class OverworldController extends BaseController {
             if (before.has(key)) continue;
             this.isLocked = true;
             this.setAnimIdle();
-            // one that can see you coming (interaction.seenId: a madman): come at it from behind and it is its own encounter (A Disturbing Sight,
-            // with the chances a sneak gives); from the front or the sides it sees you, and it is the other (seenId: the fight)
-            const seen = obj.interaction.seenId && this.seesPlayer(obj);
+            // one that can see you coming (interaction.seenId: a madman): seen, it is the other encounter (seenId: the fight). One with `sight` is only
+            // ever in a zone because it saw you (from behind it sees nothing: you must walk up and interact with it, which is its own encounter)
+            const seen = obj.interaction.seenId && (obj.interaction.sight ? true : this.seesPlayer(obj));
             const interaction = seen ? { ...obj.interaction, id: obj.interaction.seenId } : obj.interaction;
             events.emit('INTERACT', { ...interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
             return true;
@@ -1028,13 +1041,40 @@ export class OverworldController extends BaseController {
         return false;
     }
 
+    /** Can the eyes at `obj` see the cell (col, row) past what stands between? Along the line between them (Bresenham, the two ends left out) a solid
+     *  map object blocks it (a tree, a boulder, a house, a fence; not a character, not anything walked over), and so does a wall: ground rising
+     *  higher than both of them, or a cliff face (a castle's walls are cliffs too). Water does not. */
+    sightClear(obj, col, row) {
+        const wm = this.worldManager;
+        if (!wm) return true;
+        const objectAt = (c, r) => (wm.getObjectAt ? wm.getObjectAt(c, r) : (wm.getObject ? wm.getObject(c, r) : null));
+        const elev = (c, r) => (wm.getElevation ? wm.getElevation(c, r) : 0);
+        const top = Math.max(elev(obj.col, obj.row), elev(col, row));
+        let x = obj.col, y = obj.row;
+        const dx = Math.abs(col - x), dy = -Math.abs(row - y), sx = x < col ? 1 : -1, sy = y < row ? 1 : -1;
+        let err = dx + dy;
+        for (let guard = 0; guard < 64; guard++) {
+            const e2 = 2 * err;
+            if (e2 >= dy) { err += dy; x += sx; }
+            if (e2 <= dx) { err += dx; y += sy; }
+            if (x === col && y === row) return true;
+            const o = objectAt(x, y);
+            if (o && o !== obj && o.isSolid && !o.isGround && !o.character) return false;
+            if (elev(x, y) > top) return false;
+            if ((wm.isCliffFace && wm.isCliffFace(x, y)) || (wm.isBlockedByFace && wm.isBlockedByFace(x, y))) return false;
+        }
+        return true;
+    }
+
     /** Does a map character see the player: are they in front of it or beside it, not behind it? Behind is the quarter at its back (within
-     *  45 degrees of straight behind), by the way it faces (a wanderer: the way it walks or looks, obj._facing). */
-    seesPlayer(obj) {
+     *  45 degrees of straight behind), by the way it faces (a wanderer: the way it walks or looks, obj._facing). With `mode` 'ahead': only the
+     *  half circle in front of it (the eyes of `sight`: straight ahead to straight out at either side). */
+    seesPlayer(obj, mode = 'around') {
         const facing = obj._facing || (obj.character && obj.character.facing) || 'DOWN';
         const [fx, fy] = { DOWN: [0, 1], UP: [0, -1], LEFT: [-1, 0], RIGHT: [1, 0] }[facing] || [0, 1];
         const dx = gameState.player.col - obj.col, dy = gameState.player.row - obj.row;
         const along = dx * fx + dy * fy, across = Math.abs(dx * fy - dy * fx);
+        if (mode === 'ahead') return along >= 0;
         return !(along < 0 && across <= -along);
     }
 

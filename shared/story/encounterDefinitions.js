@@ -2,6 +2,7 @@
 import { applyEncounterTraits } from './encounterTraits.js';
 import { aDisturbingSight, madmanSpotsYou } from './encounters/aDisturbingSight.js';
 import { woundedMutt } from './encounters/woundedMutt.js';
+import { bearPatrol } from './encounters/bearPatrol.js';
 import { bonfire } from './encounters/bonfire.js';
 import { wildHunt } from './encounters/wildHunt.js';
 import { treasureChest } from './encounters/treasureChest.js';
@@ -35,6 +36,7 @@ import { shackledBetrayal, shackledBetrayalEnd } from './encounters/story/shackl
 // 2. Map them by their explicit system IDs
 export const encounterDefinitions = {
     [woundedMutt.id]: woundedMutt,
+    [bearPatrol.id]: bearPatrol,   // a grizzly keeping to its patch of the plains or the snowy mountains (BEAR_PATROL)
     [aDisturbingSight.id]: aDisturbingSight,
     [madmanSpotsYou.id]: madmanSpotsYou,   // a madman who sees you coming (front or sides): the fight
     [bonfire.id]: bonfire,
