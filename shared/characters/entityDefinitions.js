@@ -1154,7 +1154,8 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 84, maxStamina: 20, maxInsight: 60, speed: 8, critical: 0.1,
+            maxHp: 84, maxStamina: 40, maxInsight: 60, speed: 8,   // stamina enough for an Earthquake (30), which Spirit Reap refills from the party
+            critical: 0.1,
             maxHpMultiplier: 2,   // twice the health his level and vigor give: tuned for three players (fewer get less: PARTY_SCALING.BOSS_HP_BY_PLAYERS)
             // A boss: blows glance off him. Every kind of attack loses a good share against him (resistance comes off before armour), so no single
             // hit takes a big bite. Light is still his weakness, and less so than it was.
@@ -1175,9 +1176,9 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment },
         currencyReward: { min: 200, max: 500 },
         lootTableId: "boss_darius_drops",
-        // his moveset, exactly: Acid Pool burns them all, Magic Missile, Bless mends him over five turns, Cleanse throws off whatever the party puts on him,
-        // Arcane Blast. ("rest" is only the AI's fallback when he can afford nothing.)
-        abilities: ["rest", "acid_pool", "magic_missile", "bless", "cleanse", "arcane_blast"],
+        // his moveset, exactly: Spirit Reap tears at a hero's stamina and feeds his own, Cleanse throws off whatever the party puts on him, Bless mends him
+        // over five turns, Arcane Blast, and Earthquake shakes the whole party. ("rest" is only the AI's fallback when he can afford nothing.)
+        abilities: ["rest", "spirit_reap", "cleanse", "bless", "arcane_blast", "earthquake"],
         tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
     },
 

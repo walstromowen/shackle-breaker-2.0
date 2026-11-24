@@ -537,6 +537,18 @@ export class SceneManager {
                 // (the same shared encounter as a random one, START_ENCOUNTER below)
                 // an encounter marked `personal` (the quest giver: it is about this player's own quests) is never shared
                 const personal = !!(encounterDefinitions[data.id] && encounterDefinitions[data.id].personal);
+                // a map character or object already in another player's encounter (a bear, a madman, a chest): left to them
+                const ctx = data.context || {};
+                // (a wanderer is known by its home, the cell every screen agrees on while it walks its round)
+                const there = ctx.objectId && this.worldManager && this.worldManager.getObject ? this.worldManager.getObject(ctx.col, ctx.row) : null;
+                const [hc, hr] = there && there._home ? there._home : [ctx.col, ctx.row];
+                const holder = ctx.objectId && multiplayerSocial.claimedBy(hc, hr);
+                if (holder) {
+                    multiplayerSocial._say(`${holder} is already facing that.`);
+                    if (this.overworldController) this.overworldController.isLocked = false;
+                    return;
+                }
+                if (ctx.objectId) multiplayerSocial.claimObject(hc, hr);
                 const mp = multiplayerSocial.sharesFights && !personal
                     ? multiplayerSocial.startPartyEncounter({ encounterId: data.id, context: data.context || {}, bgm: data.context?.bgm || null, quiet: true })
                     : null;

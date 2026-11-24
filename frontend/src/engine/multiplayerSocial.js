@@ -20,6 +20,9 @@
  *   grp_add { id }               a member's invite was accepted: the leader adds them (any member can invite; the leader keeps the party)
  *   grp_full { id }              the leader's answer when there was no room left
  *   bt_start { spec }            a shared fight begins                         bt_dec / bt_sync   picks and the lead's health totals
+ *   obj_claim { key, on }        to everyone: the map character or object at `key` ("world|col,row") is in someone's encounter (on) or free
+ *                                again (off). While another player holds it, its eyes see no one here and walking up to it starts nothing,
+ *                                so two players outside a party never both fight the same bear or madman (claims run out after CLAIM_MS)
  */
 import { events } from '../../../shared/core/eventBus.js';
 import { gameState } from '../../../shared/core/gameState.js';
@@ -46,6 +49,7 @@ function weatherFromSpec(spec) {
 }
 
 const REQUEST_SECONDS = 20;
+const CLAIM_MS = 10 * 60 * 1000;   // a claim nobody let go of (a player who dropped out mid-fight) runs out after this
 const CHAT_MAX = 200;   // characters in one chat line
 const MAX_GROUP = 3;
 const PARTY_SEND_EVERY = 4;   // seconds between a player's character updates to the rest of their party (only when they changed)
@@ -71,6 +75,8 @@ class MultiplayerSocial {
         this.early = new Map();      // bid -> [picks] that came before the fight was set up
         this.duelBackup = null;      // my party as it was before a duel
         this.declined = new Set();   // players who were already busy (in a fight or an encounter) when my shared fight or encounter began: left out of it
+        this.claims = new Map();     // "map|col,row" -> { by, until }: map objects in another player's encounter (obj_claim)
+        this.myClaim = null;         // the key of the map object my own encounter is about, until I am back on the map
         this._t = { party: 0 };
         this._lastPartyJson = '';
         this._wired = false;
@@ -102,6 +108,7 @@ class MultiplayerSocial {
         if (this.trade) this._closeTrade('The world closed, so the trade was called off.');
         this.prompt = null; this.outgoing = null; this.incoming = null;
         this.groups.clear(); this.groupParties.clear(); this.groupWaypoints.clear();
+        this.claims.clear(); this.myClaim = null;
     }
 
     get me() { return multiplayer.you ? multiplayer.you.id : null; }
@@ -110,6 +117,31 @@ class MultiplayerSocial {
         return p ? p.username : 'Another player';
     }
     _scene() { return multiplayerSession.env ? multiplayerSession.env.getScene() : 'overworld'; }
+
+    // ================================================================ CLAIMS (a map object in someone's encounter)
+    _claimKey(col, row) { return `${gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world'}|${col},${row}`; }
+    /** I start an encounter with the map object at (col, row): everyone else leaves it alone until I am back on the map. */
+    claimObject(col, row) {
+        if (!multiplayerSession.active || !Number.isFinite(col) || !Number.isFinite(row)) return;
+        if (this.myClaim) this._send({ k: 'obj_claim', key: this.myClaim, on: false });
+        this.myClaim = this._claimKey(col, row);
+        this._claimLeft = false; this._claimAt = performance.now();
+        this._send({ k: 'obj_claim', key: this.myClaim, on: true });
+    }
+    releaseClaim() {
+        if (!this.myClaim) return;
+        if (multiplayerSession.active) this._send({ k: 'obj_claim', key: this.myClaim, on: false });
+        this.myClaim = null;
+    }
+    /** The name of the other player whose encounter the map object at (col, row) is in, or null when it is free. */
+    claimedBy(col, row) {
+        const c = this.claims.get(this._claimKey(col, row));
+        if (!c) return null;
+        const room = multiplayer.room;
+        const here = room && room.players.some(p => p.id === c.by && p.connected);
+        if (!here || Date.now() > c.until) { this.claims.delete(this._claimKey(col, row)); return null; }
+        return this.nameOf(c.by);
+    }
     _say(text) { multiplayerSession._say(text); }
     _send(data, to) { multiplayer.relay(data, to); }
 
@@ -609,6 +641,11 @@ class MultiplayerSocial {
     // ================================================================ MESSAGES
     _onRelay(from, d) {
         switch (d.k) {
+            case 'obj_claim':
+                if (typeof d.key !== 'string' || d.key.length > 80) break;
+                if (d.on) this.claims.set(d.key, { by: from, until: Date.now() + CLAIM_MS });
+                else if (this.claims.get(d.key) && this.claims.get(d.key).by === from) this.claims.delete(d.key);
+                break;
             case 'rq': if (multiplayerSession.active) this._onRequest(from, d); break;
             case 'rq_ans': this._onAnswer(from, d); break;
             case 'tr_offer': {
@@ -731,6 +768,11 @@ class MultiplayerSocial {
     /** Every frame (from multiplayerSession.update): request timeouts, and a member's characters for the leader. */
     update(dt) {
         const now = performance.now();
+        // back on the map: the encounter (and any fight after it) is over (not during the fade into it: the screen has to have left the map first)
+        if (this.myClaim) {
+            if (this._scene() !== 'overworld') this._claimLeft = true;
+            else if (this._claimLeft || now - this._claimAt > 8000) this.releaseClaim();
+        }
         if (this.outgoing && now > this.outgoing.until) {
             this._say(`${this.nameOf(this.outgoing.to)} did not answer.`);
             this.outgoing = null;

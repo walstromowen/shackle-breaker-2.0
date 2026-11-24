@@ -90,9 +90,8 @@ test('he talks to you: every stage is his own words, spoken to you, with no narr
     assert.match(stages.darius_speaks_2.text, /seen it/i);
     assert.match(stages.darius_late.text, /punished/i);
     assert.match(stages.darius_sees.text, /gave it to you/i);
-    assert.match(stages.darius_wrath.text, /adviser/i);
-    assert.match(stages.darius_wrath.text, /thief/i);
-    assert.match(stages.darius_wrath.text, /give it back/i);
+    assert.match(stages.darius_wrath.text, /not possible/i);
+    assert.match(stages.darius_wrath.text, /rightfully\.\.\. mine!"$/, 'short: the stone is rightfully his');
 });
 
 test('the music: none at all while he talks (only the altar\'s drone, kept low), his track the moment he turns, and the same track carries on into the fight', async () => {

@@ -62,7 +62,7 @@ export function drawGraphicsNotice(ctx, focusId = null) {
     ui.drawText(`Detected: ${graphics.info ? graphics.info.renderer : 'unknown'}`, SW / 2, cy, SMALL_FONT, UITheme.colors.textMuted, 'center', 'alphabetic', W - PAD * 2);
     cy += 44;
 
-    const bw = 300, bh = 62, gap = 28;
+    const bw = 360, bh = 62, gap = 28;   // wide enough for "Don't show again" in the button font
     const bx = SW / 2 - (bw * 2 + gap) / 2;
     const hitboxes = NOTICE_BUTTONS.map((b, i) => {
         const box = { id: b.id, x: bx + i * (bw + gap), y: cy, w: bw, h: bh, zIndex: 100 };

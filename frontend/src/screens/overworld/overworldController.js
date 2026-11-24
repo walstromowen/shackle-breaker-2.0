@@ -999,7 +999,8 @@ export class OverworldController extends BaseController {
         for (let dy = -MAX_SIGHT; dy <= MAX_SIGHT; dy++) {
             for (let dx = -MAX_SIGHT; dx <= MAX_SIGHT; dx++) {
                 const obj = wm.getObject(col + dx, row + dy);
-                const sight = obj && !obj.isFading && obj.interaction && obj.interaction.type === 'ENCOUNTER' && obj.interaction.sight;
+                const sight = obj && !obj.isFading && obj.interaction && obj.interaction.type === 'ENCOUNTER' && obj.interaction.sight
+                    && !multiplayerSocial.claimedBy(...(obj._home || [obj.col, obj.row])) ? obj.interaction.sight : 0;   // (its eyes are on another player, in their encounter: a wanderer by its home)
                 if (sight && Math.hypot(dx, dy) <= sight && this.seesPlayer(obj, 'ahead') && this.sightClear(obj, col, row)) zones.set(`${obj.col},${obj.row}`, obj);
             }
         }

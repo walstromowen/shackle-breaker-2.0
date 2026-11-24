@@ -716,6 +716,26 @@ export class CanvasUI {
     return this.drawButton(box.x, box.y, box.w, box.h, UITheme.backButton.label, this.flags(id, focusId));
   }
 
+  /**
+   * The button's font, made smaller until the label fits inside the button with room on each side (and its height inside the button's),
+   * so no label runs over a button's edge however small the button or long the word. Fonts that already fit come back unchanged.
+   */
+  fitButtonFont(text, font, w, h, tracking = 0) {
+    const m = /(\d+(?:\.\d+)?)px/.exec(font);
+    if (!m) return font;
+    const size = parseFloat(m[1]);
+    const padX = Math.max(10, Math.min(24, w * 0.1));
+    const roomW = w - padX * 2, roomH = h - 12;
+    this.ctx.save();
+    this.ctx.font = font;
+    const width = this.ctx.measureText(text).width + tracking * Math.max(0, text.length - 1);
+    this.ctx.restore();
+    const k = Math.min(1, roomW / Math.max(1, width), roomH / (size * 1.05));
+    if (k >= 1) return font;
+    const fitted = Math.max(12, Math.floor(size * k));
+    return font.replace(m[0], `${fitted}px`);
+  }
+
   /** A standard button: dark face, thin edge, centered label, and the shared state look on top. */
   drawButton(x, y, w, h, label, flags = {}, opts = {}) {
     const state = this.resolveState(flags);
@@ -747,12 +767,10 @@ export class CanvasUI {
     this.ctx.restore();
     this.drawStateBox(x, y, w, h, flags, { ...opts, bar: false, wash: false, notch: false });   // a button is a plain rectangle
 
-    this.drawText(
-      opts.upper === false ? label : String(label).toUpperCase(), x + w / 2, y + h / 2,
-      (!opts.font || opts.font === UITheme.fonts.medium || opts.font === UITheme.fonts.body) ? UITheme.fonts.button : opts.font,
-      this.stateTextColor(flags, opts.color || UITheme.colors.textMain),
-      'center', 'middle', undefined, opts.tracking ?? b.tracking
-    );
+    const text = opts.upper === false ? String(label) : String(label).toUpperCase();
+    const tracking = opts.tracking ?? b.tracking;
+    const font = this.fitButtonFont(text, (!opts.font || opts.font === UITheme.fonts.medium || opts.font === UITheme.fonts.body) ? UITheme.fonts.button : opts.font, w, h, tracking);
+    this.drawText(text, x + w / 2, y + h / 2, font, this.stateTextColor(flags, opts.color || UITheme.colors.textMain), 'center', 'middle', undefined, tracking);
     this.ctx.restore();
     return state;
   }

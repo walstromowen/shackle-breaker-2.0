@@ -257,20 +257,16 @@ export class WorldMapRenderer {
     _markerPanel(ctx, ui, state) {
         const m = state.selectedMarker, p = state.panel;
         if (!m || state.selectedWaypoint) return;
+        this._panelPlate(ctx, ui, p);
         ctx.save();
-        ctx.fillStyle = 'rgba(12, 11, 9, 0.82)';
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.strokeStyle = UITheme.colors.border;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(p.x + 1, p.y + 1, p.w - 2, p.h - 2);
         ctx.fillStyle = m.fill;
-        ctx.beginPath(); ctx.arc(p.x + 36, p.y + 34, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x + 36, p.y + 36, 10, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'; ctx.stroke();
         ctx.restore();
         if (state.naming && state.naming.kind === 'marker') this._nameBox(ctx, ui, state.naming);
-        else ui.drawStyled('subtitle', m.label, p.x + 56, p.y + 40, { align: 'left', maxWidth: p.w - 56 - 210 });
-        ui.drawStyled('label', `${m.tiles} tile${m.tiles === 1 ? '' : 's'} away`, p.x + 24, p.y + 78, { align: 'left' });
-        ui.drawStyled('label', `${m.colorName}  ·  ${m.col}, ${m.row}`, p.x + 24, p.y + 108, { align: 'left' });
+        else ui.drawStyled('subtitle', m.label, p.x + 56, p.y + 44, { align: 'left', maxWidth: p.w - 80 });
+        ui.drawStyled('label', `${m.tiles} tile${m.tiles === 1 ? '' : 's'} away`, p.x + 24, p.y + 80, { align: 'left' });
+        ui.drawStyled('label', `${m.colorName}  ·  ${m.col}, ${m.row}`, p.x + 24, p.y + 112, { align: 'left' });
     }
 
     /* The graves beaten multiplayer parties left on the overworld (world/graves.js): the cursed grave in a violet glow, mine named. */
@@ -345,17 +341,25 @@ export class WorldMapRenderer {
         const wp = state.selectedWaypoint, plan = state.travelPlan, p = state.panel;
         if (state.notice) ui.drawStyled('label', state.notice, VIEW.x + VIEW.w / 2, VIEW.y + 28, { align: 'center', color: '#e8a86a' });
         if (!wp || !plan) return;
-        ctx.save();
-        ctx.fillStyle = 'rgba(12, 11, 9, 0.82)';
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.strokeStyle = UITheme.colors.border;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(p.x + 1, p.y + 1, p.w - 2, p.h - 2);
-        ctx.restore();
+        this._panelPlate(ctx, ui, p);
         if (state.naming && state.naming.kind === 'waypoint') this._nameBox(ctx, ui, state.naming);
-        else ui.drawStyled('subtitle', wp.name, p.x + 24, p.y + 40, { align: 'left', maxWidth: wp.owner ? p.w - 48 : p.w - 24 - 210 });   // (Rename sits top right for my own)
-        ui.drawStyled('label', `${plan.tiles} tiles away  ·  ${formatDuration(plan.minutes)}`, p.x + 24, p.y + 74, { align: 'left' });
-        ui.drawStyled('label', `Cost: ${plan.cost}  (you have ${state.currency})`, p.x + 24, p.y + 106, plan.affordable ? { align: 'left' } : { align: 'left', color: '#e8806a' });
+        else ui.drawStyled('subtitle', wp.name, p.x + 24, p.y + 44, { align: 'left', maxWidth: p.w - 48 });
+        ui.drawStyled('label', `${plan.tiles} tiles away  ·  ${formatDuration(plan.minutes)}`, p.x + 24, p.y + 80, { align: 'left' });
+        ui.drawStyled('label', `Cost: ${plan.cost}  (you have ${state.currency})`, p.x + 24, p.y + 112, plan.affordable ? { align: 'left' } : { align: 'left', color: '#e8806a' });
+    }
+
+    /* The waypoint and marker panel's plate: the theme's panel, with a fine rule over the row of buttons. */
+    _panelPlate(ctx, ui, p) {
+        ui.drawPanel(p.x, p.y, p.w, p.h);
+        ctx.save();
+        ctx.strokeStyle = UITheme.colors.border;
+        ctx.globalAlpha = 0.6;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(p.x + 20, p.y + p.rowY - 11.5);
+        ctx.lineTo(p.x + p.w - 20, p.y + p.rowY - 11.5);
+        ctx.stroke();
+        ctx.restore();
     }
 
     /* Top right: what is under the pointer (only land that has been seen is named), else the tile in the middle. */

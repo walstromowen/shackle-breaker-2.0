@@ -38,7 +38,7 @@ test('a clip with word timings shows each word when it is said; the chuckles at 
         assert.ok(e && Array.isArray(e.w) && e.w.length === l.text.split(/\s+/).length, `"${l.text.slice(0, 30)}" is timed word by word`);
     }
     assert.ok(darius.some(l => / Hm-hm\.$/.test(l.text)) && darius.some(l => / Heh\.\.\. heh\. Heh heh\.$/.test(l.text)), 'his chuckles are written out');
-    assert.ok(darius.some(l => /is mine!$/.test(l.text)), 'and his last words before the fight end without one');
+    assert.ok(darius.some(l => /rightfully\.\.\. mine!$/.test(l.text)), 'and his last words before the fight end without one');
 });
 
 test('a speaker\'s screen that is only a direction is a sound they make, in their voice: Darius\'s deep breathing has a clip', () => {

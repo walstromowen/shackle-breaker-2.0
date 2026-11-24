@@ -19,3 +19,11 @@ test("the Healer's Pouch holds 5 of each herb, 2 healing tonics and 3 of each st
     for (const cure of cures) assert.equal(qty[cure], 3, `3 ${cure}`);
     for (const id of Object.keys(qty)) assert.ok(ItemDefinitions[id], `${id} exists`);
 });
+
+test('every keepsake (not "None") starts you with a waypoint banner and at least one healing tonic', () => {
+    for (const k of KEEPSAKES.filter(k => k.items)) {
+        const qty = (id) => k.items.filter(i => i.id === id).reduce((n, i) => n + i.qty, 0);
+        assert.equal(qty('waypoint'), 1, `${k.label}: one waypoint`);
+        assert.ok(qty('healing_tonic') >= 1, `${k.label}: a healing tonic`);
+    }
+});

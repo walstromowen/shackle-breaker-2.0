@@ -1,5 +1,5 @@
 // backend/test/dariusfight.test.js: `npm test`. Darius the Groveler's fight: a tough boss who shrugs off big hits, blesses himself, cleanses what you put on him,
-// and pools acid under the party.
+// reaps the party's stamina and shakes the ground under them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ENTITY_DEFINITIONS } from '../../shared/characters/entityDefinitions.js';
@@ -22,8 +22,9 @@ test('Darius resists every kind of attack, so no single blow takes a big bite (l
     assert.ok(D.baseStats.maxHp >= 80);
 });
 
-test('his moveset is exactly Acid Pool, Magic Missile, Bless, Cleanse and Arcane Blast (rest only as the fallback), and he holds no gear', () => {
-    const moves = ['acid_pool', 'magic_missile', 'bless', 'cleanse', 'arcane_blast'];
+test('his moveset is exactly Spirit Reap, Cleanse, Bless, Arcane Blast and Earthquake (rest only as the fallback), and he holds no gear', () => {
+    const moves = ['spirit_reap', 'cleanse', 'bless', 'arcane_blast', 'earthquake'];
+    assert.ok(!D.abilities.includes('acid_pool'), 'no Acid Pool any more');
     assert.deepEqual(D.abilities.filter(id => id !== 'rest').sort(), [...moves].sort());
     assert.ok(Object.values(D.equipment).every(v => v == null), 'no gear, so nothing grants him extra abilities');
 });
@@ -32,8 +33,10 @@ test('Spirit Reap: 3x dark damage to stamina only, half of it stolen back as sta
     assert.deepEqual(AbilityDefinitions.spirit_reap.effects, [{ type: 'damage', damageType: 'dark', resource: 'stamina', power: 3.0, drain: 0.5 }]);
 });
 
-test('he can Bless, Cleanse and pool acid', () => {
-    for (const id of ['bless', 'cleanse', 'acid_pool', 'magic_missile', 'arcane_blast']) {
+test('every move he has exists, has its animation, and is one he can pay for', () => {
+    for (const id of ['spirit_reap', 'cleanse', 'bless', 'arcane_blast', 'earthquake']) {
+        const cost = AbilityDefinitions[id].cost || {};
+        assert.ok((cost.stamina || 0) <= D.baseStats.maxStamina && (cost.insight || 0) <= D.baseStats.maxInsight, `${id} is affordable`);
         assert.ok(D.abilities.includes(id), `Darius knows ${id}`);
         assert.ok(AbilityDefinitions[id], `${id} exists`);
         assert.ok(BattleAnimationDefinitions[AbilityDefinitions[id].animationId], `${id} has its animation`);
@@ -63,13 +66,13 @@ test('Cleanse throws off every harmful status the game has, and nothing helpful'
 });
 
 test('the enemy AI does not waste a turn: no Bless while blessed, no Cleanse with nothing to cleanse', () => {
-    const [bless, cleanse, acid] = AbilityFactory.createAbilities(['bless', 'cleanse', 'acid_pool']);
+    const [bless, cleanse, quake] = AbilityFactory.createAbilities(['bless', 'cleanse', 'earthquake']);
     const caster = (ids) => ({ statusEffects: ids.map(id => ({ id })) });
     assert.equal(worthUsing(bless, caster([])), true);
     assert.equal(worthUsing(bless, caster(['blessed'])), false);
     assert.equal(worthUsing(cleanse, caster([])), false);
     assert.equal(worthUsing(cleanse, caster(['poison'])), true);
-    assert.equal(worthUsing(acid, caster(['blessed', 'poison'])), true, 'attacks are always worth it');
+    assert.equal(worthUsing(quake, caster(['blessed', 'poison'])), true, 'attacks are always worth it');
 });
 
 test('built for battle, Darius has only his five moves (plus rest), and Spirit Reap leaves HP alone and steals half the stamina it takes', async () => {
@@ -78,7 +81,7 @@ test('built for battle, Darius has only his five moves (plus rest), and Spirit R
     const { AbilitySystem } = await import('../../shared/abilities/abilitySystem.js');
     const darius = new CombatantModel(EntityFactory.create('DARIUS_THE_GROVELER', { level: 8 }), 'enemy');
     const ids = darius.abilities.map(a => a.id).filter(id => id !== 'rest').sort();
-    assert.deepEqual(ids, ['acid_pool', 'arcane_blast', 'bless', 'cleanse', 'magic_missile']);
+    assert.deepEqual(ids, ['arcane_blast', 'bless', 'cleanse', 'earthquake', 'spirit_reap']);
 
     const hero = new CombatantModel(EntityFactory.create('HUMANOID', { level: 8, levelEdge: false }), 'party');
     darius.modifyResource('stamina', -darius.stamina);

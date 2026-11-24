@@ -458,17 +458,19 @@ export class WorldMapController extends BaseController {
         const picked = this.selectedWaypoint();
         const plan = picked ? this.travelPlan() : null;
         const marker = this.selectedMarker();
-        const panel = { x: VIEW.x + 20, y: VIEW.y + VIEW.h - 150, w: 660, h: 130 };
-        if (picked) hitboxes.push({ id: 'btn_fast_travel', x: panel.x + panel.w - 210, y: panel.y + panel.h - 72, w: 190, h: 56, zIndex: 11, label: 'Fast Travel' });
-        // Rename, top right of the panel: for a pin, or for one of my own waypoints (not a party member's); and the name box while it is open
+        // the panel, bottom left of the window: the name and the details on top, a row of buttons the same height as the map's other buttons
+        // underneath, sharing the panel's width: Rename (a pin, or one of my own waypoints, not a party member's) and Fast Travel for a waypoint;
+        // Rename, Colour and Remove for a pin
+        const panel = { x: VIEW.x + 20, y: VIEW.y + VIEW.h - 20 - 206, w: 660, h: 206, rowY: 134 };
         const renamable = marker || (picked && !picked.owner);
-        if (renamable) hitboxes.push({ id: 'btn_rename', x: panel.x + panel.w - 190, y: panel.y + 10, w: 170, h: 42, zIndex: 11, label: this.naming ? 'Cancel' : 'Rename' });
-        const nameBox = this.naming ? { x: panel.x + (this.naming.kind === 'marker' ? 56 : 20), y: panel.y + 12, w: 380, h: 40 } : null;
+        const row = [];
+        if (renamable) row.push({ id: 'btn_rename', label: this.naming ? 'Cancel' : 'Rename' });
+        if (picked) row.push({ id: 'btn_fast_travel', label: 'Fast Travel' });
+        else if (marker) row.push({ id: 'btn_marker_color', label: 'Colour' }, { id: 'btn_marker_remove', label: 'Remove' });
+        const gap = 12, bw = row.length ? (panel.w - 40 - gap * (row.length - 1)) / row.length : 0;
+        row.forEach((b, i) => hitboxes.push({ ...b, x: Math.round(panel.x + 20 + i * (bw + gap)), y: panel.y + panel.rowY, w: Math.round(bw), h: 56, zIndex: 11 }));
+        const nameBox = this.naming ? { x: panel.x + (this.naming.kind === 'marker' ? 56 : 20), y: panel.y + 14, w: panel.w - (this.naming.kind === 'marker' ? 76 : 40), h: 44 } : null;
         if (nameBox) hitboxes.push({ id: 'name_box', ...nameBox, zIndex: 11 });
-        if (marker) {
-            hitboxes.push({ id: 'btn_marker_remove', x: panel.x + panel.w - 190, y: panel.y + panel.h - 72, w: 170, h: 56, zIndex: 11, label: 'Remove' });
-            hitboxes.push({ id: 'btn_marker_color', x: panel.x + panel.w - 376, y: panel.y + panel.h - 72, w: 170, h: 56, zIndex: 11, label: 'Colour' });
-        }
         const placeBtn = hitboxes.find(h => h.id === 'btn_marker');
         if (placeBtn && this.placing) placeBtn.label = 'Cancel';
         this.hitboxes = hitboxes;

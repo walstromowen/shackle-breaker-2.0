@@ -1679,7 +1679,8 @@ export const ItemDefinitions = {
     useAbility: "brew_of_madness",
     description: "Smells like ozone and bad decisions. Drops you to 1 HP. In a fight it leaves you Enraged: physical attack +50% for 3 turns. Drunk outside one, you forget the trait you gained last, good or bad.",
     icon: { col: 11, row: 1 },   // a sealed bottle of strange ale (its own cell: it used to borrow the invigorating tonic's jar)
-    stackable: true
+    stackable: true,
+    maxStack: 20   // bottles pile up in one slot (without a maxStack every bottle took a slot of its own)
   },
   // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: the drinker forgets the Insight rank they learned
   // last, and the corruption it cost them eases (AbilitySystem._world_forget_insight). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js).

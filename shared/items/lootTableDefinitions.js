@@ -1156,7 +1156,8 @@ LootTableDefinitions.container_crate = {
         { id: "iron_ingot", weight: 6, min: 1, max: 2 },
         { id: "torch", weight: 14, min: 1, max: 2 },
         { id: "escape_rope", weight: 4, min: 1, max: 1 },
-        { id: "pickaxe", weight: 2, min: 1, max: 1 }
+        { id: "pickaxe", weight: 2, min: 1, max: 1 },
+        { id: "kurtus_brew", weight: 3, min: 1, max: 1 }      // rare: a bottle someone hid in the cargo
     ]
 };
 // A barrel: stored provisions and drink, and now and then something useful tucked in among them.
@@ -1165,7 +1166,7 @@ LootTableDefinitions.container_barrel = {
     items: [
         { id: "salt", weight: 24, min: 1, max: 3 },
         { id: "wheat", weight: 22, min: 1, max: 3 },
-        { id: "kurtus_brew", weight: 14, min: 1, max: 1 },
+        { id: "kurtus_brew", weight: 2, min: 1, max: 1 },     // rare: a bottle of Kurtus's Brew in among the stores (in every crate and barrel)
         { id: "coal", weight: 12, min: 1, max: 2 },
         { id: "flint", weight: 10, min: 1, max: 2 },
         { id: "torch", weight: 10, min: 1, max: 2 },
@@ -1191,7 +1192,7 @@ LootTableDefinitions.container_ancient_barrel = {
         { id: "illuminating_tonic", weight: 7, min: 1, max: 1 },
         { id: "antidote", weight: 6, min: 1, max: 1 },
         { id: "illuminating_herb", weight: 6, min: 1, max: 2 },
-        { id: "kurtus_brew", weight: 4, min: 1, max: 1 },
+        { id: "kurtus_brew", weight: 2, min: 1, max: 1 },     // rare
         { id: "copper_ingot", weight: 10, min: 1, max: 2 },   // grave goods: copper, and the keys to what the dead left locked
         { id: "small_iron_key", weight: 12, min: 1, max: 1 }
     ]
@@ -1207,7 +1208,8 @@ LootTableDefinitions.container_ruined_barrel = {
         { id: "torch", weight: 10, min: 1, max: 1 },
         { id: "salt", weight: 6, min: 1, max: 1 },
         { id: "copper_ore", weight: 10, min: 1, max: 2 },
-        { id: "small_iron_key", weight: 8, min: 1, max: 1 }
+        { id: "small_iron_key", weight: 8, min: 1, max: 1 },
+        { id: "kurtus_brew", weight: 2, min: 1, max: 1 }      // rare: one bottle that never broke
     ]
 };
 // A crate packed with sacks: provisions and dry goods.
@@ -1223,7 +1225,8 @@ LootTableDefinitions.container_crate_sack = {
         { id: "aloe", weight: 6, min: 1, max: 1 },
         { id: "antidote", weight: 4, min: 1, max: 1 },
         { id: "copper_ingot", weight: 11, min: 1, max: 1 },
-        { id: "small_iron_key", weight: 10, min: 1, max: 1 }
+        { id: "small_iron_key", weight: 10, min: 1, max: 1 },
+        { id: "kurtus_brew", weight: 2, min: 1, max: 1 }      // rare
     ]
 };
 // A traveller's pack, or a sack of goods: grain, supplies and bedding.
