@@ -89,6 +89,7 @@ export class VillagePlanner {
         this._planStreetProps(plan, blueprint);
         this._planTrees(plan, blueprint);
         this._paveRoads(plan);
+        this._planLegionaryPatrol(plan, blueprint);   // on the road itself: after the paving, which clears every road cell
     }
     /* _planBlueprint in steps (the same work in the same order; see drain). Used by the structure jobs of StructureSpawner. */
     *_planBlueprintSteps(startCol, startRow, blueprint, cx, cy) {
@@ -122,6 +123,7 @@ export class VillagePlanner {
         yield;
         yield* this._planTreesSteps(plan, blueprint);
         yield* this._paveRoadsSteps(plan);
+        this._planLegionaryPatrol(plan, blueprint);
     }
     _villageConfig(bp) {
         const width = Math.max(1, Math.round(bp.roadWidth ?? 3));
@@ -819,6 +821,29 @@ export class VillagePlanner {
                 this._placeObject(c, r, mc.id);
                 last = i;
                 placed++;
+            }
+        }
+    }
+    /* The village's one legionary on patrol (bp.patrol): standing on the road about the middle of its longest street, from where he walks his
+       round (his `wander`). The first free cell outward from the middle along that street, then along the others, longest first. Planned last,
+       after the roads are paved (the paving clears every road cell). */
+    _planLegionaryPatrol(plan, bp) {
+        const pc = bp.patrol;
+        if (!pc || !MAP_OBJECTS_DEFINITIONS[pc.id]) return;
+        const roads = [...plan.roads].sort((a, b) => b.centres.length - a.centres.length);
+        for (const road of roads) {
+            const cs = road.centres, mid = Math.floor(cs.length / 2);
+            for (let k = 0; k < cs.length; k++) {
+                const i = mid + (k % 2 ? -(k + 1) / 2 : k / 2);
+                if (i < 2 || i >= cs.length) continue;
+                const { c, r } = cs[i];
+                const key = this._s(c, r);
+                // (after the paving: the road's cells were cleared to null by it, which is open road, not something standing there)
+                if (plan.buildingTiles.has(key) || gameState.world.changes[key] || this._collisionMap.has(key)) continue;
+                if (this.getElevation(c, r) !== this._roadElev(plan, road) || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
+                this.modifyWorld(c, r, pc.id);
+                this._placeObject(c, r, pc.id);
+                return;
             }
         }
     }

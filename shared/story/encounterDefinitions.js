@@ -3,6 +3,7 @@ import { applyEncounterTraits } from './encounterTraits.js';
 import { aDisturbingSight, madmanSpotsYou } from './encounters/aDisturbingSight.js';
 import { woundedMutt } from './encounters/woundedMutt.js';
 import { bearPatrol } from './encounters/bearPatrol.js';
+import { legionaryPatrol, legionarySpotsYou } from './encounters/legionaryPatrol.js';
 import { bonfire } from './encounters/bonfire.js';
 import { wildHunt } from './encounters/wildHunt.js';
 import { treasureChest } from './encounters/treasureChest.js';
@@ -39,6 +40,8 @@ export const encounterDefinitions = {
     [bearPatrol.id]: bearPatrol,   // a grizzly keeping to its patch of the plains or the snowy mountains (BEAR_PATROL)
     [aDisturbingSight.id]: aDisturbingSight,
     [madmanSpotsYou.id]: madmanSpotsYou,   // a madman who sees you coming (front or sides): the fight
+    [legionaryPatrol.id]: legionaryPatrol,       // a legionary on patrol in a village or a castle, walked up to from behind (LEGIONARY_PATROL)
+    [legionarySpotsYou.id]: legionarySpotsYou,   // one who sees you coming: the fight
     [bonfire.id]: bonfire,
     [wildHunt.id]: wildHunt,
     [treasureChest.id]: treasureChest,

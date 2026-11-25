@@ -78,6 +78,7 @@ import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
 import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
+import { respawnPatrols } from '../../../shared/world/patrols.js';
 import { PARTY_SCALING, bossHpFactor } from '../../../shared/battle/spawnTableFactory.js';
 import { Dolos } from '../../../shared/story/dolos.js';
 import { VoicesPlayer } from './voicesPlayer.js';
@@ -290,6 +291,8 @@ export class SceneManager {
         if (sceneName === 'overworld') this._showDolosSign();
         // story characters on the map follow the player's story: after meeting Nikoli the cats are gone and he turns to face you (WorldManager)
         if (sceneName === 'overworld' && this.worldManager && this.worldManager.refreshStoryObjects) this.worldManager.refreshStoryObjects();
+        // patrols killed or sent off in an earlier act are back on their rounds (world/patrols.js): the act was reached here, by another player, or before a load
+        if (sceneName === 'overworld' && this.worldManager) respawnPatrols(this.worldManager);
         // the Stranger's grave (his quest shackled7): picked and pinned on the map the first time the player is back outside with it
         if (sceneName === 'overworld' && this.worldManager && this.worldManager.noticeStrangerGrave) this.worldManager.noticeStrangerGrave();
 

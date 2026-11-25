@@ -114,6 +114,7 @@ export const CASTLE = {
     // 3 x 3, the counter and the row behind it solid) in a row or two facing south, wheelbarrows, and barrels and crates stacked about
     MARKET: { chance: 0.2, keep: 1, w: [12, 14], h: [11, 12], barrels: [12, 20] },   // one in the keep's bailey, now and then one in another ward
     THE_FALLEN: { every: 3 }, // about one body for every this many houses, lying in the alleys beside them
+    PATROLS: { every: 12, min: 2 },   // legionaries on patrol (LEGIONARY_PATROL) walking the lanes: one for every this many houses, and never fewer than min
     ALLEY_GRAVES: { every: 4 },   // and a lone grave for every this many, against a wall in an alley
     PROPS: {
         CLUTTER: ['BARREL', 'BARREL', 'BARREL', 'BARREL', 'RUINED_BARREL', 'RUINED_BARREL', 'CRATE', 'CRATE', 'CRATE_SACK'],   // against the walls of the houses
@@ -776,6 +777,15 @@ export function planCastle(seed, cfg = CASTLE) {
                 if (sinceTorch < P.TORCH_EVERY) continue;
                 const x = rand() < 0.5 ? bd.col : bd.col + bd.w - 1, y = bd.row + 1;
                 if (tryPut('STANDING_TORCH', x, y)) sinceTorch = 0;
+            }
+            // the patrols: legionaries walking the lanes before the rows of houses (each walks his round from where he stands: LEGIONARY_PATROL's wander)
+            if (buildings.length && cfg.PATROLS) {
+                const want = Math.max(cfg.PATROLS.min, Math.round(buildings.length / cfg.PATROLS.every));
+                for (let k = 0, tries = 0; k < want && tries < want * 40; tries++) {
+                    const bd = buildings[Math.floor(rand() * buildings.length)];
+                    const x = bd.col + Math.floor(bd.w / 2), y = bd.row + 1 + Math.floor(rand() * 2);
+                    if (tryPut('LEGIONARY_PATROL', x, y)) k++;
+                }
             }
             // the markets: a row of stalls along the square's top (and another lower down in a deep square), each facing south with room
             // before it; wheelbarrows; barrels and crates stacked in clusters

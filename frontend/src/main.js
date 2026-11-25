@@ -310,6 +310,7 @@ ui_icons: './assets/icons/ui_icons.png',
     shadowCasterHeroSprite: './assets/sprites/shadow_caster_hero/shadow_caster_hero_sprite.png',
 
     legionaryPortrait: './assets/sprites/legionary/legionary_portrait.png',
+    legionaryPatrolSprite: './assets/sprites/legionary/legionary_patrol_sprite.png',   // the legionary on patrol (LEGIONARY_PATROL): rows 0-3 idle, 4-7 walk (8-11 the walk again)
     watchmanPortrait: './assets/sprites/watchman/watchman_portrait.png',
     wolfPortrait: './assets/sprites/wolf/wolf_portrait.png',
     snowLeopardPortrait: './assets/sprites/snow_leopard/snow_leopard_portrait.png',
@@ -490,6 +491,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     //Encounters
     encounter_wounded_mutt: './assets/icons/encounters/wounded_mutt.png',
     encounter_a_disturbing_sight: './assets/icons/encounters/a_disturbing_sight.png',
+    encounter_legionary_patrol: './assets/icons/encounters/legionary_patrol.png',   // 4 x 2 cells of 128: his back, front, dead, walking off, grabbing, robbed, saluting (story/encounters/legionaryPatrol.js)
     encounter_bonfire: './assets/icons/encounters/bonfire.png',
     encounter_wild_hunt: './assets/icons/encounters/wild_hunt.png',
     encounter_treasure_chest: './assets/icons/encounters/treasure_chest.png',

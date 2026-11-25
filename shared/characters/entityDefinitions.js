@@ -277,7 +277,7 @@ export const ENTITY_DEFINITIONS = {
         ...HUMANOID_TEMPLATE,
         name: "Legionary",
         level: 1,
-        spriteOverworld: "legionarySprite",
+        spriteOverworld: "legionaryPatrolSprite",   // the patrol walking a village's streets or a castle's lanes (LEGIONARY_PATROL)
         spritePortrait: "legionaryPortrait",
         crySound: "legionaryCry",
         deathSound: "legionaryCry",

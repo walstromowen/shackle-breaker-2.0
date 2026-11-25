@@ -262,6 +262,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // a grizzly, rare, out in the plains and the snowy mountains (biomeDefinitions.js): it keeps to its patch, a slow step or two about where it
     // stands and long stops to grub at the roots; it sees 10 tiles ahead, in a half circle the way it faces (`sight`), and seeing you starts
     // "A Grizzly" (story/encounters/bearPatrol.js)
+    // a legionary of the old garrison, gone shackled and still walking his round: one in every village (villagePlanner.js), a few down the lanes of
+    // every castle (castleLayout.js). He sees 10 tiles ahead, in a half circle the way he faces (`sight`): seen, it is the fight (legionary_spots_you);
+    // walked up to from behind, "A Legionary on Patrol" (story/encounters/legionaryPatrol.js): assassinate, distract, steal, or walk away
+    LEGIONARY_PATROL: { ...npcBody('LEGIONARY', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'legionary_patrol', seenId: 'legionary_spots_you', sight: 10 },
+        wander: { radius: 6, stepMs: [900, 1200], pauseChance: 0.2, pauseMs: [1200, 3200], straight: 0.75, waypoints: 4 } },
     BEAR_PATROL: { ...npcBody('BEAR', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'bear_patrol', sight: 10 },
         wander: { radius: 2, stepMs: [1500, 2100], pauseChance: 0.6, pauseMs: [3000, 7000], waypoints: 3 } },
     GARRICK_NPC: { ...npcBody('AMPUTATOR_GARRICK', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'amputator_garrick', triggerRadius: 2 } },

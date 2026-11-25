@@ -24,6 +24,7 @@ import { QuestDefinitions } from '../../../../shared/story/questDefinitions.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
 import { Covenants, COVENANTS } from '../../../../shared/story/covenants.js';
 import { addMarker, getMarkers, removeMarker } from '../../../../shared/world/mapMarkers.js';
+import { notePatrolFallen } from '../../../../shared/world/patrols.js';
 
 /* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
    same roll (the leader's, sent with each choice: the one who started it) and the same seed, so every screen reaches the same outcome. Who a
@@ -396,6 +397,8 @@ export class EncounterLogic {
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {
                         const o = worldManager.getObjectAt ? worldManager.getObjectAt(ctx.col, ctx.row) : null;
                         worldManager.modifyWorld(ctx.col, ctx.row, null, ctx.mapId);
+                        // a patrol (a madman, a legionary, an Arc Knight, a bear) comes back when a new act begins (world/patrols.js)
+                        if (o && o.id) { const home = o._home || [ctx.col, ctx.row]; notePatrolFallen(o.id, home[0], home[1], gameState.world.isInterior ? (gameState.world.interiorId || null) : null); }
                         // a wanderer (a madman, an Arc Knight on patrol) away from its home cell: the home is cleared too, or it would be made there again
                         if (o && o._home && (o._home[0] !== ctx.col || o._home[1] !== ctx.row)) worldManager.modifyWorld(o._home[0], o._home[1], null, ctx.mapId);
                     }

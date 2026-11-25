@@ -431,6 +431,10 @@ export const STRUCTURES = {
             max: 3,
         },
 
+        /* THE PATROL: one legionary walking the village's streets (LEGIONARY_PATROL), on the road itself, about the middle of its longest street
+           (see _planLegionaryPatrol in villagePlanner.js) */
+        patrol: { id: 'LEGIONARY_PATROL' },
+
         /* STREET DRESSING (on the grass just beside the road; the solid ones are never in the way of the road) */
         streetProps: {
             chance: 0.10,                         // per step, per side
