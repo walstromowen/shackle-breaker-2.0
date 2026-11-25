@@ -99,5 +99,15 @@ export const encounterDefinitions = {
     // 2. Add `[yourEncounter.id]: yourEncounter,` right here.
 };
 
+/* The story's encounters, shared with the whole party in multiplayer: a party member anywhere in the world is pulled into one, not only those
+   standing near (engine/multiplayerSocial.js storyParty), so the story is lived together. The deliberately personal ones are not here (the
+   Hooded Stranger and the end of act one are each player's own: `personal`), nor the prologue (each player's own start). */
+export const STORY_ENCOUNTERS = new Set([
+    mysteriousAltar, nikoli, nikoliAfterBattle, nikoliBrothersWon, dryKrakenAmbush, codeyFreed, jaeger,
+    amputatorOsric, amputatorGarrick, amputatorGarrickFallen, arcKnight, arcKnightFallen,
+    codey, strangerMark, strangerNote, brothersSword, pursuer, pursuerWon,
+    catacombVaultDoor, infernusSentinel, infernusSentinelFallen, shackledBetrayal, shackledBetrayalEnd,
+].filter(e => e && !e.personal).map(e => e.id));
+
 // The moments that sometimes teach a trait, good or bad (story/encounterTraits.js): put into the stages above, once.
 export const MISSING_TRAIT_STAGES = applyEncounterTraits(encounterDefinitions);

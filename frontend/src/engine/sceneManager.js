@@ -560,7 +560,7 @@ export class SceneManager {
                     return;
                 }
                 if (ctx.objectId) multiplayerSocial.claimObject(hc, hr);
-                const mp = multiplayerSocial.sharesFights && !personal
+                const mp = multiplayerSocial.sharesEncounter(data.id) && !personal
                     ? multiplayerSocial.startPartyEncounter({ encounterId: data.id, context: data.context || {}, bgm: data.context?.bgm || null, quiet: true })
                     : null;
                 this.transitionRenderer.start(() => {
@@ -640,7 +640,7 @@ export class SceneManager {
             // a party of players: an encounter I start pulls in the party near me (I lead it, everyone votes: engine/multiplayerSocial.js, EncounterController)
             // (an encounter marked `personal` is this player's own, never shared: the quest giver, the end of act 1 that every player plays for themselves)
             const personal = !!(encounterDefinitions[data.encounterId] && encounterDefinitions[data.encounterId].personal);
-            const mp = data.mp || (multiplayerSocial.sharesFights && !personal ? multiplayerSocial.startPartyEncounter(data) : null);
+            const mp = data.mp || (multiplayerSocial.sharesEncounter(data.encounterId) && !personal ? multiplayerSocial.startPartyEncounter(data) : null);
             if (this.overworldController) this.overworldController.isLocked = true;
             this.transitionRenderer.start(() => {
                 this.encounterController.start(data.encounterId, data.context || {}, mp);

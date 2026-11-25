@@ -37,6 +37,10 @@ import { multiplayerSession } from './multiplayerSession.js';
 import { serializeEntity, hydrateEntity, hydrateItem } from './saveManager.js';
 import { WeatherFactory } from '../../../shared/world/weatherFactory.js';
 import { QuestDefinitions, STORY_QUESTS } from '../../../shared/story/questDefinitions.js';
+import { STORY_ENCOUNTERS } from '../../../shared/story/encounterDefinitions.js';
+/* The screens a party member cannot be pulled away from: a fight, an encounter or a trade of their own (and the title or the creator). From any
+   other (the map, a menu: the inventory, the character page, the journal, the world map, a workshop) they are pulled in. */
+const PULL_BLOCKING_SCENES = new Set(['battle', 'encounter', 'trade', 'title', 'boot', 'character-creator']);
 
 const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 /* The weather a shared fight is fought in, as sent to the others ({ id, intensity }), and back as a weather of this build (null: clear). */
@@ -220,9 +224,23 @@ class MultiplayerSocial {
         const me = gameState.player;
         return this.partyPlayers().filter(id => {
             const r = multiplayerSession.remotes.get(id);
-            if (!r || !r.placed || r.map !== here || (r.scene && r.scene !== 'overworld') || !this.groupParties.has(id)) return false;
+            if (!r || !r.placed || r.gone || r.map !== here || (r.scene && PULL_BLOCKING_SCENES.has(r.scene)) || !this.groupParties.has(id)) return false;
             return Math.max(Math.abs(r.col - me.col), Math.abs(r.row - me.row)) <= PARTY_PULL_RADIUS;
         });
+    }
+
+    /** The players of my party a STORY encounter pulls in (encounterDefinitions STORY_ENCOUNTERS): every one connected, wherever they are in the
+     *  world, unless they are in a fight, an encounter or a trade of their own. The story is lived together. */
+    storyParty() {
+        return this.partyPlayers().filter(id => {
+            const r = multiplayerSession.remotes.get(id);
+            return !(r && (r.gone || (r.scene && PULL_BLOCKING_SCENES.has(r.scene))));
+        });
+    }
+
+    /** Would an encounter I start now be shared (and so pull someone in)? */
+    sharesEncounter(encounterId) {
+        return STORY_ENCOUNTERS.has(encounterId) ? this.storyParty().length > 0 : this.sharesFights;
     }
 
     /** Party members used to walk behind their leader; they keep their own feet now (every player explores, picks up and interacts). */
@@ -595,7 +613,8 @@ class MultiplayerSocial {
     startPartyEncounter(data) {
         // the one who started it leads it (their roll, their tie-break); the party near them is pulled in and votes
         this.declined.clear();
-        const players = [this.me, ...this.nearbyParty()];
+        const story = STORY_ENCOUNTERS.has(data.encounterId);
+        const players = [this.me, ...(story ? this.storyParty() : this.nearbyParty())];
         const eid = newId(), seed = (Math.random() * 0xffffffff) >>> 0;
         // the line-up, as for a fight: every player's first characters (3 each for two players, 2 each for three), the leader's lead first.
         // Any of them can step forward (a switch is voted on), and each screen shows the one who did.
@@ -604,7 +623,7 @@ class MultiplayerSocial {
         const lineup = buildLineup(players.map(id => ({ id, members: parties[id].map(m => ({ alive: living(m) })) })))
             .map(e => ({ owner: e.owner, idx: e.idx, data: parties[e.owner][e.idx] }));
         const base = { eid, seed, players, leader: this.me, lineup };
-        for (const id of players) if (id !== this.me) this._send({ k: 'enc_start', mp: base, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null, quiet: !!data.quiet }, id);
+        for (const id of players) if (id !== this.me) this._send({ k: 'enc_start', mp: base, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null, quiet: !!data.quiet, story }, id);
         return { ...base, me: this.me, isLeader: true };
     }
 
@@ -711,7 +730,8 @@ class MultiplayerSocial {
                 break;
             }
             case 'enc_start':
-                if (d.mp && multiplayerSession.active && (this._busy() || this._tooFar(from))) {
+                // a story encounter reaches me wherever I am (the story is shared); any other only when I am near the one who started it
+                if (d.mp && multiplayerSession.active && (this._busy() || (!d.story && this._tooFar(from)))) {
                     // already in a fight or an encounter (or a trade): stay in it, and tell the encounter's players to go on without me
                     for (const id of d.mp.players || []) if (id !== this.me) this._send({ k: 'enc_decline', eid: d.mp.eid }, id);
                     break;
