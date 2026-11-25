@@ -99,7 +99,7 @@ test('act 3 (the blood moon, as before): Arc Knights on patrol, rare, in the pla
     gameState.milestones = ['darius_slain'];
     assert.equal(biome.getSpawnId(tile, roll).id, 'ARC_KNIGHT_PATROL', 'in act 2');
     gameState.milestones = [];
-    assert.ok(M.ARC_KNIGHT_PATROL.wander && M.ARC_KNIGHT_PATROL.interaction.sight === 10, 'he walks; being seen by him (10 tiles ahead) is the fight');
+    assert.ok(M.ARC_KNIGHT_PATROL.wander && M.ARC_KNIGHT_PATROL.interaction.sight === 5, 'he walks; being seen by him (5 tiles ahead) is the fight');
     const p = encounterDefinitions.arc_knight_patrol;
     const st = p.stages[p.initialStage];
     assert.ok(st.bgm, 'the battle music starts with the encounter');

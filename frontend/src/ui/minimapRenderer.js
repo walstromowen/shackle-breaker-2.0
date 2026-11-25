@@ -346,7 +346,7 @@ export class MinimapRenderer {
         const here = inside ? `INT_${w.interiorId}` : 'world';
         const party = multiplayerSocial.myGroup();
         for (const r of multiplayerSession.remotes.values()) {
-            if (!r || !r.placed || r.map !== here) continue;
+            if (!r || !r.placed || r.gone || r.map !== here) continue;
             const dx = sx(r.col + 0.5), dy = sy(r.row + 0.5), s = Z + 4, h = s >> 1;
             const mine = party && (party.leader === r.id || party.members.includes(r.id));
             ctx.fillStyle = mine ? '#ffffff' : 'rgba(0, 0, 0, 0.8)';

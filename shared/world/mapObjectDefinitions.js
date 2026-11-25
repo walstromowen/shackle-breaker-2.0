@@ -236,9 +236,9 @@ export const MAP_OBJECTS_DEFINITIONS = {
     SHADY_MERCHANT_NPC: { ...npcBody('SHADY_MERCHANT'), interaction: { type: 'ENCOUNTER', id: 'suspicious_merchant' } },
     DOG_NPC: { ...npcBody('DOG'), interaction: { type: 'ENCOUNTER', id: 'wounded_mutt' } },
     // the madmen wander about where they stand, and stop now and then, as if listening, looking about (WorldManager.tickWanderers).
-    // He sees 10 tiles ahead of him, in a half circle the way he faces (`sight`): step into it and he has seen you, and it is the fight
+    // He sees 5 tiles ahead of him, in a half circle the way he faces (`sight`): step into it and he has seen you, and it is the fight
     // (seenId: madman_spots_you). Behind him he sees nothing: walk up and interact with him to come upon A Disturbing Sight, with the chances a sneak gives
-    MADMAN_NPC: { ...npcBody('MAD_MAN', 'UP'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', seenId: 'madman_spots_you', sight: 10 },
+    MADMAN_NPC: { ...npcBody('MAD_MAN', 'UP'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', seenId: 'madman_spots_you', sight: 5 },
         wander: { radius: 3, stepMs: [1100, 1500], pauseChance: 0.35, pauseMs: [1500, 4500], waypoints: 5 } },
     // the quest giver: only ever one, in one village workshop (InteriorFactory picks it: world.strangerHome); talking to him hands out the Shackled questline
     HOODED_STRANGER_NPC: { ...npcBody('HOODED_STRANGER'), interaction: { type: 'ENCOUNTER', id: 'hooded_stranger' } },
@@ -255,19 +255,19 @@ export const MAP_OBJECTS_DEFINITIONS = {
     ARC_KNIGHT_NPC: { ...npcBody('ARC_KNIGHT', 'UP'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },
     ARC_KNIGHT_NPC_LEFT: { ...npcBody('ARC_KNIGHT', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },     // a gate in the east fence
     ARC_KNIGHT_NPC_RIGHT: { ...npcBody('ARC_KNIGHT', 'RIGHT'), interaction: { type: 'ENCOUNTER', id: 'arc_knight', triggerRadius: 1 } },   // a gate in the west fence
-    // act 3: Arc Knights on patrol, rare, out in the plains (biomeDefinitions.js, minAct 3): they walk with a purpose, and they see 10 tiles ahead,
+    // act 3: Arc Knights on patrol, rare, out in the plains (biomeDefinitions.js, minAct 3): they walk with a purpose, and they see 5 tiles ahead,
     // in a half circle the way they face (`sight`): seen, it is the fight (story/encounters/story/arcKnight.js arcKnightPatrol)
-    ARC_KNIGHT_PATROL: { ...npcBody('ARC_KNIGHT', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'arc_knight_patrol', sight: 10 },
+    ARC_KNIGHT_PATROL: { ...npcBody('ARC_KNIGHT', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'arc_knight_patrol', sight: 5 },
         wander: { radius: 6, stepMs: [800, 1000], pauseChance: 0.1, pauseMs: [900, 2200], straight: 0.75, waypoints: 4 } },
     // a grizzly, rare, out in the plains and the snowy mountains (biomeDefinitions.js): it keeps to its patch, a slow step or two about where it
-    // stands and long stops to grub at the roots; it sees 10 tiles ahead, in a half circle the way it faces (`sight`), and seeing you starts
+    // stands and long stops to grub at the roots; it sees 5 tiles ahead, in a half circle the way it faces (`sight`), and seeing you starts
     // "A Grizzly" (story/encounters/bearPatrol.js)
     // a legionary of the old garrison, gone shackled and still walking his round: one in every village (villagePlanner.js), a few down the lanes of
-    // every castle (castleLayout.js). He sees 10 tiles ahead, in a half circle the way he faces (`sight`): seen, it is the fight (legionary_spots_you);
+    // every castle (castleLayout.js). He sees 5 tiles ahead, in a half circle the way he faces (`sight`): seen, it is the fight (legionary_spots_you);
     // walked up to from behind, "A Legionary on Patrol" (story/encounters/legionaryPatrol.js): assassinate, distract, steal, or walk away
-    LEGIONARY_PATROL: { ...npcBody('LEGIONARY', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'legionary_patrol', seenId: 'legionary_spots_you', sight: 10 },
+    LEGIONARY_PATROL: { ...npcBody('LEGIONARY', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'legionary_patrol', seenId: 'legionary_spots_you', sight: 5 },
         wander: { radius: 6, stepMs: [900, 1200], pauseChance: 0.2, pauseMs: [1200, 3200], straight: 0.75, waypoints: 4 } },
-    BEAR_PATROL: { ...npcBody('BEAR', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'bear_patrol', sight: 10 },
+    BEAR_PATROL: { ...npcBody('BEAR', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'bear_patrol', sight: 5 },
         wander: { radius: 2, stepMs: [1500, 2100], pauseChance: 0.6, pauseMs: [3000, 7000], waypoints: 3 } },
     GARRICK_NPC: { ...npcBody('AMPUTATOR_GARRICK', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'amputator_garrick', triggerRadius: 2 } },
     // Jaeger, posing as his brother Nikoli: in the hoard of the first catacombs the player walks into, until he has been met (InteriorFactory, CatacombGenerator)

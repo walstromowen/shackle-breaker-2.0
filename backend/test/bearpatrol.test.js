@@ -17,7 +17,7 @@ test('the bear is a map object drawn from its own sheet, keeping close to home, 
     assert.ok(b, 'BEAR_PATROL exists');
     assert.equal(b.interaction.type, 'ENCOUNTER');
     assert.equal(b.interaction.id, 'bear_patrol');
-    assert.equal(b.interaction.sight, 10, 'it sees 10 tiles ahead of it');
+    assert.equal(b.interaction.sight, 5, 'it sees 5 tiles ahead of it');
     assert.ok(b.wander, 'it moves');
     assert.ok(b.wander.radius <= 2, 'only a little way from where it stands');
     assert.ok(b.wander.radius < M.MADMAN_NPC.wander.radius && b.wander.pauseChance > M.MADMAN_NPC.wander.pauseChance, 'less than a madman, and stopping more');

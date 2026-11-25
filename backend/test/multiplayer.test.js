@@ -173,6 +173,15 @@ async function client(user) {
     return { ws, next, send };
 }
 
+
+/* the host's view of the room once every guest's ready has arrived (the guest's ready and the host's start come over different connections) */
+async function readyAll(host) {
+    for (let i = 0; i < 10; i++) {
+        const r = (await host.next('room')).room;
+        if (r.players.every(p => p.host || p.ready || p.id === r.hostId)) return r;
+    }
+    throw new Error('the guests never got ready');
+}
 test('over the socket: hello with the login token, then host, join, ready, start and relay', async () => {
     const a = await client({ id: 'u1', username: 'Ann' });
     assert.deepEqual((await a.next('welcome')).you, { id: 'u1', username: 'Ann' });
@@ -184,6 +193,7 @@ test('over the socket: hello with the login token, then host, join, ready, start
     b.send({ t: 'join', code });
     assert.equal((await b.next('room')).room.players.length, 2);
     b.send({ t: 'ready', ready: true });
+    await readyAll(a);
     a.send({ t: 'start' });
     await a.next('started'); await b.next('started');
     b.send({ t: 'relay', data: { step: [3, 4] } });
@@ -204,4 +214,42 @@ test('over the socket: a bad token is refused, and a second connection of one ac
     await second.next('welcome');
     assert.equal(await closed, 4009);
     second.ws.close();
+});
+
+test('over the socket: nothing a player sends cuts the connection or brings the server down (bursts, junk, a failing handler, a whole world)', async () => {
+    const a = await client({ id: 'u31', username: 'Ann' }); await a.next('welcome');
+    const b = await client({ id: 'u32', username: 'Bo' }); await b.next('welcome');
+    let aClosed = null, bClosed = null;
+    a.ws.on('close', (c) => { aClosed = c; }); b.ws.on('close', (c) => { bClosed = c; });
+    a.send({ t: 'host', world: { name: 'Ann' } });
+    const code = (await a.next('room')).room.code;
+    b.send({ t: 'join', code }); await b.next('room');
+    b.send({ t: 'ready', ready: true }); await readyAll(a); a.send({ t: 'start' });
+    await a.next('started'); await b.next('started');
+    // a burst well over what the game itself sends (it paces at 25 a second)
+    for (let i = 0; i < 100; i++) b.send({ t: 'relay', data: { k: 'tr_offer', v: i } });
+    // junk: broken JSON, binary, no type, unknown type, odd relays
+    b.ws.send('{not json'); b.ws.send(Buffer.from([1, 2, 3]), { binary: true });
+    b.send({}); b.send({ t: 42 }); b.send({ t: 'nonsense' }); b.send({ t: 'relay' }); b.send({ t: 'relay', to: 'nobody', data: { k: 'x' } });
+    b.send({ t: 'relay', to: { evil: true }, data: null }); b.send({ t: 'kick', id: 'u31' }); b.send({ t: 'start' });
+    // a handler that throws: the server carries on
+    const real = mp.lobby.handle.bind(mp.lobby);
+    let thrown = 0;
+    mp.lobby.handle = (id, msg) => { if (msg && msg.t === 'relay' && msg.data && msg.data.k === 'boom') { thrown++; throw new Error('boom'); } return real(id, msg); };
+    const log = console.error; console.error = () => {};
+    try { b.send({ t: 'relay', data: { k: 'boom' } }); await new Promise(r => setTimeout(r, 300)); } finally { console.error = log; mp.lobby.handle = real; }
+    assert.equal(thrown, 1, 'the failing handler ran');
+    // a whole world, as a host sends a joining guest (a save can be 3 MB)
+    const world = 'x'.repeat(5 * 1024 * 1024);
+    a.send({ t: 'relay', to: 'u32', data: { k: 'world', save: world } });
+    const got = await new Promise((resolve, reject) => { const t = setTimeout(() => reject(new Error('no world')), 5000); b.ws.on('message', (raw) => { const m = JSON.parse(raw.toString()); if (m.t === 'relay' && m.data && m.data.k === 'world') { clearTimeout(t); resolve(m); } }); });
+    assert.equal(got.data.save.length, world.length, 'a 5 MB world arrives whole');
+    // still connected both ways, the room intact
+    b.send({ t: 'relay', data: { k: 'still_here' } });
+    for (let i = 0; i < 200; i++) { const m = await a.next('relay'); if (m.data && m.data.k === 'still_here') break; }   // the burst first, in order, then this
+    await new Promise(r => setTimeout(r, 300));
+    assert.equal(aClosed, null, 'the host is still connected');
+    assert.equal(bClosed, null, 'the guest is still connected');
+    assert.equal(a.ws.readyState, WebSocket.OPEN); assert.equal(b.ws.readyState, WebSocket.OPEN);
+    a.ws.close(); b.ws.close();
 });

@@ -110,7 +110,7 @@ test('they are no longer random encounters, and every way they leave the scene t
     assert.ok(!all('wounded_mutt').find(([s]) => s === 'walk_away')[1].some(r => r.type === 'DESTROY_OBJECT'));
 });
 
-test('the madman sees 10 tiles ahead, in a half circle the way he faces, and nothing behind; the zone fires once each time you come into it', () => {
+test('the madman sees 5 tiles ahead, in a half circle the way he faces, and nothing behind; the zone fires once each time you come into it', () => {
     const madman = mapObjectFactory.create('MADMAN_NPC', 10, 10, BIOME_DEFINITIONS.PLAINS);
     const dog = mapObjectFactory.create('DOG_NPC', 20, 20, BIOME_DEFINITIONS.PLAINS);
     const objects = new Map([[madman, 0], [dog, 0]].map(([o]) => [`${o.col},${o.row}`, o]));
@@ -119,25 +119,25 @@ test('the madman sees 10 tiles ahead, in a half circle the way he faces, and not
     const keep = { ...gameState.player };
     const zones = (c, r) => { gameState.player.col = c; gameState.player.row = r; return OverworldController.prototype.findEncounterZones.call({ worldManager: wm, seesPlayer: OverworldController.prototype.seesPlayer, sightClear: OverworldController.prototype.sightClear }, c, r); };
     try {
-        assert.equal(madman.interaction.sight, 10);
+        assert.equal(madman.interaction.sight, 5);
         assert.equal(madman.interaction.triggerRadius, undefined, 'no circle all round him any more');
         madman._facing = 'UP';   // he looks north
         for (let dy = -12; dy <= 12; dy++) {
             for (let dx = -12; dx <= 12; dx++) {
                 if (!dx && !dy) continue; // his own tile
-                const sees = -dy >= 0 && Math.hypot(dx, dy) <= 10;   // ahead of him (north, or level with him) and within 10
+                const sees = -dy >= 0 && Math.hypot(dx, dy) <= 5;   // ahead of him (north, or level with him) and within 5
                 assert.equal(zones(10 + dx, 10 + dy).has('10,10'), sees, `player at ${dx},${dy} from him`);
             }
         }
         assert.ok(!zones(10, 11).has('10,10'), 'right behind him: unseen (walk up and interact for A Disturbing Sight)');
-        assert.ok(zones(10, 1).has('10,10') && !zones(10, -1).has('10,10'), '9 tiles ahead seen, 11 not');
+        assert.ok(zones(10, 5).has('10,10') && !zones(10, 4).has('10,10'), '5 tiles ahead seen, 6 not');
         // the dog has no eyes for you: you have to talk to it
         for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) assert.equal(zones(20 + dx, 20 + dy).size, 0);
         // fires once on entering, quiet while you stay, armed again after you leave
         const ctrl = { encounterZones: null };
         const step = (c, r) => { const now = zones(c, r), before = ctrl.encounterZones || new Map(); ctrl.encounterZones = now; return [...now.keys()].filter(k => !before.has(k)); };
         const fired = [];
-        for (const [c, r] of [[10, -2], [10, -1], [10, 0], [10, 1], [10, 0], [10, -1], [10, 0]]) fired.push(step(c, r).length);
+        for (const [c, r] of [[10, 3], [10, 4], [10, 5], [10, 6], [10, 5], [10, 4], [10, 5]]) fired.push(step(c, r).length);
         assert.deepEqual(fired, [0, 0, 1, 0, 0, 0, 1]);
         // a vanished madman (isFading) no longer sees you
         madman.isFading = true;
@@ -160,19 +160,20 @@ test('walls and solid things block their sight: a tree, a boulder or a cliff bet
     const keep = { ...gameState.player };
     const sees = (c, r) => { gameState.player.col = c; gameState.player.row = r; return OverworldController.prototype.findEncounterZones.call({ worldManager: wm, seesPlayer: OverworldController.prototype.seesPlayer, sightClear: OverworldController.prototype.sightClear }, c, r).has('10,10'); };
     try {
-        assert.ok(sees(10, 4), 'open ground: seen 6 tiles ahead');
-        solid.set('10,7', tree);
-        assert.ok(!sees(10, 4), 'a tree between: unseen');
-        assert.ok(sees(13, 5), 'off to the side of the tree: seen');
-        solid.set('10,7', flowers);
-        assert.ok(sees(10, 4), 'flowers (walked over) block nothing');
-        heights.set('10,7', 4);
-        assert.ok(!sees(10, 4), 'a rise of ground higher than both of you: unseen');
-        heights.delete('10,7'); faces.add('10,6');
-        assert.ok(!sees(10, 4), 'a cliff face between: unseen');
+        assert.ok(sees(10, 6), 'open ground: seen 4 tiles ahead');
+        assert.ok(!sees(10, 4), 'beyond his 5 tiles: unseen');
+        solid.set('10,8', tree);
+        assert.ok(!sees(10, 6), 'a tree between: unseen');
+        assert.ok(sees(13, 8), 'off to the side of the tree: seen');
+        solid.set('10,8', flowers);
+        assert.ok(sees(10, 6), 'flowers (walked over) block nothing');
+        heights.set('10,8', 4);
+        assert.ok(!sees(10, 6), 'a rise of ground higher than both of you: unseen');
+        heights.delete('10,8'); faces.add('10,7');
+        assert.ok(!sees(10, 6), 'a cliff face between: unseen');
         faces.clear();
-        solid.set('10,7', mapObjectFactory.create('DOG_NPC', 10, 7, BIOME_DEFINITIONS.PLAINS));
-        assert.ok(sees(10, 4), 'another creature does not hide you');
+        solid.set('10,8', mapObjectFactory.create('DOG_NPC', 10, 8, BIOME_DEFINITIONS.PLAINS));
+        assert.ok(sees(10, 6), 'another creature does not hide you');
     } finally { Object.assign(gameState.player, keep); }
 });
 

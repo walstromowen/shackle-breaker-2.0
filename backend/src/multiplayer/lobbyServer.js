@@ -8,11 +8,11 @@ import jwt from 'jsonwebtoken';
 import { Lobby } from './lobby.js';
 
 export const MP_PATH = '/api/mp';
-const MAX_MESSAGE_BYTES = 4 * 1024 * 1024;   // the host sends a joining guest the whole world (a save is at most 3 MB)
+export const MAX_MESSAGE_BYTES = 8 * 1024 * 1024;   // the host sends a joining guest the whole world (a save is at most 3 MB, with room to spare)
 const HELLO_TIMEOUT_MS = 10000;
 const PING_EVERY_MS = 25000;         // keeps the connection open through proxies, and finds dead ones
 const SWEEP_EVERY_MS = 5000;
-const RATE = { perSecond: 40, burst: 80 };   // messages a connection may send (movement later sends a few a second)
+export const RATE = { perSecond: 60, burst: 120 };   // messages a connection may send (the game paces itself at 25 a second: multiplayerClient.js SEND_RATE)
 
 /**
  * Adds the multiplayer WebSocket to an http server.
@@ -72,7 +72,8 @@ export function attachLobbyServer(httpServer, { config, lobby: givenLobby } = {}
                 lobby.connect(ws.user);
                 return;
             }
-            lobby.handle(ws.user.id, msg);
+            // one bad message must never take the server (and everyone's connection) down
+            try { lobby.handle(ws.user.id, msg); } catch (e) { console.error('[mp] a message could not be handled:', e && e.message); }
         });
 
         ws.on('close', () => {

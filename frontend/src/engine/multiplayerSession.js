@@ -390,6 +390,8 @@ class MultiplayerSession {
         for (const p of room.players) {
             if (p.id === me) continue;
             const was = this._known.get(p.id);
+            const r = this.remotes.get(p.id);
+            if (r) r.gone = p.connected === false;   // dropped: off every map until they are back (or gone for good)
             if (was === undefined) this._say(`${p.username} joined the world.`);
             else if (was && !p.connected) this._say(`${p.username} lost their connection.`);
             else if (!was && p.connected) this._say(`${p.username} is back.`);
@@ -545,7 +547,8 @@ class MultiplayerSession {
         if (!this.active) return [];
         const here = mapKey();
         const out = [];
-        for (const r of this.remotes.values()) if (r.placed && r.map === here && r.sprite) out.push(r.entity);
+        // a player whose connection has dropped (r.gone) is not drawn while the server keeps their place (they show again if they come back)
+        for (const r of this.remotes.values()) if (r.placed && !r.gone && r.map === here && r.sprite) out.push(r.entity);
         return out;
     }
 

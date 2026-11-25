@@ -303,7 +303,7 @@ export class WorldMapRenderer {
         const party = multiplayerSocial.myGroup();
         const k = Math.max(1, Math.min(1.6, 0.7 + scale / 8));
         for (const r of multiplayerSession.remotes.values()) {
-            if (!r || !r.placed || r.map !== 'world') continue;
+            if (!r || !r.placed || r.gone || r.map !== 'world') continue;
             const x = sx(r.col + 0.5), y = sy(r.row + 0.5);
             const mine = party && (party.leader === r.id || party.members.includes(r.id));
             ctx.save();

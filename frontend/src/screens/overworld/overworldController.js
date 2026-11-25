@@ -488,7 +488,7 @@ export class OverworldController extends BaseController {
         const col = Math.round(this.player.x / TILE_SIZE) + step[0], row = Math.round(this.player.y / TILE_SIZE) + step[1];
         const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
         for (const r of multiplayerSession.remotes.values()) {
-            if (!r.placed || r.map !== here) continue;
+            if (!r.placed || r.gone || r.map !== here) continue;
             const rc = Math.round(r.entity.x / TILE_SIZE), rr = Math.round(r.entity.y / TILE_SIZE);
             if ((rc === col && rr === row) || (r.col === col && r.row === row)) return r.id;
         }

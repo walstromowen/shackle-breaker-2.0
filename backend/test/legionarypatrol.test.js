@@ -21,7 +21,7 @@ test('the legionary on patrol: a walking map character with eyes, drawn from its
     assert.ok(p && p.character && p.character.entity === 'LEGIONARY');
     assert.equal(p.interaction.id, 'legionary_patrol', 'walked up to from behind: the sneak-up encounter');
     assert.equal(p.interaction.seenId, 'legionary_spots_you', 'seen: the fight');
-    assert.equal(p.interaction.sight, 10);
+    assert.equal(p.interaction.sight, 5);
     assert.ok(p.wander && p.wander.radius >= 4, 'he walks a round');
     assert.equal(ENTITY_DEFINITIONS.LEGIONARY.spriteOverworld, 'legionaryPatrolSprite');
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');

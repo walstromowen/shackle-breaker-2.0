@@ -27,6 +27,12 @@ class MultiplayerClient {
         this.retries = 0;
         this.wanted = false;       // true while the player wants to be online (a drop is then reconnected)
         this._queue = [];          // requests made while the connection was still opening
+        // the pace this client keeps (a token bucket): the server cuts off a connection that sends more than 40 a second (lobbyServer.js RATE),
+        // so a burst (a trade's quick clicks, a held key) waits its turn here instead of costing the connection
+        this._tokens = SEND_RATE.burst;
+        this._lastRefill = 0;
+        this._backlog = [];        // messages over the pace, sent in order as it allows
+        this._flushTimer = null;
     }
 
     on(type, fn) {
@@ -133,10 +139,55 @@ class MultiplayerClient {
     }
 
     _send(msg) {
-        if (this.status === 'online' && this.ws && this.ws.readyState === WebSocket.OPEN) { this.ws.send(JSON.stringify(msg)); return true; }
+        if (this.status === 'online' && this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this._refill();
+            if (this._backlog.length || this._tokens < 1) { this._hold(msg); return true; }
+            this._tokens -= 1;
+            return this._wire(msg);
+        }
         if (this.status === 'connecting') { this._queue.push(msg); return true; }
         this._fail({ code: 'network', message: 'Not connected to the server.' });
         return false;
+    }
+
+    /** Onto the connection: never a message the server would close the connection over (too big), which is reported instead. */
+    _wire(msg) {
+        const json = JSON.stringify(msg);
+        if (json.length > MAX_SEND_BYTES) {
+            console.warn('[mp] a message was too big to send', msg && msg.t, msg && msg.data && msg.data.k, json.length);
+            this._fail({ code: 'too_big', message: 'Something was too big to send to the other players.' });
+            return false;
+        }
+        this.ws.send(json);
+        return true;
+    }
+    _refill() {
+        const t = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (!this._lastRefill) this._lastRefill = t;
+        this._tokens = Math.min(SEND_RATE.burst, this._tokens + (t - this._lastRefill) / 1000 * SEND_RATE.perSecond);
+        this._lastRefill = t;
+    }
+    /** Over the pace: kept to send shortly. Only the newest of the same kind of update waits: a newer position or trade offer replaces an
+     *  older one still waiting (it says everything the older one did). */
+    _hold(msg) {
+        const k = coalesceKey(msg);
+        if (k) {
+            const i = this._backlog.findIndex(m => coalesceKey(m) === k);
+            if (i !== -1) { this._backlog[i] = msg; this._scheduleFlush(); return; }
+        }
+        if (this._backlog.length >= MAX_BACKLOG) this._backlog.shift();   // never an endless pile (the oldest, by now stale, goes)
+        this._backlog.push(msg);
+        this._scheduleFlush();
+    }
+    _scheduleFlush() {
+        if (this._flushTimer) return;
+        this._flushTimer = setTimeout(() => { this._flushTimer = null; this._flushBacklog(); }, 1000 / SEND_RATE.perSecond);
+    }
+    _flushBacklog() {
+        if (!(this.status === 'online' && this.ws && this.ws.readyState === WebSocket.OPEN)) { this._backlog = []; return; }
+        this._refill();
+        while (this._backlog.length && this._tokens >= 1) { this._tokens -= 1; this._wire(this._backlog.shift()); }
+        if (this._backlog.length) this._scheduleFlush();
     }
 
     host(world) { this.lastError = null; return this._send({ t: 'host', world }); }
@@ -157,6 +208,19 @@ class MultiplayerClient {
         if (ws) { try { ws.close(1000, 'Left'); } catch { /* already closed */ } }
         this._setStatus('offline');
     }
+}
+
+/* The pace this client sends at: under the server's limit (40 a second, bursts of 80) with room to spare. */
+const SEND_RATE = { perSecond: 25, burst: 50 };
+const MAX_SEND_BYTES = 7.5 * 1024 * 1024;   // the server closes a connection whose message is over 8 MB (lobbyServer.js MAX_MESSAGE_BYTES)
+const MAX_BACKLOG = 200;
+/** Updates where only the newest matters (a newer one says everything an older one did): where this player is, and their trade offer. */
+function coalesceKey(msg) {
+    const d = msg && msg.t === 'relay' && msg.data;
+    if (!d) return null;
+    if (d.k === 'pos') return 'pos';
+    if (d.k === 'tr_offer') return 'tr_offer:' + (msg.to || '');
+    return null;
 }
 
 export const multiplayer = new MultiplayerClient();
