@@ -90,3 +90,20 @@ test('every patrol (madmen, legionaries, Arc Knights, bears) is put back when a 
         assert.equal(respawnPatrols(wm), 0);
     } finally { gameState.world = keep.world; gameState.milestones = keep.milestones; }
 });
+
+test('every patrol stage that leads to a fight plays its battle music already (the patrol has recognized you), and the screen keeps it', () => {
+    const res = (d) => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])].flatMap(o => o.results || []);
+    const ids = new Set();
+    for (const [k, d] of Object.entries(M)) if (isPatrol(k)) { ids.add(d.interaction.id); if (d.interaction.seenId) ids.add(d.interaction.seenId); }
+    for (const id of ids) {
+        for (const [sid, st] of Object.entries(E[id].stages)) {
+            const ds = st.decisions || [];
+            const fights = ds.filter(d => res(d).some(r => r.type === 'START_BATTLE'));
+            if (!fights.length || fights.length !== ds.length) continue;   // a forced fight: it has seen you
+            assert.ok(st.bgm && st.bgm !== 'none', `${id}/${sid}: its battle music plays on this screen`);
+        }
+    }
+    // the encounter screen opening does not put the overworld's music back over the stage's (SceneManager.resolveTargetBGM)
+    const sm = fs.readFileSync(new URL('../../frontend/src/engine/sceneManager.js', import.meta.url), 'utf8');
+    assert.match(sm, /targetScene === 'encounter' && this\.encounterController && this\.encounterController\.model/);
+});

@@ -79,6 +79,7 @@ import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
 import { respawnPatrols } from '../../../shared/world/patrols.js';
+import { EncounterLogic } from '../screens/encounter/encounterLogic.js';
 import { PARTY_SCALING, bossHpFactor } from '../../../shared/battle/spawnTableFactory.js';
 import { Dolos } from '../../../shared/story/dolos.js';
 import { VoicesPlayer } from './voicesPlayer.js';
@@ -233,6 +234,13 @@ export class SceneManager {
         // 3. Cached Battle/Encounter overrides
         if (targetScene === 'battle' && this.activeBattleBGM) return this.activeBattleBGM;
         if (targetScene === 'encounter' && this.activeEncounterBGM) return this.activeEncounterBGM;
+        // the encounter's stage on screen chooses its own music (a patrol that has seen you: the battle track before the battle), and the
+        // screen opening does not drown it in the overworld's (EncounterController.updateBGM has already started it; 'none' is its silence)
+        if (targetScene === 'encounter' && this.encounterController && this.encounterController.model && this.encounterController.model.getBgm) {
+            const stageBgm = this.encounterController.model.getBgm();
+            if (stageBgm === 'none') return null;
+            if (stageBgm) return EncounterLogic.resolveBattleBgm(stageBgm, this.worldManager);
+        }
         
         // --- FIX: Preserve active encounter BGM if battle specifies no custom BGM ---
         if (targetScene === 'battle' && this.currentScene === 'encounter' && gameState.world?.currentBgm) {
