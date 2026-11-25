@@ -43,6 +43,7 @@ export class PartyController extends BaseController {
     init(data = {}) {
         this.mode = data.mode || 'DEFAULT';
         this.activeIndices = data.activeIndices || [];
+        this.pickable = Array.isArray(data.pickable) ? data.pickable : null;   // a fight's own say on who can step in (BattleController.requestPartySwap)
         this.callback = data.callback || null;
         // a pick from someone else's list: a shared fight's or encounter's line-up (every player's characters), with whose each one is
         this.roster = Array.isArray(data.members) ? data.members : null;
@@ -303,8 +304,9 @@ export class PartyController extends BaseController {
             const member = this._members()[this.selectedIndex];
             const isDead = member.hp <= 0;
             const isActive = this.activeIndices.includes(this.selectedIndex);
+            const blocked = this.pickable ? !this.pickable[this.selectedIndex] : (isDead || isActive);
 
-            if (isDead || isActive) {
+            if (blocked) {
                 console.log("[Party] Cannot select this member.");
                 this.playErrorSound(); // that member can't be picked
                 return;

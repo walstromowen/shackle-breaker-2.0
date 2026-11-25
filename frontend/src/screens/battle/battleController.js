@@ -322,11 +322,21 @@ export class BattleController extends BaseController {
             }
         });
 
+        // who can step in: standing, not on the field, not already called in (by me or, in a shared fight, by another player this round). Nobody at all (in a shared fight another player may have called the last reserve in this very
+        // round): no question is asked, the slot stays empty and the fight goes on, rather than a pick nobody can make
+        const pickable = this.state.partyRoster.map((c, i) => !c.isDead() && !activeIndices.includes(i));
+        if (!pickable.some(Boolean)) {
+            if (!isForced) { this.playErrorSound(); this.state.message = 'There is no one to swap in.'; return; }
+            if (mp) multiplayerSocial.sendBattleDecision(mp, { round: mp.round, kind: 'reinforce', key: `${slotIndex}:${this.state.activeParty[slotIndex]?.netId || ''}`, replacement: null, none: true });
+            this.state.isPausedForUI = false;
+            return;
+        }
         this.state.isPausedForUI = true;
         
         events.emit('REQUEST_PARTY_SWAP', { 
             mode: 'BATTLE_SELECT', 
             activeIndices: activeIndices, 
+            pickable,
             // the cards are the fight's roster (in a shared fight: the line-up, with whose each character is)
             members: this.state.partyRoster.map(c => c.originalEntity),
             owners: mp ? this.state.partyRoster.map(c => (mp.names || {})[c.netOwner] || '') : null,
@@ -351,6 +361,7 @@ export class BattleController extends BaseController {
         const s = this.state, w = this._awaitReinforce;
         if (!s || !w) return;
         this._awaitReinforce = null;
+        if (d && d.none) { s.isPausedForUI = false; return; }   // its owner had nobody to send in: the slot stays empty on every screen
         const free = (c) => c && !c.isDead() && !s.activeParty.includes(c) && !s.turnQueue.some(t => t.replacement === c);
         let replacement = d ? this.byNet.get(d.replacement) : null;
         if (!free(replacement)) replacement = s.partyRoster.find(free) || null;

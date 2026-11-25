@@ -840,6 +840,7 @@ export class SceneManager {
                 this.partyController.init({
                     mode: data.mode || 'BATTLE_SELECT',
                     activeIndices: data.activeIndices,
+                    pickable: data.pickable,
                     callback: data.callback,
                     members: data.members, owners: data.owners, title: data.title
                 });

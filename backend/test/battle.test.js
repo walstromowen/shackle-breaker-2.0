@@ -304,3 +304,35 @@ test('a pick already made this round can be taken back: Escape (or right-click) 
         assert.equal(bc._canUndoPick(), false, 'too late once the round has begun');
     });
 });
+
+test('a fallen fighter\'s place: only who can really step in is pickable, and with nobody left (a shared fight\'s last reserve already called in) it asks nothing: no dead end', () => {
+    party(['HUMANOID', 5], ['HUMANOID', 5], ['HUMANOID', 5], ['HUMANOID', 5]);
+    const bc = withSeed(7, () => newBattle([['MAD_MAN', 1]], { maxActive: 3 }));
+    const s = bc.state;
+    const asks = [];
+    const off = (d) => asks.push(d);
+    events.on('REQUEST_PARTY_SWAP', off);
+    try {
+        // the reserve has fallen earlier in the fight, and now a fighter on the field falls
+        const reserve = s.partyRoster.find(c => !s.activeParty.includes(c));
+        reserve.modifyResource('hp', -9999);
+        s.activeParty[0].modifyResource('hp', -9999);
+        withSeed(1, () => bc.requestPartySwap(true, 0));
+        assert.equal(asks.length, 0, 'no picker opened: nobody can step in');
+        assert.equal(s.isPausedForUI, false, 'the fight goes on');
+        // a reserve standing: the picker opens, marks only it as pickable, and shows the fallen as they are now
+        reserve.modifyResource('hp', 5);
+        withSeed(1, () => bc.requestPartySwap(true, 0));
+        assert.equal(asks.length, 1);
+        const ask = asks[0];
+        const i = s.partyRoster.indexOf(reserve);
+        assert.deepEqual(ask.pickable.map((p, k) => p ? k : -1).filter(k => k >= 0), [i], 'only the standing reserve');
+        assert.equal(ask.members[i], reserve.originalEntity, 'the cards are the characters');
+        // the same reserve already called in (as another player can in a shared fight): nobody is left, and no picker opens
+        asks.length = 0; s.isPausedForUI = false;
+        s.turnQueue.push({ type: TURN_TYPES.REINFORCEMENT, team: 'party', slotIndex: 1, replacement: reserve });
+        withSeed(1, () => bc.requestPartySwap(true, 0));
+        assert.equal(asks.length, 0, 'the last reserve is already on its way in: nothing to ask');
+        assert.equal(s.isPausedForUI, false);
+    } finally { events.off ? events.off('REQUEST_PARTY_SWAP', off) : null; }
+});
