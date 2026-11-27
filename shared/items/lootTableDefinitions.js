@@ -1023,6 +1023,40 @@ export const LootTableDefinitions = {
     // SNOWBOUND HUMANOIDS
     // ------------------------------------------
     // Frozen trapper: furs and traps-and-gear of a hunter lost to the cold, plus a spear and the odd frost focus.
+    // the snow trio's heavy: what he carried into the cold, and the ice he froze in (characters/entityDefinitions.js FROSTBITTEN_WARRIOR)
+    "frostbitten_warrior_drops": {
+        type: "independent",
+        items: [
+            { id: "iron_ingot", dropRate: 0.35, min: 1, max: 3 },
+            { id: "fur", dropRate: 0.30, min: 1, max: 2 },
+            { id: "stone", dropRate: 0.25, min: 1, max: 2 },
+            { id: "warhammer", dropRate: 0.08 },
+            { id: "mace", dropRate: 0.06 },
+            { id: "insight_of_ice", dropRate: 0.05 },
+            { id: "iron_helmet", dropRate: 0.06 },
+            { id: "iron_armor", dropRate: 0.05 },
+            { id: "iron_gauntlets", dropRate: 0.05 },
+            { id: "healing_herb", dropRate: 0.12 },
+            { id: "kurtus_brew", dropRate: 0.03 }   // rare
+        ]
+    },
+    // the snow trio's caster (characters/entityDefinitions.js RIME_HERMIT)
+    "rime_hermit_drops": {
+        type: "independent",
+        items: [
+            { id: "fur", dropRate: 0.35, min: 1, max: 2 },
+            { id: "illuminating_herb", dropRate: 0.15, min: 1, max: 2 },
+            { id: "insight_of_ice", dropRate: 0.12 },
+            { id: "insight_of_wind", dropRate: 0.05 },
+            { id: "cloth_robe", dropRate: 0.12 },
+            { id: "cloth_hood", dropRate: 0.10 },
+            { id: "tattered_hood", dropRate: 0.08 },
+            { id: "illuminating_tonic", dropRate: 0.06 },
+            { id: "linen", dropRate: 0.1 },
+            { id: "smoke_bomb", dropRate: 0.05 },
+            { id: "kurtus_brew", dropRate: 0.06 }
+        ]
+    },
     "frozen_trapper_drops": {
         type: "independent",
         items: [

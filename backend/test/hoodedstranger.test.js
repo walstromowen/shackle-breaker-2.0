@@ -18,9 +18,9 @@ const quiet = (fn) => { const l = console.log, w = console.warn; console.log = c
 const freshQuests = () => { gameState.quests = { active: {}, completed: [], trackedIds: [] }; gameState.party.members = []; };
 const results = (stageId) => E.stages[stageId].decisions[0].outcomes[0].results;
 
-test('he is one NPC with his own sheet and picture, in a personal encounter', () => {
+test('he is one NPC with his own sheet and picture, met by the party together', () => {
     assert.equal(M.HOODED_STRANGER_NPC.interaction.id, 'hooded_stranger');
-    assert.equal(E.personal, true, 'never shared or voted on in a party');
+    assert.equal(E.personal, false, 'shared with the party, like the rest of the story');
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
     for (const key of ['hoodedStrangerSprite', 'encounter_hooded_stranger']) {
         const m = main.match(new RegExp(`${key}: '([^']+)'`));
@@ -75,6 +75,43 @@ test('the first meeting hands in "find him" and gives the first step; a hand-in 
     assert.equal(nextOf(nextOf(nextOf('lore_shackled1'))), 'give_shackled2', 'then the next step');
     quiet(() => EncounterLogic.resolveResults(results('give_shackled2'), model, null));
     assert.ok(gameState.quests.active.shackled2);
+});
+
+test('met together: a step the leader hands in is handed in by every player in it, done or not, had or not; the leader still needs it done', () => {
+    QuestSystem.init();
+    const model = { context: {}, instanceId: 't' };
+    try {
+        // a player of the party (not leading) whose own step is not done: handed in all the same, with its rewards
+        freshQuests();
+        QuestModel.startQuest(gameState, 'shackled1');
+        EncounterLogic.shared = { players: ['lead', 'me'], me: 'me', isLeader: false, roller: null, active: null };
+        const coins = gameState.party.currency || 0;
+        quiet(() => EncounterLogic.resolveResults(results('turnin_shackled1'), model, null));
+        assert.ok(gameState.quests.completed.includes('shackled1'), 'handed in with the party');
+        assert.equal(gameState.party.currency, coins + Q.shackled1.rewards.currency, 'and paid');
+        // one who never had the step (joined the party later): it is theirs, handed in at once
+        freshQuests();
+        quiet(() => EncounterLogic.resolveResults(results('turnin_shackled2'), model, null));
+        assert.ok(gameState.quests.completed.includes('shackled2'));
+        // a step already handed in is not paid twice
+        const again = gameState.party.currency || 0;
+        quiet(() => EncounterLogic.resolveResults(results('turnin_shackled2'), model, null));
+        assert.equal(gameState.party.currency || 0, again);
+        // the leader (or a player alone): their own objectives still have to be done
+        freshQuests();
+        QuestModel.startQuest(gameState, 'shackled1');
+        EncounterLogic.shared = { players: ['me', 'p2'], me: 'me', isLeader: true, roller: null, active: null };
+        quiet(() => EncounterLogic.resolveResults(results('turnin_shackled1'), model, null));
+        assert.ok(!gameState.quests.completed.includes('shackled1'), 'not done: not handed in');
+    } finally { EncounterLogic.shared = null; freshQuests(); }
+});
+
+test('a shared conversation opens on the leader\'s stage on every screen (his opening depends on the leader\'s quests)', () => {
+    const social = fs.readFileSync(new URL('../../frontend/src/engine/multiplayerSocial.js', import.meta.url), 'utf8');
+    assert.match(social, /const stage = openingStage\(data\.encounterId/, 'the leader works out the opening');
+    assert.match(social, /const base = \{ eid, seed, players, leader: this\.me, lineup, stage \}/, 'and sends it with the encounter');
+    const ctrl = fs.readFileSync(new URL('../../frontend/src/screens/encounter/encounterController.js', import.meta.url), 'utf8');
+    assert.match(ctrl, /EncounterFactory\.create\(encounterId, context, at\)/, 'every screen opens there');
 });
 
 test('only one workshop in the world has him: the first one entered', () => {

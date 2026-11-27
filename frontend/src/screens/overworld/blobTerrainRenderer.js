@@ -659,6 +659,9 @@ export class BlobTerrainRenderer {
                 }
         }
 
+        // floor litter (a pack's `litter`): small pixel decals over whole, flat ground, picked by the cell's place so they never shift or shimmer
+        this._drawLitter(ctx, cells, px, py, pw, ph);
+
         // depth shade (caves): a pack with `depthShade: { from: N, step: a, max: m, color: 'r,g,b' }` darkens a cell by `step` per layer below LAYER_N,
         // so the ledges of a cave get darker the deeper they are (the floor in the middle is the darkest)
         for (let i = 0; i < cells.length; i += 3) {
@@ -702,6 +705,71 @@ export class BlobTerrainRenderer {
     }
 
     // true for a cell the stair there cuts out of the plateau (see `carve` in TerrainGenerator.getStairAt): only the cast shadow looks at this
+    /* ---- floor litter ---------------------------------------------------------------------------------------------------------------
+       A pack's `litter: { sheet, grass, dirt, patches: { grass: [..], dirt: [..] }, chance, patchChance }` breaks up a field of one texture: on the
+       sheet, row 0 holds `grass` decals of a tile each (tufts, clover, wild flowers, leaves, pebbles, twigs, dry grass), row 1 `dirt` decals (pebbles,
+       cracks, ripples, boot prints, straw, sprouts, damp spots) and rows 2-3 big soft patches of two tiles (darker, lighter or drier ground). A cell
+       gets a decal with `chance` (a number, or { grass, dirt }) and a patch under it with `patchChance`, each nudged a few pixels off the grid. Only whole ground has litter: a cell
+       whose eight neighbours are on its level, of its ground (grass or dirt) and its biome, with no water and no stair (nothing hangs over an edge).
+       Pure decoration: nothing here is solid, and it is drawn before every object and character. */
+    _litterKind(c, r, pack, p) {
+        if (p && p.litterKind !== undefined) return p.litterKind;
+        const here = this.info(c, r);
+        let kind = null;
+        if (!here.water && !(here.lv > 0 && (pack.levelTop === 'void' || (pack.voidFromLayer !== undefined && here.lv + 2 >= pack.voidFromLayer)))) {
+            const lv = here.lv;
+            const dirtFn = lv > 0 ? this._dirtFn(pack) : null;
+            const dirtAt = (x, y) => (lv === 0 ? this.info(x, y).dirt : dirtFn(x, y, lv - 1));
+            const d = dirtAt(c, r);
+            const terrain = this._wm.terrain;
+            let whole = !(terrain && terrain.getStairAt && terrain.getStairAt(c, r));
+            for (let dy = -1; dy <= 1 && whole; dy++) {
+                for (let dx = -1; dx <= 1 && whole; dx++) {
+                    if (!dx && !dy) continue;
+                    const n = this.info(c + dx, r + dy);
+                    if (n.water || n.lv !== lv || this._pack(c + dx, r + dy) !== pack || dirtAt(c + dx, r + dy) !== d) whole = false;
+                }
+            }
+            if (whole) kind = d ? 'dirt' : 'grass';
+        }
+        if (p) p.litterKind = kind;
+        return kind;
+    }
+    _drawLitter(ctx, cells, px, py, pw, ph) {
+        const T = BLOB_TILE_PX;
+        const h = (c, r, s) => (Math.imul(c, 73856093) ^ Math.imul(r, 19349663) ^ Math.imul(s, 83492791)) >>> 0;
+        // the patches first (under the decals), then the decals
+        for (let pass = 0; pass < 2; pass++) {
+            for (let i = 0; i < cells.length; i += 3) {
+                const p = cells[i + 2], L = p.pack.litter;
+                if (!L) continue;
+                const img = this.loader.get(L.sheet);
+                if (!img) continue;
+                const c = cells[i], r = cells[i + 1];
+                const kind = this._litterKind(c, r, p.pack, p);
+                if (!kind) continue;
+                const w = pw(c), k = w / T;
+                if (pass === 0) {
+                    const list = L.patches && L.patches[kind];
+                    if (!list || !list.length || h(c, r, 5) % 1000 >= (L.patchChance || 0) * 1000) continue;
+                    // a patch spans the cells round this one: they must be whole ground of the same kind too
+                    let ok = true;
+                    for (let dy = -1; dy <= 1 && ok; dy++) for (let dx = -1; dx <= 1 && ok; dx++) if ((dx || dy) && this._litterKind(c + dx, r + dy, p.pack, this._plans.get((c + dx) * 4194304 + r + dy)) !== kind) ok = false;
+                    if (!ok) continue;
+                    const pi = list[h(c, r, 6) % list.length];
+                    ctx.drawImage(img, pi * 2 * T, 2 * T, 2 * T, 2 * T, Math.round(px(c) - (T / 2) * k), Math.round(py(r) - (T / 2) * k), Math.round(2 * T * k), Math.round(2 * T * k));
+                } else {
+                    const n = L[kind];
+                    const chance = typeof L.chance === 'object' ? (L.chance[kind] || 0) : (L.chance || 0);   // (per ground: a road has fewer whole cells)
+                    if (!n || h(c, r, 1) % 1000 >= chance * 1000) continue;
+                    const di = h(c, r, 2) % n;
+                    const ox = ((h(c, r, 3) % 13) - 6) * k, oy = ((h(c, r, 4) % 13) - 6) * k;
+                    ctx.drawImage(img, di * T, (kind === 'dirt' ? 1 : 0) * T, T, T, Math.round(px(c) + ox), Math.round(py(r) + oy), w, ph(r));
+                }
+            }
+        }
+    }
+
     _stairCarved(x, y) {
         const terrain = this._wm && this._wm.terrain;
         if (!terrain || !terrain.getStairAt) return false;

@@ -20,7 +20,15 @@ export function seedRandom(seed) {
         t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+    seeded.state = () => a;
+    seeded.restore = (v) => { a = (Number(v) >>> 0); };
 }
+
+/** Where the seeded stream is now (a player let into a shared fight in progress starts from the same place), or null when unseeded. */
+export const getRandomState = () => (seeded && seeded.state ? seeded.state() : null);
+
+/** Puts the seeded stream at a place getRandomState gave (on another screen). */
+export function setRandomState(v) { if (seeded && seeded.restore && Number.isFinite(v)) seeded.restore(v); }
 
 /** Back to Math.random. */
 export function unseedRandom() { seeded = null; }

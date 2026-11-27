@@ -78,6 +78,8 @@ import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
 import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
+import { multiplayer } from './multiplayerClient.js';
+import { activePlayPrompt, playPromptHit, playPromptKey, drawPlayPrompt } from '../ui/playPrompt.js';
 import { respawnPatrols } from '../../../shared/world/patrols.js';
 import { EncounterLogic } from '../screens/encounter/encounterLogic.js';
 import { PARTY_SCALING, bossHpFactor } from '../../../shared/battle/spawnTableFactory.js';
@@ -417,8 +419,15 @@ export class SceneManager {
                 if (scene === 'overworld' && ((this.currentScene === 'character-creator' && !mpJoin) || (mpJoin && data && data.prologue))) {
                     this.overworldController.isLocked = true;
                     this.activeEncounterBGM = null;
-                    this.encounterController.start('prologue', {});
+                    // a world started together: the host's prologue is shared, and every player who arrives while it plays is let in at the
+                    // stage it has reached (each guest plays it alone until the host's answer comes: multiplayerSocial.askToJoin, auto)
+                    const sharedPrologue = multiplayerSession.takeSharedPrologue();
+                    this.encounterController.start('prologue', {}, sharedPrologue ? multiplayerSocial.startPrologue() : null);
                     this.changeScene('encounter');
+                    if (mpJoin && data && data.prologue) {
+                        const host = multiplayer.room && multiplayer.room.players.find(p => p.isHost);
+                        if (host && host.id !== multiplayerSocial.me) multiplayerSocial.askToJoin(host.id, { auto: true, retry: 10 });
+                    }
                     return;
                 }
 
@@ -560,7 +569,7 @@ export class SceneManager {
                     return;
                 }
                 if (ctx.objectId) multiplayerSocial.claimObject(hc, hr);
-                const mp = multiplayerSocial.sharesEncounter(data.id) && !personal
+                const mp = multiplayerSocial.sharesEncounter(data.id) && !personal && !data.noShare
                     ? multiplayerSocial.startPartyEncounter({ encounterId: data.id, context: data.context || {}, bgm: data.context?.bgm || null, quiet: true })
                     : null;
                 this.transitionRenderer.start(() => {
@@ -640,7 +649,10 @@ export class SceneManager {
             // a party of players: an encounter I start pulls in the party near me (I lead it, everyone votes: engine/multiplayerSocial.js, EncounterController)
             // (an encounter marked `personal` is this player's own, never shared: the quest giver, the end of act 1 that every player plays for themselves)
             const personal = !!(encounterDefinitions[data.encounterId] && encounterDefinitions[data.encounterId].personal);
-            const mp = data.mp || (multiplayerSocial.sharesEncounter(data.encounterId) && !personal ? multiplayerSocial.startPartyEncounter(data) : null);
+            // (`players`: the players of the fight it follows, who are in it whatever screen they are on; `noShare`: this player's alone, the
+            // encounter after a fight whose leader's never came, or A Dark Truth owed to an old save)
+            const wanted = (data.players && data.players.length > 1) || multiplayerSocial.sharesEncounter(data.encounterId);
+            const mp = data.mp || (wanted && !personal && !data.noShare && multiplayerSession.active ? multiplayerSocial.startPartyEncounter(data) : null);
             if (this.overworldController) this.overworldController.isLocked = true;
             this.transitionRenderer.start(() => {
                 this.encounterController.start(data.encounterId, data.context || {}, mp);
@@ -737,7 +749,8 @@ export class SceneManager {
             // every one of their screens (engine/multiplayerSocial.js)
             const encMp = this.currentScene === 'encounter' && this.encounterController && this.encounterController.mp;
             const fromEncounter = encMp && encMp.players && encMp.players.length > 1 ? encMp.players : null;
-            if (fromEncounter || multiplayerSocial.sharesFights) {
+            // (in a party of players every fight is a shared one, even with nobody near: a party member can walk up and ask to join it)
+            if (fromEncounter || multiplayerSocial.sharesFights || (multiplayerSession.active && multiplayerSocial.partyPlayers().length > 0)) {
                 multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, weather: data.weather || null, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter, afterVictory: this.pendingAfterVictory, allies });
                 return;
             }
@@ -826,7 +839,15 @@ export class SceneManager {
             if (data.victory && !data.fled && after) {
                 // e.g. the end of Darius the Groveler: the act changes in an encounter of its own. The fight is over, so its music is too: unless the
                 // encounter's opening stage picks its own (or silence), the overworld's music comes back (Nikoli thanking you after the snow leopards)
-                events.emit('START_ENCOUNTER', { encounterId: after.encounterId, context: after.context, ...(this._afterBattleBgm(after.encounterId)) });
+                const music = this._afterBattleBgm(after.encounterId);
+                // a party's fight: ONE encounter after it, led by the fight's leader, with every player of the fight in it (on the others'
+                // screens it comes from the leader: multiplayerSocial.awaitAfterFight; alone if it never comes)
+                const def = encounterDefinitions[after.encounterId];
+                const mp = data.mp;
+                const shared = !!(mp && mp.kind === 'party' && Array.isArray(mp.players) && mp.players.length > 1 && !(def && def.personal) && multiplayerSession.active);
+                const solo = () => events.emit('START_ENCOUNTER', { encounterId: after.encounterId, context: after.context, noShare: true, ...music });
+                if (shared && mp.authority !== mp.me && multiplayerSocial.awaitAfterFight(after.encounterId, solo)) return;
+                events.emit('START_ENCOUNTER', { encounterId: after.encounterId, context: after.context, players: shared ? mp.players : undefined, ...music });
             } else if (data.victory) {
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {
@@ -913,6 +934,14 @@ export class SceneManager {
             return;
         }
 
+        // a player asks to join this encounter or fight (ui/playPrompt.js): the question has the keys while it is up
+        const asked = activePlayPrompt(this.currentScene);
+        if (asked) {
+            if (e.preventDefault) e.preventDefault();
+            if (!e.repeat) playPromptKey(asked, e.code);
+            return;
+        }
+
         const activeController = this._getActiveController();
         if (activeController && activeController.handleKeyDown) {
             activeController.handleKeyDown(e.code, e);
@@ -985,7 +1014,7 @@ export class SceneManager {
         if (this.currentScene === 'overworld' && this._darkTruthFor !== gameState.quests && !this.transitionRenderer.isActive && !this.tutorial.blocking
             && this.overworldController && !this.overworldController.isLocked && !multiplayerSocial.prompt && ActSystem.owesDarkTruth()) {
             this._darkTruthFor = gameState.quests;
-            events.emit('START_ENCOUNTER', { encounterId: 'act_two', context: {} });
+            events.emit('START_ENCOUNTER', { encounterId: 'act_two', context: {}, noShare: true });   // (this player's own: the party saw it already)
         }
 
         const cardWasUp = this.tutorial.blocking;
@@ -1010,6 +1039,14 @@ export class SceneManager {
         }
         const mousePos = this.input.getMousePosition();
         const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
+
+        // a player asks to join this encounter or fight (ui/playPrompt.js): the question has the mouse while it is up
+        const asked = activePlayPrompt(this.currentScene);
+        if (asked) {
+            const o = click && playPromptHit(asked, this.canvas.width, this.canvas.height, click.x, click.y);
+            if (o) { events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 0.6 }); multiplayerSocial.pickPrompt(o.i); }
+            click = null; rightClick = null; scroll = 0;
+        }
 
         const activeController = this._getActiveController();
         const activeRenderer = this._getActiveRenderer();
@@ -1148,6 +1185,9 @@ export class SceneManager {
         }
 
         this._drawSharedBackButton();
+
+        const asked = activePlayPrompt(this.currentScene);
+        if (asked) drawPlayPrompt(this.ctx, asked, this.input.getMousePosition());
 
         this.tutorial.render(this.ctx);
 

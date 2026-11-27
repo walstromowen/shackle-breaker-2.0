@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { gameState } from '../../shared/core/gameState.js';
 import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
 import { QuestDefinitions as Q, STORY_QUESTS } from '../../shared/story/questDefinitions.js';
-import { WorldManager, GARRICK_GRAVEYARD } from '../../shared/world/worldManager.js';
+import { WorldManager, GARRICK_GRAVEYARD, NIKOLI_CAMP_SIGHT } from '../../shared/world/worldManager.js';
 import { MAP_OBJECTS_DEFINITIONS as M } from '../../shared/world/mapObjectDefinitions.js';
 import { ENTITY_DEFINITIONS as E } from '../../shared/characters/entityDefinitions.js';
 import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
@@ -155,7 +155,9 @@ test('in act 1 the first graveyard the player comes upon becomes Osric\'s; Garri
             // a graveyard: three or more stones in one plot (a village's lone roadside stone is not one, and is never claimed)
             const stones = all.filter(([c, r]) => all.filter(([c2, r2]) => Math.abs(c2 - c) <= 6 && Math.abs(r2 - r) <= 6).length >= 3);
             assert.ok(stones.length, `seed ${seed}: there are graveyards near the start`);
-            const lone = all.find(([c, r]) => all.filter(([c2, r2]) => Math.abs(c2 - c) <= 12 && Math.abs(r2 - r) <= 12).length === 1);
+            // (a stone with no other near it, and no graveyard in sight of it either: standing there, there is nothing to notice)
+            const lone = all.find(([c, r]) => all.filter(([c2, r2]) => Math.abs(c2 - c) <= 12 && Math.abs(r2 - r) <= 12).length === 1
+                && !stones.some(([c2, r2]) => Math.abs(c2 - c) <= NIKOLI_CAMP_SIGHT.cols && Math.abs(r2 - r) <= NIKOLI_CAMP_SIGHT.rows));
             if (lone) assert.equal(wm.noticeAmputatorGraveyard(lone[0], lone[1]), false, 'a lone roadside stone is not a graveyard');
             // far from every stone: nothing is claimed
             assert.equal(wm.noticeAmputatorGraveyard(sp.col + 900, sp.row + 900), false);

@@ -68,12 +68,12 @@ test('a rank asks the attributes the held Insight asked at that level: short of 
     assert.equal(X.rankOf(c, 'fire'), 1);
 });
 
-test('the four enemy casters hold no Insight: they know ranks, deeper each act, and their attack does not change for it', () => {
+test('the enemy casters hold no Insight: they know ranks, deeper each act, and their attack does not change for it', () => {
     for (const [id, d] of Object.entries(E)) {
         for (const item of Object.values(d.equipment || {})) assert.ok(!X.elementOfInsight(item), `${id} holds ${item}`);
     }
     const casters = Object.entries(E).filter(([, d]) => d.insights).map(([id]) => id).sort();
-    assert.deepEqual(casters, ['ANCIENT_CULTIST', 'MAGIC_ADDICT', 'MIRAGEWRIGHT', 'SCORCHED_VAGRANT']);
+    assert.deepEqual(casters, ['ANCIENT_CULTIST', 'MAGIC_ADDICT', 'MIRAGEWRIGHT', 'RIME_HERMIT', 'SCORCHED_VAGRANT']);   // (the Rime Hermit: the snow's caster)
     const saved = gameState.milestones;
     try {
         const make = (milestones) => {

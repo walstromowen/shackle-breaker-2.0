@@ -64,8 +64,9 @@ test('houses stand on both sides of the alleys', () => {
                 const cs = road.centres;
                 for (let i = 1; i < cs.length; i++) {
                     const horizontal = cs[i].d === 1 || cs[i].d === 3;
-                    for (const sgn of [-1, 1]) {
-                        const key = horizontal ? `${cs[i].c},${cs[i].r + sgn * 2}` : `${cs[i].c + sgn * 2},${cs[i].r}`;
+                    // (a yard stands right beside the alley, or a cell or two back where the alley sways away from it: yardSlack)
+                    for (const sgn of [-1, 1]) for (let k = 2; k <= 4; k++) {
+                        const key = horizontal ? `${cs[i].c},${cs[i].r + sgn * k}` : `${cs[i].c + sgn * k},${cs[i].r}`;
                         if (plan.buildingTiles.has(key)) sides.add(sgn);
                     }
                 }
@@ -89,10 +90,32 @@ test('the roads take little room: a village has a building for every 60 road cel
     assert.ok(houses / villages >= 8, `${(houses / villages).toFixed(1)} buildings per village`);
 });
 
-test('the stools of the village hub stand right round the campfire', () => {
+test('the campfire stands alone in the middle of the village hub (no stools round it)', () => {
     const center = STRUCTURES.ABANDONED_CENTER;
     const at = (x, y) => center.objects[y][x];
     assert.equal(at(5, 5), 'CAMPFIRE');
-    for (const [x, y] of [[4, 4], [6, 4], [4, 6], [6, 6]]) assert.equal(at(x, y), 'STOOL');
-    for (const [x, y] of [[3, 3], [7, 3], [3, 7], [7, 7]]) assert.notEqual(at(x, y), 'STOOL');
+    for (const [x, y] of [[4, 4], [6, 4], [4, 6], [6, 6], [3, 3], [7, 3], [3, 7], [7, 7]]) assert.notEqual(at(x, y), 'STOOL', 'no stools round the fire');
+});
+
+test('the roads sway: a main road drifts to the side and back along its length instead of running ruler straight between its turns', () => {
+    const bp = STRUCTURES.ABANDONED_VILLAGE;
+    assert.ok(bp.curves && bp.curves.amplitude.max >= 2, 'the village has curves');
+    let swaying = 0, arms = 0;
+    for (const seed of [5, 8]) {
+        const { plans } = generate(seed);
+        for (const plan of plans) for (const road of plan.roads) {
+            if (road.kind !== 'arm' || road.centres.length < 20) continue;
+            arms++;
+            // along one heading, how far the road wanders across it
+            const byHeading = new Map();
+            for (const ctr of road.centres) {
+                const across = ctr.d === 1 || ctr.d === 3 ? ctr.r : ctr.c;
+                const run = byHeading.get(ctr.d) || { lo: Infinity, hi: -Infinity };
+                run.lo = Math.min(run.lo, across); run.hi = Math.max(run.hi, across);
+                byHeading.set(ctr.d, run);
+            }
+            if ([...byHeading.values()].some(r => r.hi - r.lo >= 2)) swaying++;
+        }
+    }
+    assert.ok(arms > 0 && swaying / arms >= 0.6, `${swaying} of ${arms} main roads sway`);
 });

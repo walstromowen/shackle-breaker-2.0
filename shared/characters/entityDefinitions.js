@@ -121,8 +121,8 @@ export const ENTITY_DEFINITIONS = {
         traitRewards: []
     },
 
-    // Frozen trapper: a snowbound hunter, half-lost to the cold and the madness. Fights with a spear
-    // (thrust comes from the item) and has frost magic of his own (ice_shard / frigid_gale).
+    // Frozen trapper: a snowbound hunter, half-lost to the cold and the madness. He fights with his spear and nothing else: its moves (thrust and the
+    // rest) come from the item; the cold is in his bones (he shrugs it off), not in his hands. The trio's magic is the Rime Hermit's.
     "FROZEN_TRAPPER": {
         ...HUMANOID_TEMPLATE,
         name: "Frozen Trapper",
@@ -140,13 +140,73 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 20, maxStamina: 14, maxInsight: 28, speed: 6, critical: 0.08,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, ice: 3, water: 1, fire: -2 },
             baseResistance: { ice: 0.3, fire: -0.2 },
-            baseAttack: { blunt: 1, slash: 0, pierce: 2, ice: 2 }
+            baseAttack: { blunt: 1, slash: 0, pierce: 2 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "spear", head: "tattered_hood" },
         currencyReward: { min: 4, max: 12 },
         lootTableId: "frozen_trapper_drops",
-        abilities: [...REGULAR_HUMANOID_ABILITIES, "ice_shard", "frigid_gale"],
-        tags: [...HUMANOID_TEMPLATE.tags, "TRAPPER", "SNOW", "MAGICAL"]
+        abilities: [...REGULAR_HUMANOID_ABILITIES],   // and the spear's
+        tags: [...HUMANOID_TEMPLATE.tags, "TRAPPER", "SNOW"]
+    },
+
+    /* The snow trio: the Frozen Trapper above, and two more of the shackled of the peaks, as the desert has its Sand Stalker, Calcified Crusader and
+       Miragewright and the plains their Madman, Magic Addict and Rotter. Battle only (no map sprite), like the Sand Stalker. */
+
+    // Frostbitten Warrior: a big armoured warrior who went shackled in the snow and froze inside his plate, a crust of ice over it and a closed, horned great
+    // helm rimed white, like the Panzerian warlord's. The snow's heavy, as the Calcified Crusader is the desert's: slow and hard to cut or pierce, but the
+    // ice shatters under a blunt blow and runs before fire.
+    "FROSTBITTEN_WARRIOR": {
+        ...HUMANOID_TEMPLATE,
+        name: "Frostbitten Warrior",
+        level: 1,
+        spritePortrait: "frostbittenWarriorPortrait",
+        crySound: "frostbittenWarriorCry",
+        deathSound: "frostbittenWarriorCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 18, strength: 16, dexterity: 4, intelligence: 4, attunement: 10
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 10, maxStamina: 16, maxInsight: 16, speed: 3, critical: 0.05,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 4, pierce: 4, blunt: -3, ice: 5, water: 2, fire: -4 },
+            baseResistance: { slash: 0.2, pierce: 0.3, ice: 0.5, blunt: -0.3, fire: -0.5 },
+            baseAttack: { blunt: 6, ice: 3 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "warhammer" },
+        currencyReward: { min: 10, max: 22 },
+        lootTableId: "frostbitten_warrior_drops",
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "frost_ward"],   // he sheathes himself (or a trapper beside him) in another skin of ice
+        tags: ["HUMANOID", "SNOW", "FROSTBOUND", "ELITE"]
+    },
+
+    // Rime Hermit: an old hermit who went shackled alone in the mountains, all furs, frost and white hair, two cold eyes. The snow's caster, as the
+    // Miragewright is the desert's: frail, but the cold answers him: shards, gales and spikes of ice, and a ward of ice for those who fight beside him.
+    "RIME_HERMIT": {
+        ...HUMANOID_TEMPLATE,
+        name: "Rime Hermit",
+        level: 1,
+        spritePortrait: "rimeHermitPortrait",
+        crySound: "rimeHermitCry",
+        deathSound: "rimeHermitCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 10, strength: 6, dexterity: 10, intelligence: 18, attunement: 16
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 14, maxStamina: 15, maxInsight: 35, speed: 8,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, ice: 4, water: 2, wind: 3, dark: 2, fire: -3 },
+            baseResistance: { ice: 0.4, wind: 0.2, fire: -0.3 },
+            baseAttack: { blunt: 1, ice: 4, wind: 2 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        insights: { ice: 1 },           // Insight ranks (abilities/insights.js), deeper each act (actDefinitions enemyInsightRanks)
+        insightAttack: false,           // its baseAttack already counts its magic
+        currencyReward: { min: 10, max: 25 },
+        lootTableId: "rime_hermit_drops",
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "water_blast", "ice_shard", "frigid_gale", "glacial_spike", "frost_ward"],   // the basic water attack too
+        tags: ["HUMANOID", "MAGICAL", "SNOW", "ELITE"]
     },
 
     "MAGIC_ADDICT": {

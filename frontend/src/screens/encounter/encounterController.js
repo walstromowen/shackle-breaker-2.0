@@ -9,7 +9,7 @@ import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha, decisionsDoneTimer, actionPadding, setVoiceTiming, clearVoiceTiming } from '../../ui/narration.js';
 import { seedRandom, unseedRandom, withoutSeed } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
-import { hydrateEntity } from '../../engine/saveManager.js';
+import { hydrateEntity, serializeEntity } from '../../engine/saveManager.js';
 import { multiplayerSession } from '../../engine/multiplayerSession.js';
 import { worldSync } from '../../../../shared/world/worldManager.js';
 import { audioManager } from '../../engine/audioManager.js';
@@ -118,21 +118,9 @@ export class EncounterController extends BaseController {
   start(encounterId, context = {}, mp = null) {
     // (its recorded lines load a stage ahead as it goes: _speak / _preloadAhead)
     // a shared encounter (see the note at the top): the dice, and who keeps what (EncounterLogic.shared)
-    this.mp = mp ? { ...mp, step: 0, votes: new Map(), voteTimer: 0, myVote: null, tally: {}, opts: null, optsSentKey: null } : null;
-    if (mp) {
-      seedRandom(mp.seed);
-      EncounterLogic.shared = { players: mp.players, me: mp.me, isLeader: !!mp.isLeader, roller: null, active: null };
-      multiplayerSocial.encounterState = () => this;
-      multiplayerSocial.encounterPlayers = mp.players;   // while it lasts, a fight out of it is theirs (nearbyParty)
-      // the party's line-up (every player's first characters, as for a fight): any of them can be the one the encounter is about
-      this.mp.lineup = (mp.lineup || []).map(e => ({ owner: e.owner, idx: e.idx, entity: e.owner === mp.me ? gameState.party.members[e.idx] : hydrateEntity(e.data) }))
-        .filter(e => e.entity);
-      EncounterLogic.shared.lineupSize = this.mp.lineup.length;
-      EncounterLogic.onSharedTime = (minutes, players) => multiplayerSession.sharedTimePassed(minutes, players);
-      this._setActive(0);
-      // a player who was busy elsewhere may have said so before this screen opened (the leader's opens after a transition)
-      for (const id of [...multiplayerSocial.declined]) this._dropPlayer(id);
-    }
+    multiplayerSocial.encounterState = () => this;   // (a player who walks up can ask to join it, even one of my own: makeShared)
+    this.mp = null;
+    if (mp) this._setupShared(mp);
     else { unseedRandom(); EncounterLogic.shared = null; }
 
     if (!mp && gameState.party && gameState.party.members && gameState.party.members.length > 0) {   // (a line-up has only the living)
@@ -149,7 +137,11 @@ export class EncounterController extends BaseController {
       }
     }
     
-    this.model = EncounterFactory.create(encounterId, context);
+    // a shared encounter opens on its leader's stage (the Hooded Stranger's opening depends on the leader's quests); a player let in while it
+    // plays opens on the stage it has reached
+    const def = encounterDefinitions[encounterId];
+    const at = mp && mp.stage && def && def.stages && def.stages[mp.stage] ? mp.stage : null;
+    this.model = EncounterFactory.create(encounterId, context, at);
     this._encounterId = encounterId;
     this.prologueHold = 0;
     if (!this.model) {
@@ -185,6 +177,8 @@ export class EncounterController extends BaseController {
   update(dt) {
     if (super.update) super.update(dt);
     if (this.mp && this.mp.isLeader) this._leaderTick(dt);
+    // the leader is gone from the world (dropped out): the next player leads (_dropPlayer)
+    else if (this.mp && multiplayerSocial.partyHere([this.mp.leader]).length === 0) this._dropPlayer(this.mp.leader);
     if (this.inputCooldown > 0) this.inputCooldown -= dt;
     this._playStageCues();
     this.scrollManager.update(dt);
@@ -418,6 +412,9 @@ export class EncounterController extends BaseController {
   _leaderTick(dt) {
     const mp = this.mp;
     if (!this.model) return;
+    // players let in, between choices (admitPlayer)
+    if (mp.admits.length && this.actionPhase === 'none') for (const a of mp.admits.splice(0)) this._admitNow(a);
+    if (!this.mp) return;
     const key = `${mp.step}:${this.model.currentStageId}`;
     mp.optsAge = (mp.optsAge || 0) + dt;
     if (this.actionPhase === 'none' && (mp.optsSentKey !== key || mp.optsAge >= OPTS_RESEND)) {
@@ -509,9 +506,80 @@ export class EncounterController extends BaseController {
     this.beginActionSequence(decision);
   }
 
+  /* The shared part of start(): the dice, the players and their line-up. `mp.step` / `mp.active`: a player let in while it plays. */
+  _setupShared(mp) {
+    this.mp = { ...mp, step: mp.step || 0, votes: new Map(), voteTimer: 0, myVote: null, tally: {}, opts: null, optsSentKey: null, admits: [] };
+    seedRandom(mp.seed);
+    EncounterLogic.shared = { players: mp.players, me: mp.me, isLeader: !!mp.isLeader, roller: null, active: null };
+    multiplayerSocial.encounterPlayers = mp.players;   // while it lasts, a fight out of it is theirs (nearbyParty)
+    // the party's line-up (every player's first characters, as for a fight): any of them can be the one the encounter is about
+    this.mp.lineup = (mp.lineup || []).map(e => ({ owner: e.owner, idx: e.idx, data: e.data, entity: e.owner === mp.me ? gameState.party.members[e.idx] : hydrateEntity(e.data) }))
+      .filter(e => e.entity);
+    EncounterLogic.shared.lineupSize = this.mp.lineup.length;
+    EncounterLogic.onSharedTime = (minutes, players) => multiplayerSession.sharedTimePassed(minutes, players);
+    this._setActive(Math.min(mp.active || 0, Math.max(0, this.mp.lineup.length - 1)));
+    // a player who was busy elsewhere may have said so before this screen opened (the leader's opens after a transition)
+    for (const id of [...multiplayerSocial.declined]) this._dropPlayer(id);
+  }
+
+  /** An encounter of my own that a player of my party walked up to and asked to join (multiplayerSocial._onJoinRequest): it becomes a
+   *  shared one that I lead, between choices. False when it cannot (in the middle of a choice, or over). */
+  makeShared() {
+    if (this.mp || !this.model || this.actionPhase !== 'none' || !multiplayerSocial.me) return false;
+    const me = multiplayerSocial.me;
+    const lineup = gameState.party.members.map((m, idx) => ({ m, idx })).filter(e => e.m && e.m.hp > 0).slice(0, 3)
+      .map(e => ({ owner: me, idx: e.idx, data: serializeEntity(e.m) }));
+    if (!lineup.length) return false;
+    multiplayerSocial.declined.clear();
+    this._setupShared({ eid: Math.random().toString(36).slice(2, 10), seed: (Math.random() * 0xffffffff) >>> 0, players: [me], leader: me, lineup,
+      me, isLeader: true, encounterId: this._encounterId, context: this.model.context, bgm: null });
+    return true;
+  }
+
+  /** The leader: a player is let in (multiplayerSocial: asked and said yes, or the prologue's `open` door). Done between choices (_leaderTick),
+   *  so they open on the stage everyone is on, at the step the next choice will be. */
+  admitPlayer(id, members, jid) {
+    const mp = this.mp;
+    if (!mp || !mp.isLeader || !id || id === mp.me) return;
+    mp.admits.push({ id, members, jid });
+  }
+
+  _admitNow(a) {
+    const mp = this.mp;
+    const entries = mp.players.includes(a.id) ? [] : multiplayerSocial.joinEntries(a.id, a.members);
+    if (!mp.players.includes(a.id)) {
+      // the others first (the newcomer is told everything below): one more player, and their characters at the back of the line-up
+      multiplayerSocial.sendEncounter(mp, { k: 'enc_add', id: a.id, entries });
+      this._addPlayer(a.id, entries);
+    }
+    multiplayerSocial.declined.delete(a.id);
+    const lineup = mp.lineup.map(e => ({ owner: e.owner, idx: e.idx, data: e.owner === mp.me ? serializeEntity(e.entity) : (e.data || serializeEntity(e.entity)) }));
+    multiplayerSocial._send({ k: 'enc_join', jid: a.jid, encounterId: this._encounterId, context: this.model.context || {}, bgm: mp.bgm || null,
+      mp: { eid: mp.eid, seed: mp.seed, players: mp.players, leader: mp.me, lineup, stage: this.model.currentStageId, step: mp.step, active: mp.active, open: !!mp.open } }, a.id);
+    mp.optsSentKey = null;   // the choices go out again, to them too
+    multiplayerSocial._say(`${multiplayerSocial.nameOf(a.id)} joins the encounter.`);
+  }
+
+  /** One more player in this shared encounter, with their characters at the back of the line-up (every screen, from the leader's enc_add). */
+  _addPlayer(id, entries) {
+    const mp = this.mp;
+    if (!mp || mp.players.includes(id)) return;
+    mp.players = [...mp.players, id];
+    if (EncounterLogic.shared) EncounterLogic.shared.players = mp.players;
+    multiplayerSocial.encounterPlayers = mp.players;
+    multiplayerSocial.declined.delete(id);
+    for (const e of entries || []) {
+      if (!e || typeof e.idx !== 'number') continue;
+      const entity = e.owner === mp.me ? gameState.party.members[e.idx] : hydrateEntity(e.data);
+      if (entity) mp.lineup.push({ owner: e.owner, idx: e.idx, data: e.data, entity });
+    }
+    if (EncounterLogic.shared) EncounterLogic.shared.lineupSize = mp.lineup.length;
+  }
+
   _onRemote(d) {
     const mp = this.mp;
     if (!mp || !d || d.eid !== mp.eid) return;
+    if (d.k === 'enc_add') { if (d.from === mp.leader && typeof d.id === 'string' && d.id !== mp.me) { this._addPlayer(d.id, Array.isArray(d.entries) ? d.entries : []); multiplayerSocial._say(`${multiplayerSocial.nameOf(d.id)} joins the encounter.`); } return; }
     if (d.k === 'enc_decline') this._dropPlayer(d.from);
     else if (d.k === 'enc_vote') this._onVote(d);
     else if (d.k === 'enc_go') this._onGo(d);
@@ -533,6 +601,24 @@ export class EncounterController extends BaseController {
       if (EncounterLogic.shared) EncounterLogic.shared.lineupSize = mp.lineup.length;
     }
     mp.votes.delete(id);
+    // the leader left (skipped the prologue, or dropped out): the next player in it leads from here, on every screen alike, and every
+    // vote of this choice is cast again
+    if (id === mp.leader) {
+      mp.leader = mp.players[0];
+      mp.isLeader = mp.leader === mp.me;
+      if (EncounterLogic.shared) EncounterLogic.shared.isLeader = mp.isLeader;
+      mp.votes.clear(); mp.voteTimer = 0; mp.myVote = null; mp.tally = {}; mp.opts = null; mp.optsSentKey = null;
+      if (mp.players.length <= 1) this._leaveSharedKeepingStage();
+    }
+  }
+
+  /** Alone in what was a shared encounter: it goes on as my own, from the stage it is on. */
+  _leaveSharedKeepingStage() {
+    this.mp = null;
+    multiplayerSocial.encounterPlayers = null;
+    multiplayerSocial.declined.clear();   // (who left that one must not be left out of the next)
+    EncounterLogic.shared = null;
+    unseedRandom();
   }
 
   // The mouse moved onto a decision: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
@@ -632,6 +718,8 @@ export class EncounterController extends BaseController {
     this.prologueHold += dt;
     if (this.prologueHold >= PROLOGUE_HOLD) {
       this.prologueHold = 0;
+      // a shared prologue goes on without me (the next player leads it if I did: _dropPlayer on their screens)
+      if (this.mp) multiplayerSocial.sendEncounter(this.mp, { k: 'enc_decline' });
       this._swallowClick = true;
       this._swallowTimer = 0;
       this.endEncounter(null);

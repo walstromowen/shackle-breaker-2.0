@@ -182,8 +182,7 @@ function buildCenter(theme = {}) {
     }
 
     const put = (x, y, id) => { objects[y][x] = id; };
-    put(5, 5, 'CAMPFIRE');
-    put(4, 4, 'STOOL'); put(6, 4, 'STOOL'); put(4, 6, 'STOOL'); put(6, 6, 'STOOL');   // right round the fire
+    put(5, 5, 'CAMPFIRE');   // (alone in the middle of the plaza: no stools round it)
 
     if (theme.corners) {
         theme.corners(put);
@@ -222,6 +221,7 @@ const HOUSE_SIZES = {
     ABANDONED_STONE_HOUSE_LEFT: { w: 5, h: 5 }, ABANDONED_STONE_HOUSE_RIGHT: { w: 5, h: 5 },
     ABANDONED_SMITHY_LEFT: { w: 5, h: 5 }, ABANDONED_SMITHY_RIGHT: { w: 5, h: 5 },
     CRAFTING_HOUSE_LEFT: { w: 6, h: 6 }, CRAFTING_HOUSE_RIGHT: { w: 6, h: 6 },
+    STABLE: { w: 8, h: 5 },   // the houses' height, longer (no door: it is not entered)
 };
 
 function houseSpec(house, door, props) {
@@ -242,6 +242,9 @@ const HOUSE_SPEC = houseSpec('ABANDONED_HOUSE_1', 'HOUSE_DOOR_WOODEN', [[2, 5, '
 const STONE_HOUSE_SPEC = houseSpec('ABANDONED_STONE_HOUSE', 'HOUSE_DOOR_WOODEN', [[2, 5, 'CRATE'], [5, 5, 'SMALL_ROCKS_2']]);
 
 const SMITHY_SPEC = houseSpec('ABANDONED_SMITHY', 'SMITHY_DOOR', [[2, 5, 'BARREL'], [5, 5, 'CRATE']]);
+
+/* the stable: its stalls open onto the yard, which is its paddock (no door, no interior) */
+const STABLE_SPEC = houseSpec('STABLE', null, [[2, 5, 'SACKS'], [5, 5, 'BARREL']]);
 
 /* the workshop is a blacksmith house (ABANDONED_SMITHY): every blacksmith house holds every crafting station, and the Hooded Stranger lives in the
    first one the player walks into (InteriorFactory.claimStrangerHome). Each village has at least this one; the stone house is no longer built */
@@ -269,6 +272,7 @@ function buildingSet(suffix, t) {
         [n('ABANDONED_STONE_HOUSE')]: yard({ ...STONE_HOUSE_SPEC, ...b, props: t.stone }),
         [n('ABANDONED_SMITHY')]: yard({ ...SMITHY_SPEC, ...b, props: t.smithy }),
         [n('ABANDONED_WORKSHOP')]: yard({ ...WORKSHOP('WORKSHOP_DOOR', t.workshop), ...b }),
+        [n('ABANDONED_STABLE')]: yard({ ...STABLE_SPEC, ...b, props: t.stable || STABLE_SPEC.props }),
         ...side('ABANDONED_HOUSE', 'ABANDONED_HOUSE_1', 0), ...side('ABANDONED_HOUSE', 'ABANDONED_HOUSE_1', 1),
         ...side('ABANDONED_STONE_HOUSE', 'ABANDONED_STONE_HOUSE', 0), ...side('ABANDONED_STONE_HOUSE', 'ABANDONED_STONE_HOUSE', 1),
         ...side('ABANDONED_SMITHY', 'ABANDONED_SMITHY', 0), ...side('ABANDONED_SMITHY', 'ABANDONED_SMITHY', 1),
@@ -287,6 +291,7 @@ function villageModules(suffix) {
         { prefab: n('ABANDONED_COTTAGE'), weight: 3, verticalWeight: 1 },
         { prefab: n('ABANDONED_FARMHOUSE'), weight: 2, verticalWeight: 0.8 },
         { prefab: n('ABANDONED_HUT'), weight: 2, verticalWeight: 0.8 },
+        { prefab: n('ABANDONED_STABLE'), weight: 1.4, verticalWeight: 0.6, required: true, max: 2 },   // a stable in every village that has room for one (now and then two)
         ...sides('ABANDONED_HOUSE', 3.5),
         // (no other blacksmith houses, nor their side views: a village has exactly one, its required workshop, lit, where the Hooded Stranger lives)
     ];
@@ -325,8 +330,14 @@ export const STRUCTURES = {
         verge: 1,                                 // tiles beside a road kept free of random trees / rocks
         branchChance: 0.8,                        // chance for each of the hub's four sides to grow a main road (at least two always do)
         branchLength: { min: 36, max: 56 },                // longer streets: more plots, a town rather than a hamlet
-        turnChance: 0.10,
-        minStepsBetweenTurns: 8,
+        turnChance: 0.05,                         // a sharp turn now and then (fewer than before: the sway below does most of the bending)
+        minStepsBetweenTurns: 12,
+        curves: {                                 // the roads sway: they drift to one side and back along a slow wave, so no street runs ruler straight
+            amplitude: { min: 1.5, max: 3 },      //   cells of drift each way, main roads
+            sideAmplitude: { min: 1, max: 1.6 },  //   ... and the side streets
+            period: { min: 26, max: 42 },         //   cells along the road for one full swing
+        },
+        yardSlack: 2,                             // a yard may stand this many cells back from a road that curves away from it (its footpath runs on to the road)
         sideStreets: {                            // alleys that fork off the main roads (and off each other)
             chance: 1,                            //   per candidate spot
             width: 1,                             //   the alleys are one tile wide (the main roads are `roadWidth`): the yards stand right along them, fence to fence
@@ -380,6 +391,7 @@ export const STRUCTURES = {
             pool: [
                 { id: 'OAK_TREE_1', weight: 3 },
                 { id: 'PINE_TREE', weight: 4 },
+                { id: 'DEAD_TREE', weight: 0.6 },     // now and then a dead one among them
                 { id: 'TREE_STUMP', weight: 1 },
             ],
             biomes: {

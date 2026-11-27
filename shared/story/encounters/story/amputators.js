@@ -1,6 +1,6 @@
 /* The Amputators (story/covenants.js), the game's first covenant.
 
-   Senior Surgeon Osric, "Osric of the Saw" (object OSRIC_NPC, entity AMPUTATOR_OSRIC): an Amputator with an iron hook where his left hand was, sitting among the stones of the
+   Senior Surgeon Osric, "Osric of the Saw" (object OSRIC_NPC, entity AMPUTATOR_OSRIC): an old one-armed Amputator, his hat pulled low over his eyes, a cane in his one hand, sitting among the stones of the
    first small graveyard the player comes upon in act 1 (WorldManager.noticeAmputatorGraveyard claims it for the world: world.amputatorGraveyard is the
    cell he sits on). He stays there once claimed.
    Surgeon Garrick (object GARRICK_NPC, entity AMPUTATOR_GARRICK): an Amputator going mad, where Osric sends you (world.amputatorQuarry, picked when the
@@ -109,7 +109,7 @@ const shop = {
 
 const STAGES = {
     // ---- the first meeting ----
-    meet: stage("Among the leaning stones a man sits on a toppled grave marker, drawing a whetstone along the teeth of a saw. His left sleeve is pinned up past the elbow. Where the hand should be, an iron hook catches the light.",
+    meet: stage("Among the leaning stones an old man sits hunched on a toppled grave marker, a cane across his knees, drawing a whetstone along the teeth of a saw. His hat is pulled so low that his eyes are lost in its shadow. His left sleeve is knotted up past the elbow, empty.",
         next("meet_2")),
     meet_2: stage("\"Ah. Another soul on the old road. Mind the graves, friend. The dead here have suffered enough of us.\"",
         next("meet_3")),
@@ -117,7 +117,7 @@ const STAGES = {
         next("meet_key")),
     meet_key: stage("\"Looking for a key, are we? Heh heh... You'll not find one. But there's one sure way to free a wrist of any shackle, friend.\" He turns the saw so its teeth catch the light.",
         next("meet_4")),
-    meet_4: stage("\"Don't fret. I'm not one to cut first and ask after. Not anymore.\" He taps the hook against the saw. \"We are the Amputators.\"",
+    meet_4: stage("\"Don't fret. I'm not one to cut first and ask after. Not anymore.\" He taps the saw against his cane. \"We are the Amputators.\"",
         next("meet_5")),
     meet_5: stage("\"Where the chain takes hold, we take it off. The shackle, and if the shackle won't come... well. Better a hand than a mind, I'd wager.\"",
         [
@@ -128,7 +128,7 @@ const STAGES = {
         next("lore_1")),
     lore_1: stage("\"Most of us gave something to the saw. A hand. A foot. A little sense, now and again.\" He laughs, then stops himself, as if surprised by the sound.",
         next("lore_ranks")),
-    lore_ranks: stage("\"We keep the old ranks. Orderlies fetch the buckets. Dressers hold the limb still. Surgeons cut.\" He taps his hook to his chest. \"Senior Surgeon, these days.\"",
+    lore_ranks: stage("\"We keep the old ranks. Orderlies fetch the buckets. Dressers hold the limb still. Surgeons cut.\" He raps his cane against a gravestone. \"Senior Surgeon, these days.\"",
         next("lore_2")),
     lore_2: stage("\"We're not the cure, mind. There is no cure. We're only the knife.\"",
         [{ text: "\"What do you want from me?\"", outcomes: toStage("task") }]),
@@ -140,7 +140,7 @@ const STAGES = {
         next("task_3")),
     task_3: stage("\"I can't do it. Old friends, you understand. Put him to rest, before he puts that saw to someone who never asked for it.\"",
         [takeTask, notNow]),
-    sent: stage("\"Last I saw him he was off past the stones, muttering at the crows.\" He scratches a mark into your map with the point of his hook. \"You'll know him by the laughing. Be quick about it. And be kind, if you can.\"",
+    sent: stage("\"Last I saw him he was off past the stones, muttering at the crows.\" He scratches a mark into your map with the corner of the saw. \"You'll know him by the laughing. Be quick about it. And be kind, if you can.\"",
         [{ text: "Leave him to his saw.", outcomes: end() }]),
     later: stage("\"No hurry. The dead keep, and so do I. Garrick, I fear, does not.\"",
         [{ text: "Leave.", outcomes: end() }]),
@@ -166,7 +166,7 @@ const STAGES = {
     member: stage("\"Orderly. Still whole? Good. Keep it that way, as long as you can.\"",
         [shop, takeOath, retakeOath, renounce, switchMember, { text: "Leave.", outcomes: end() }]),
     // giving the oath back
-    renounce_ask: stage("\"Give it back, would you?\" He turns the hook slowly in the light. \"An oath's no shackle, friend. Walk away if you must. But you'll walk away no surgeon of ours.\"",
+    renounce_ask: stage("\"Give it back, would you?\" He turns the saw slowly in the light. \"An oath's no shackle, friend. Walk away if you must. But you'll walk away no surgeon of ours.\"",
         [
             { text: "[Renounce] \"I'm done with the saw.\"", outcomes: [{ weight: 100, results: [{ type: "RENOUNCE_COVENANT", payload: { covenantId: COVENANT.id } }, { type: "ADVANCE_STAGE", payload: { stageId: "renounced" } }] }] },
             { text: "\"No. I'll keep it.\"", outcomes: toStage("member") }

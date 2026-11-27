@@ -37,7 +37,7 @@ import { multiplayerSession } from './multiplayerSession.js';
 import { serializeEntity, hydrateEntity, hydrateItem } from './saveManager.js';
 import { WeatherFactory } from '../../../shared/world/weatherFactory.js';
 import { QuestDefinitions, STORY_QUESTS } from '../../../shared/story/questDefinitions.js';
-import { STORY_ENCOUNTERS } from '../../../shared/story/encounterDefinitions.js';
+import { encounterDefinitions } from '../../../shared/story/encounterDefinitions.js';
 /* The screens a party member cannot be pulled away from: a fight, an encounter or a trade of their own (and the title or the creator). From any
    other (the map, a menu: the inventory, the character page, the journal, the world map, a workshop) they are pulled in. */
 const PULL_BLOCKING_SCENES = new Set(['battle', 'encounter', 'trade', 'title', 'boot', 'character-creator']);
@@ -52,9 +52,17 @@ function weatherFromSpec(spec) {
     return w;
 }
 
+/** The stage an encounter opens on, where that depends on the game (initialStage is a function: the Hooded Stranger), or null. */
+function openingStage(id, context) {
+    const def = encounterDefinitions[id];
+    if (!def || typeof def.initialStage !== 'function') return null;
+    try { const s = def.initialStage(context); return def.stages && def.stages[s] ? s : null; } catch (e) { return null; }
+}
+
 const REQUEST_SECONDS = 20;
 const CLAIM_MS = 10 * 60 * 1000;   // a claim nobody let go of (a player who dropped out mid-fight) runs out after this
-const CHAT_MAX = 200;   // characters in one chat line
+const CHAT_MAX = 200;
+const AFTER_FIGHT_WAIT_MS = 6000;   // how long a won fight's players wait for its leader's encounter (the end of Darius) before playing it alone   // characters in one chat line
 const MAX_GROUP = 3;
 const PARTY_SEND_EVERY = 4;   // seconds between a player's character updates to the rest of their party (only when they changed)
 export { PARTY_PULL_RADIUS };
@@ -81,6 +89,8 @@ class MultiplayerSocial {
         this.declined = new Set();   // players who were already busy (in a fight or an encounter) when my shared fight or encounter began: left out of it
         this.claims = new Map();     // "map|col,row" -> { by, until }: map objects in another player's encounter (obj_claim)
         this.myClaim = null;         // the key of the map object my own encounter is about, until I am back on the map
+        this.joining = null;         // { jid, to, what, auto, until }: my ask to join someone's encounter or fight (askToJoin)
+        this.afterBattle = null;     // the encounter another player leads after the fight I am in (_afterFight)
         this._t = { party: 0 };
         this._lastPartyJson = '';
         this._wired = false;
@@ -113,6 +123,9 @@ class MultiplayerSocial {
         this.prompt = null; this.outgoing = null; this.incoming = null;
         this.groups.clear(); this.groupParties.clear(); this.groupWaypoints.clear();
         this.claims.clear(); this.myClaim = null;
+        this.joining = null;
+        if (this.afterBattle) clearTimeout(this.afterBattle.timer);
+        this.afterBattle = null;
     }
 
     get me() { return multiplayer.you ? multiplayer.you.id : null; }
@@ -229,18 +242,10 @@ class MultiplayerSocial {
         });
     }
 
-    /** The players of my party a STORY encounter pulls in (encounterDefinitions STORY_ENCOUNTERS): every one connected, wherever they are in the
-     *  world, unless they are in a fight, an encounter or a trade of their own. The story is lived together. */
-    storyParty() {
-        return this.partyPlayers().filter(id => {
-            const r = multiplayerSession.remotes.get(id);
-            return !(r && (r.gone || (r.scene && PULL_BLOCKING_SCENES.has(r.scene))));
-        });
-    }
-
-    /** Would an encounter I start now be shared (and so pull someone in)? */
-    sharesEncounter(encounterId) {
-        return STORY_ENCOUNTERS.has(encounterId) ? this.storyParty().length > 0 : this.sharesFights;
+    /** Would an encounter I start now be shared (and so pull someone in)? Every encounter, the story's too, pulls in only the players of my
+     *  party within PARTY_PULL_RADIUS (nearbyParty); one further off can walk up later and ask to join it (askToJoin). */
+    sharesEncounter() {
+        return this.sharesFights;
     }
 
     /** Party members used to walk behind their leader; they keep their own feet now (every player explores, picks up and interacts). */
@@ -257,10 +262,17 @@ class MultiplayerSocial {
         else if (together) options.push({ id: 'leave', label: 'Leave Party' });
         else if (!theirs && (!mine || mine.members.length < MAX_GROUP - 1)) options.push({ id: 'party', label: 'Invite to Party' });   // the leader or any member
         options.push({ id: 'duel', label: 'Challenge to a Duel' }, { id: 'cancel', label: 'Never mind' });
+        // a player of my party in an encounter or a fight I was left out of: ask to join it (they are asked; askToJoin)
+        const r = multiplayerSession.remotes.get(otherId);
+        const busyIn = r && (r.scene === 'battle' || r.scene === 'encounter') ? (r.scene === 'encounter' ? 'encounter' : 'fight') : null;
+        if (busyIn && together) options.unshift({ id: 'join', label: busyIn === 'fight' ? 'Ask to Join the Fight' : 'Ask to Join the Encounter' });
+        let text = theirs && !together ? `${name} is in ${this.nameOf(theirs.leader)}'s party.` : 'What will you do?';
+        if (busyIn && together) text = `${name} is in ${busyIn === 'fight' ? 'a fight' : 'an encounter'}.`;
         this.prompt = {
-            title: name, text: theirs && !together ? `${name} is in ${this.nameOf(theirs.leader)}'s party.` : 'What will you do?', options, focus: 0,
+            title: name, text, options, focus: 0,
             onPick: (id) => {
-                if (id === 'kick') this.removeFromGroup(otherId);
+                if (id === 'join') this.askToJoin(otherId);
+                else if (id === 'kick') this.removeFromGroup(otherId);
                 else if (id === 'leave') this.leaveGroup();
                 else if (id === 'trade' || id === 'party' || id === 'duel') this.request(otherId, id);
             },
@@ -569,11 +581,17 @@ class MultiplayerSocial {
         if (allies.length) partyMeta = [...partyMeta, ...allies.map((_, i) => ({ netId: `A#${i}` }))];
         const players = spec.players.slice();
         this.battle = { bid: spec.bid, kind: spec.kind, players };
+        // a won fight with an encounter after it that another player leads (_afterFight)
+        clearTimeout(this.afterBattle && this.afterBattle.timer);
+        this.afterBattle = spec.kind === 'party' && spec.afterVictory && spec.afterVictory.encounterId && spec.authority !== me
+            ? { from: spec.authority, encounterId: spec.afterVictory.encounterId, stash: null, ended: false, timer: null } : null;
         const mp = {
             bid: spec.bid, kind: spec.kind, seed: spec.seed, me, authority: spec.authority, players, names: spec.names,
             partyMeta, enemyMeta, opponent, opponentName: opponent ? spec.names[opponent] : null,
             share: spec.kind === 'party' ? { players, me } : null,
             early: this.early.get(spec.bid) || [],
+            bgm: spec.bgm || null,
+            resume: spec.resume || null,   // let into it in progress (bt_join): as it stood at the start of a round
         };
         this.early.delete(spec.bid);
         events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, allies, backgroundId: spec.background || undefined, weather: weatherFromSpec(spec.weather), noEscape: !!spec.noEscape }, bgm: spec.bgm || null, afterVictory: spec.afterVictory || null });
@@ -597,6 +615,31 @@ class MultiplayerSocial {
     }
 
     /** In a shared encounter that `id` is in too (the fight it turns into is ours). */
+    /* The fight I am in, when an encounter follows its win (afterVictory: the end of Darius) and another player leads it (its authority): that
+       encounter is theirs to lead, and mine to be in, from the fight's screen too. A call that comes before this screen has left the fight
+       waits for it to end (awaitAfterFight). */
+    _afterFight(from, d) {
+        const a = this.afterBattle;
+        if (!a || a.from !== from || a.encounterId !== d.encounterId) return false;
+        const start = { encounterId: d.encounterId, context: d.context || {}, bgm: d.bgm || null, quiet: true, mp: { ...d.mp, me: this.me, isLeader: false } };
+        if (a.ended) { this.afterBattle = null; clearTimeout(a.timer); this.prompt = null; this.declined.clear(); events.emit('START_ENCOUNTER', start); }
+        else a.stash = start;
+        return true;
+    }
+
+    /** BATTLE_ENDED on a screen that did not lead the fight (won, with an encounter after it): its leader's encounter starts here (it may have
+     *  come already); if it never comes, `solo` plays it alone. False when the fight was not one of those. */
+    awaitAfterFight(encounterId, solo) {
+        const a = this.afterBattle;
+        if (!a || a.encounterId !== encounterId) return false;
+        a.solo = solo;
+        // its call came while this screen was still on the fight: it has gone on since, so ask its leader to be let in where it is now
+        if (a.stash) { this.afterBattle = null; this.askToJoin(a.from, { auto: true, after: { a, tries: 0 } }); return true; }
+        a.ended = true;
+        a.timer = setTimeout(() => { if (this.afterBattle === a) { this.afterBattle = null; solo(); } }, AFTER_FIGHT_WAIT_MS);
+        return true;
+    }
+
     _inEncounterWith(id) {
         const e = this.encounterState && this.encounterState();
         return this._scene() === 'encounter' && !!(e && e.mp && e.mp.players && e.mp.players.includes(id));
@@ -613,18 +656,150 @@ class MultiplayerSocial {
     startPartyEncounter(data) {
         // the one who started it leads it (their roll, their tie-break); the party near them is pulled in and votes
         this.declined.clear();
-        const story = STORY_ENCOUNTERS.has(data.encounterId);
-        const players = [this.me, ...(story ? this.storyParty() : this.nearbyParty())];
+        // (`players`: the ones who must be in it whatever screen they are on: the players of the fight it follows, the end of Darius)
+        const must = (data.players || []).filter(id => id !== this.me && this.partyHere([id]).length);
+        const players = [...new Set([this.me, ...must, ...this.nearbyParty()])];
         const eid = newId(), seed = (Math.random() * 0xffffffff) >>> 0;
+        // the stage it opens on is the leader's (the Hooded Stranger opens on what the leader's quests have reached): every screen opens there
+        const stage = openingStage(data.encounterId, data.context || {});
         // the line-up, as for a fight: every player's first characters (3 each for two players, 2 each for three), the leader's lead first.
         // Any of them can step forward (a switch is voted on), and each screen shows the one who did.
         const parties = { [this.me]: gameState.party.members.map(serializeEntity) };
         for (const id of players) if (id !== this.me) parties[id] = this.groupParties.get(id) || [];
         const lineup = buildLineup(players.map(id => ({ id, members: parties[id].map(m => ({ alive: living(m) })) })))
             .map(e => ({ owner: e.owner, idx: e.idx, data: parties[e.owner][e.idx] }));
-        const base = { eid, seed, players, leader: this.me, lineup };
-        for (const id of players) if (id !== this.me) this._send({ k: 'enc_start', mp: base, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null, quiet: !!data.quiet, story }, id);
-        return { ...base, me: this.me, isLeader: true };
+        const base = { eid, seed, players, leader: this.me, lineup, stage };
+        const after = must.length ? data.encounterId : null;   // (the fight's players take it even from the fight's screen: _onEncStart)
+        for (const id of players) if (id !== this.me) this._send({ k: 'enc_start', mp: base, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null, quiet: !!data.quiet, after }, id);
+        return { ...base, me: this.me, isLeader: true, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null };
+    }
+
+    /** The opening of a new world started together (engine/multiplayerSession.js): the host plays the prologue as a shared encounter, which every
+     *  player who arrives while it plays joins at once, at the stage it has reached (askToJoin, auto). */
+    startPrologue() {
+        if (!this.me) return null;
+        this.declined.clear();
+        const lineup = buildLineup([{ id: this.me, members: gameState.party.members.map(m => ({ alive: living(m) })) }])
+            .map(e => ({ owner: e.owner, idx: e.idx, data: serializeEntity(gameState.party.members[e.idx]) }));
+        return { eid: newId(), seed: (Math.random() * 0xffffffff) >>> 0, players: [this.me], leader: this.me, lineup, stage: null,
+            me: this.me, isLeader: true, encounterId: 'prologue', context: {}, bgm: null, open: true };
+    }
+
+    // ================================================================ JOINING ONE IN PROGRESS
+    /* A player who was left out of an encounter or a fight (too far, busy, not yet in the world) walks up to a player who is in it and asks to
+       join (the player menu: Ask to Join). That player is asked (a question on their encounter or battle screen); on a yes the encounter's
+       leader (the fight's authority) lets them in: into an encounter at the stage and step it has reached, into a fight at the start of the
+       next round, their characters waiting at the back of the line-up to be swapped in. The prologue of a world started together lets
+       everyone in without asking (`auto`).
+         join_rq { jid, what: 'enc'|'bt', auto?, members }   newcomer -> the player they walked up to
+         join_fwd { jid, n, members }                        that player (yes) -> the leader / authority
+         join_no { jid, why }                                -> the newcomer
+         enc_join { mp, encounterId, context, bgm }          leader -> the newcomer: the encounter as it is now
+         enc_add { eid, id, entries }                        leader -> the others: one more player and their characters in the line-up
+         bt_join { jid, spec }                               authority -> the newcomer: the fight as it is now (bt_add to the others)  */
+    _myLeads() {
+        // my whole party as it is now (the leader picks my first living characters for the line-up: joinEntries)
+        return gameState.party.members.map(serializeEntity);
+    }
+
+    /** The line-up entries a newcomer brings: their first living characters (as many as a player brings to a line-up of two), with the data
+     *  every screen builds them from. Their party is kept as a party member's is (a fight out of the encounter takes them in too). */
+    joinEntries(id, members) {
+        const list = Array.isArray(members) ? members.slice(0, 8) : [];
+        if (this.partyPlayers().includes(id)) this.groupParties.set(id, list);
+        return list.map((data, idx) => ({ owner: id, idx, data })).filter(e => e.data && living(e.data)).slice(0, 3);
+    }
+
+    /** Ask the player `to` (in an encounter or a fight) to let me into it. */
+    askToJoin(to, { auto = false, after = null, retry = 0 } = {}) {
+        const r = multiplayerSession.remotes.get(to);
+        const what = r && r.scene === 'encounter' ? 'enc' : 'bt';
+        if (!auto && (this.outgoing || this.joining)) { this._say('Wait for your last request to be answered.'); return; }
+        const jid = newId();
+        // (`after`: the encounter after a fight I was in, that went on before my screen left the fight: awaitAfterFight)
+        // (`retry`: the prologue of a world started together, whose host may not have opened it yet: asked again a few times)
+        this.joining = { jid, to, what, auto, after, retry, until: performance.now() + (auto ? 3000 : (REQUEST_SECONDS + 5) * 1000) };
+        this._send({ k: 'join_rq', jid, what, auto, members: this._myLeads() }, to);
+        if (!auto) this._say(`Asked ${this.nameOf(to)} to let you join…`);
+    }
+
+    /* The prologue of a world started together, played alone until the host's answer comes: the host may still be opening theirs. */
+    _retryPrologue(j) {
+        if (!(j.retry > 0)) return;
+        setTimeout(() => {
+            const e = this.encounterState && this.encounterState();
+            if (!this.joining && this._scene() === 'encounter' && e && !e.mp && e._encounterId === 'prologue') this.askToJoin(j.to, { auto: true, retry: j.retry - 1 });
+        }, 1500);
+    }
+
+    /* The encounter after the fight: its leader may still be fading into it. Ask again a few times, then play it alone. */
+    _retryAfter(after) {
+        if (after.tries >= 6) { if (after.a.solo) after.a.solo(); return; }
+        setTimeout(() => { if (!this.joining && this._scene() === 'battle') this.askToJoin(after.a.from, { auto: true, after: { a: after.a, tries: after.tries + 1 } }); }, 700);
+    }
+
+    /** The encounter or fight I am in right now, as the join handling needs it: { kind: 'enc'|'bt', leader, ... } or null. */
+    _myShared() {
+        const e = this.encounterState && this.encounterState();
+        if (this._scene() === 'encounter' && e && e.mp) return { kind: 'enc', leader: e.mp.leader, ctrl: e, mp: e.mp };
+        const b = this.battleCtrl && this.battleCtrl();
+        if (this.battle && b && b.state && b.state.mp && b.state.mp.kind === 'party' && b.state.mp.bid === this.battle.bid) return { kind: 'bt', leader: b.state.mp.authority, ctrl: b, mp: b.state.mp };
+        return null;
+    }
+
+    _onJoinRequest(from, d) {
+        const no = (why) => this._send({ k: 'join_no', jid: d.jid, why }, from);
+        if (!multiplayerSession.active || typeof d.jid !== 'string') return;
+        const shared = this._myShared();
+        const e = this.encounterState && this.encounterState();
+        // the prologue of a world started together: everyone comes in, no question asked (I may be playing it alone, as its leader)
+        // (and a player already in my encounter who fell behind: the one after a fight, whose screen was still on the fight)
+        if (d.auto) {
+            if (shared && shared.kind === 'enc' && (shared.mp.open || shared.mp.players.includes(from))) return this._forwardJoin(shared, from, d);
+            return no('over');
+        }
+        if (!this.partyPlayers().includes(from)) return no('declined');   // (Ask to Join is for the players of my party)
+        if (!shared && this._scene() === 'encounter' && e && e.model && !e.mp) {
+            // an encounter of my own: it becomes a shared one, led by me, with them in it
+            if (!e.makeShared()) return no('busy');
+            return this._askToLetIn(from, d, this._myShared());
+        }
+        if (!shared) return no('over');
+        if (shared.mp.players.includes(from)) return no('in');
+        this._askToLetIn(from, d, shared);
+    }
+
+    _askToLetIn(from, d, shared) {
+        const what = shared.kind === 'bt' ? 'fight' : 'encounter';
+        if (this.prompt) { this._send({ k: 'join_no', jid: d.jid, why: 'busy' }, from); return; }
+        this.prompt = {
+            title: this.nameOf(from), text: `${this.nameOf(from)} wants to join your ${what}.`, inPlay: true,
+            options: [{ id: 'yes', label: 'Let them in' }, { id: 'no', label: 'Not now' }], focus: 0,
+            until: performance.now() + REQUEST_SECONDS * 1000,
+            onExpire: (why) => this._send({ k: 'join_no', jid: d.jid, why }, from),
+            onPick: (id) => {
+                const now = this._myShared();
+                if (id !== 'yes') { this._send({ k: 'join_no', jid: d.jid, why: 'declined' }, from); return; }
+                if (!now) { this._send({ k: 'join_no', jid: d.jid, why: 'over' }, from); return; }
+                this._forwardJoin(now, from, d);
+            },
+        };
+    }
+
+    _forwardJoin(shared, from, d) {
+        const members = Array.isArray(d.members) ? d.members.slice(0, 8) : [];
+        if (shared.leader === this.me) shared.ctrl.admitPlayer(from, members, d.jid);
+        else this._send({ k: 'join_fwd', jid: d.jid, n: from, members, what: shared.kind }, shared.leader);
+    }
+
+    _joinRefused(d) {
+        const j = this.joining;
+        if (!j || j.jid !== d.jid) return;
+        this.joining = null;
+        if (j.after) { this._retryAfter(j.after); return; }
+        if (j.auto) { this._retryPrologue(j); return; }
+        const why = { declined: 'did not let you in', over: 'is not in an encounter or a fight any more', busy: 'is busy', full: 'has no room for you' }[d.why] || 'could not let you in';
+        this._say(`${this.nameOf(j.to)} ${why}.`);
     }
 
     sendEncounter(mp, d, to) {
@@ -643,6 +818,10 @@ class MultiplayerSocial {
     sendBattleDecision(mp, d, to = null) {
         if (to) { this._send({ k: 'bt_dec', bid: mp.bid, ...d }, to); return; }
         for (const id of mp.players) if (id !== mp.me) this._send({ k: 'bt_dec', bid: mp.bid, ...d }, id);
+    }
+    /** The authority: a player let into the fight, to the others in it (BattleController._admitWaiting). */
+    sendBattleAdd(mp, d) {
+        for (const id of mp.players) if (id !== mp.me) this._send({ k: 'bt_add', ...d }, id);
     }
     sendBattleSync(mp, d) {
         for (const id of mp.players) if (id !== mp.me) this._send({ k: 'bt_sync', bid: mp.bid, ...d }, id);
@@ -730,14 +909,17 @@ class MultiplayerSocial {
                 break;
             }
             case 'enc_start':
-                // a story encounter reaches me wherever I am (the story is shared); any other only when I am near the one who started it
-                if (d.mp && multiplayerSession.active && (this._busy() || (!d.story && this._tooFar(from)))) {
+                // the encounter that follows the fight I was in with its leader (the end of Darius): mine, from the fight's screen too
+                if (d.mp && multiplayerSession.active && d.after && this._afterFight(from, d)) break;
+                // an encounter reaches me only when I am near the one who started it (further off, I can walk up and ask to join it)
+                if (d.mp && multiplayerSession.active && (this._busy() || this._tooFar(from))) {
                     // already in a fight or an encounter (or a trade): stay in it, and tell the encounter's players to go on without me
                     for (const id of d.mp.players || []) if (id !== this.me) this._send({ k: 'enc_decline', eid: d.mp.eid }, id);
                     break;
                 }
                 if (d.mp && multiplayerSession.active && !this.battle) {
                     this.prompt = null;
+                    this.declined.clear();   // (left from an earlier encounter: only this one's declines count, as they come)
                     events.emit('START_ENCOUNTER', { encounterId: d.encounterId, context: d.context || {}, bgm: d.bgm || null, quiet: !!d.quiet, mp: { ...d.mp, me: this.me, isLeader: false } });
                 }
                 break;
@@ -760,6 +942,47 @@ class MultiplayerSocial {
             case 'enc_decline':
                 this.declined.add(from);
                 events.emit('MP_ENCOUNTER', { k: 'enc_decline', eid: d.eid, from });
+                break;
+            case 'join_rq': this._onJoinRequest(from, d); break;
+            case 'join_fwd': {   // a player of the encounter or fight I lead said yes to someone who walked up to them: in they come
+                if (typeof d.n !== 'string' || typeof d.jid !== 'string') break;
+                const shared = this._myShared();
+                if (!shared || shared.leader !== this.me || !shared.mp.players.includes(from)) { this._send({ k: 'join_no', jid: d.jid, why: 'over' }, d.n); break; }
+                shared.ctrl.admitPlayer(d.n, Array.isArray(d.members) ? d.members.slice(0, 8) : [], d.jid);
+                break;
+            }
+            case 'join_no': this._joinRefused(d); break;
+            case 'enc_join': {   // let into an encounter in progress: it opens here at the stage and step it has reached
+                const j = this.joining;
+                if (!j || j.jid !== d.jid || !d.mp || !multiplayerSession.active) break;
+                this.joining = null;
+                // (busy since I asked: a fight, a trade, or another encounter; the solo prologue I asked from is the one it replaces)
+                const solo = this.encounterState && this.encounterState();
+                const replacing = (j.auto && this._scene() === 'encounter' && solo && !solo.mp && solo._encounterId === d.encounterId) || !!j.after;
+                if (this.battle || this.trade || (this._scene() !== 'overworld' && !replacing && PULL_BLOCKING_SCENES.has(this._scene()))) {
+                    for (const id of d.mp.players || []) if (id !== this.me) this._send({ k: 'enc_decline', eid: d.mp.eid }, id);
+                    break;
+                }
+                this.prompt = null;
+                this.declined.clear();
+                if (!j.auto) this._say(`You join ${this.nameOf(j.to)}.`);
+                events.emit('START_ENCOUNTER', { encounterId: d.encounterId, context: d.context || {}, bgm: d.bgm || null, quiet: true, mp: { ...d.mp, me: this.me, isLeader: false } });
+                break;
+            }
+            case 'enc_add':
+                events.emit('MP_ENCOUNTER', { ...d, k: 'enc_add', from });
+                break;
+            case 'bt_join': {   // let into a fight in progress: it begins here as it stands, and my characters wait at the back to be swapped in
+                const j = this.joining;
+                if (!j || j.jid !== d.jid || !d.spec || !multiplayerSession.active) break;
+                this.joining = null;
+                if (this._busy()) { this._send({ k: 'bt_decline', bid: d.spec.bid }, d.spec.authority); break; }
+                this._say(`You join ${this.nameOf(j.to)}'s fight.`);
+                this._beginBattle(d.spec);
+                break;
+            }
+            case 'bt_add':
+                if (this.battle && this.battle.bid === d.bid) events.emit('MP_BATTLE_ADD', { ...d, from });
                 break;
             case 'bt_dec':
                 if (this.battle && this.battle.bid === d.bid) events.emit('MP_BATTLE_DECISION', { ...d, from });
@@ -803,7 +1026,21 @@ class MultiplayerSocial {
             this._send({ k: 'rq_ans', rid: this.incoming.rid, ok: false, why: 'busy' }, this.incoming.from);
             this.incoming = null;
         }
+        if (this.joining && now > this.joining.until) {
+            const j = this.joining;
+            this.joining = null;
+            if (j.after) this._retryAfter({ ...j.after, tries: 99 });
+            else if (j.auto) this._retryPrologue(j);
+            else this._say(`${this.nameOf(j.to)} did not answer.`);
+        }
+        // a "let them join?" question asked in an encounter or a fight that is over now: no, it is over
+        if (this.prompt && this.prompt.inPlay && this._scene() !== 'encounter' && this._scene() !== 'battle' && this._scene() !== 'party') {
+            const p = this.prompt; this.prompt = null;
+            if (p.onExpire) p.onExpire('over');
+        }
         if (this.prompt && this.prompt.until && now > this.prompt.until) {
+            const p = this.prompt;
+            if (p.onExpire) p.onExpire('declined');
             this.prompt = null;
             if (this.incoming) { this._send({ k: 'rq_ans', rid: this.incoming.rid, ok: false, why: 'timeout' }, this.incoming.from); this.incoming = null; }
         }

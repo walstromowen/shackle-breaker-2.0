@@ -1,6 +1,6 @@
 /* A Legionary on Patrol (LEGIONARY_PATROL in mapObjectDefinitions.js): a legionary of the old garrison, gone shackled in his rusted plate and still
    walking his round. One keeps the streets of every village (villagePlanner.js _planLegionaryPatrol) and a few walk the lanes of every castle
-   (castleLayout.js). He sees 10 tiles ahead of him, in a half circle the way he faces (`sight`), like the madmen and the Arc Knights.
+   (castleLayout.js). He sees 5 tiles ahead of him, in a half circle the way he faces (`sight`), like the madmen and the Arc Knights.
 
      unseen      walked up to from behind (he has not seen you): his back, as the madman's Disturbing Sight. Assassinate him [DEX], distract him
                  [INT], steal from him [DEX], switch who goes first, or walk away. A failed roll and he turns on you.
@@ -98,7 +98,7 @@ export const legionaryPatrol = {
     }
 };
 
-/* A legionary who sees you coming (LEGIONARY_PATROL from the front or the sides, in his 10 tiles of sight): nothing left but the fight. */
+/* A legionary who sees you coming (LEGIONARY_PATROL from the front or the sides, in his 5 tiles of sight): nothing left but the fight. */
 export const legionarySpotsYou = {
     id: "legionary_spots_you",
     title: TITLE,

@@ -20,7 +20,7 @@ import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { pushItemToast, pushTextToast } from '../../ui/toasts.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
-import { QuestDefinitions } from '../../../../shared/story/questDefinitions.js';
+import { QuestDefinitions, STORY_QUESTS } from '../../../../shared/story/questDefinitions.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
 import { Covenants, COVENANTS } from '../../../../shared/story/covenants.js';
 import { addMarker, getMarkers, removeMarker } from '../../../../shared/world/mapMarkers.js';
@@ -439,9 +439,17 @@ export class EncounterLogic {
                     // `force: true` counts its objectives done first (a "find him" quest, finished by the very talk that turns it in).
                     const qid = payload.questId;
                     const def = qid && QuestDefinitions[qid];
-                    const quest = def && gameState.quests?.active?.[qid];
+                    let quest = def && gameState.quests?.active?.[qid];
+                    // a shared encounter (the Hooded Stranger, met by the party together): a step of the story the leader hands in is handed in by
+                    // everyone in it, since they were there: one whose own objectives were not done, or who never had the step, too
+                    const sh = EncounterLogic.shared;
+                    const together = !!(sh && !sh.isLeader && def && (STORY_QUESTS.has(qid) || qid === 'shackled_stranger'));
+                    if (together && !quest && !(gameState.quests?.completed || []).includes(qid)) {
+                        events.emit('START_QUEST', { questId: qid });
+                        quest = gameState.quests?.active?.[qid];
+                    }
                     if (!quest) break;
-                    if (payload.force) for (const o of def.objectives) quest.progress[o.id] = o.amount || 1;
+                    if (payload.force || together) for (const o of def.objectives) quest.progress[o.id] = o.amount || 1;
                     if (!QuestModel.checkCompletion(gameState, qid)) break;
                     const r = def.rewards || {};
                     if (QuestModel.completeQuest(gameState, qid)) {

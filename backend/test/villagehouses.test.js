@@ -75,20 +75,25 @@ test('the door of a front yard is on the bottom row of its house and has a footp
     }
 });
 
-test('every module of every village exists, the side houses stand only beside north-south streets, and the one workshop (a blacksmith house) is required', () => {
+test('every module of every village exists, the side houses stand only beside north-south streets, and the one workshop (a blacksmith house) and a stable are required', () => {
     for (const id of ['ABANDONED_VILLAGE', 'ABANDONED_VILLAGE_DESERT', 'ABANDONED_VILLAGE_SNOWY']) {
         const mods = STRUCTURES[id].modules;
         for (const m of mods) assert.ok(STRUCTURES[m.prefab], `${id}: ${m.prefab} exists`);
         const sides = mods.filter(m => /_SIDE_/.test(m.prefab));
         assert.equal(sides.length, 2, `${id}: the plank house's two side modules (no side smithies, no stone houses)`);
         assert.ok(!mods.some(m => /^ABANDONED_STONE_HOUSE/.test(m.prefab)), `${id}: no plain stone house`);
-        const workshop = STRUCTURES[mods.find(m => m.required).prefab];
+        const required = mods.filter(m => m.required);
+        assert.deepEqual(required.map(m => m.prefab.replace(/_(DESERT|SNOWY)$/, '')).sort(), ['ABANDONED_STABLE', 'ABANDONED_WORKSHOP'], `${id}: the workshop and a stable`);
+        const workshopMod = required.find(m => /WORKSHOP/.test(m.prefab));
+        const workshop = STRUCTURES[workshopMod.prefab];
         assert.ok(JSON.stringify(workshop).includes('ABANDONED_SMITHY') && !JSON.stringify(workshop).includes('ABANDONED_STONE_HOUSE'), `${id}: the workshop is a blacksmith house`);
         for (const m of sides) assert.equal(m.horizontalWeight, 0, `${m.prefab} is never beside an east-west street`);
         for (const m of mods.filter(x => !/_SIDE_/.test(x.prefab))) assert.ok((m.horizontalWeight ?? m.weight) > 0, `${m.prefab} may stand beside an east-west street`);
-        assert.equal(mods.filter(m => m.required).length, 1);
         assert.ok(!mods.some(m => /SMITHY/.test(m.prefab)), `${id}: no blacksmith house but the workshop`);
-        assert.equal(mods.find(m => m.required).max, 1, `${id}: one blacksmith house per village`);
+        assert.equal(workshopMod.max, 1, `${id}: one blacksmith house per village`);
+        const stable = required.find(m => /STABLE/.test(m.prefab));
+        assert.ok(stable.max <= 2, `${id}: a stable or two, no more`);
+        assert.ok(JSON.stringify(STRUCTURES[stable.prefab]).includes('"STABLE"'), `${id}: the stable's yard holds the stable`);
     }
 });
 

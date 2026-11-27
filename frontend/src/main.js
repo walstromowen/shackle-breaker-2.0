@@ -18,6 +18,7 @@ ui_icons: './assets/icons/ui_icons.png',
 
     plainsPrimaryFloor:     './assets/tilesets/plains/primary_floor_blob47.png',
     plainsSecondaryFloor:   './assets/tilesets/plains/secondary_floor_blob47.png',
+    plainsLitter:           './assets/tilesets/plains/litter.png',   // floor litter: tufts, clover, flowers, pebbles, twigs on the grass; pebbles, cracks, prints on the dirt
     plainsSecondaryOnLevel: './assets/tilesets/plains/secondary_floor_on_level.png',
     plainsCliffFloor:       './assets/tilesets/plains/cliff_blob47_floor.png',
     plainsCliffWall:        './assets/tilesets/plains/cliff_blob47_wall.png',
@@ -145,6 +146,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objAbandonedStoneHouse: './assets/mapObjects/objAbandonedStoneHouse.png',
     objStoneWorkshop: './assets/mapObjects/objStoneWorkshop.png',   // the stone house as the workshop: lit windows, a smouldering chimney
     objCraftingHouse: './assets/mapObjects/objCraftingHouse.png',
+    objStable: './assets/mapObjects/objStable.png',   // the village stable (structures.js ABANDONED_STABLE)
     objAbandonedSmithy: './assets/mapObjects/objAbandonedSmithy.png',
     objCastleTownhouse: './assets/mapObjects/objCastleTownhouse.png',   // a house of the castle's town, in the keep's stone (tools/art/castleTownhouse.py)
     objCastleTownhouseLeft: './assets/mapObjects/objCastleTownhouseLeft.png',     // its side views (tools/art/castleTownhouseSide.py)
@@ -196,6 +198,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objPineTree: './assets/mapObjects/objPineTree.png',
     objPineTreeSnow: './assets/mapObjects/objPineTreeSnow.png',
     objOakTree1: './assets/mapObjects/objOakTree1.png',
+    objDeadTree: './assets/mapObjects/objDeadTree.png',     // a dead, leafless tree
     objTreeStump: './assets/mapObjects/objTreeStump.png',
     objTreeStumpSnow: './assets/mapObjects/objTreeStumpSnow.png',
     objMediumCactus1: './assets/mapObjects/objMediumCactus1.png',
@@ -293,7 +296,7 @@ ui_icons: './assets/icons/ui_icons.png',
     warlordHeroSprite: './assets/sprites/warlord_hero/warlord_hero_sprite.png',
     nightbladeHeroSprite: './assets/sprites/nightblade_hero/nightblade_hero_sprite.png',
     madmanSprite: './assets/sprites/madman/madman_sprite.png',
-    osricSprite: './assets/sprites/amputator_osric/osric_sprite.png',       // the Amputators (story/encounters/story/amputators.js): blank until their art is in
+    osricSprite: './assets/sprites/amputator_osric/osric_sprite.png',       // Senior Surgeon Osric, the old one-armed Amputator on his cane (his first, straw-hat look is kept in sprites/reserved/straw_hat_amputator)
     garrickSprite: './assets/sprites/amputator_garrick/garrick_sprite.png',
     arcKnightSprite: './assets/sprites/arc_knight/arc_knight_sprite.png',   // made from its 8-direction idle frames (tools/art/overworldSheetFromRotations.py)
     shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png',
@@ -310,6 +313,7 @@ ui_icons: './assets/icons/ui_icons.png',
     shadowCasterHeroSprite: './assets/sprites/shadow_caster_hero/shadow_caster_hero_sprite.png',
 
     legionaryPortrait: './assets/sprites/legionary/legionary_portrait.png',
+    frozenTrapperSprite: './assets/sprites/frozen_trapper/frozen_trapper_sprite.png',   // the frozen trapper on the prowl (FROZEN_TRAPPER_PATROL): rows 0-3 idle, 4-7 walk (8-11 the walk again)
     legionaryPatrolSprite: './assets/sprites/legionary/legionary_patrol_sprite.png',   // the legionary on patrol (LEGIONARY_PATROL): rows 0-3 idle, 4-7 walk (8-11 the walk again)
     watchmanPortrait: './assets/sprites/watchman/watchman_portrait.png',
     wolfPortrait: './assets/sprites/wolf/wolf_portrait.png',
@@ -348,6 +352,8 @@ iceCoilPortrait: './assets/sprites/icecoil/icecoil_portrait.png',   // the Iceco
 scorchedVagrantPortrait: './assets/sprites/scorched_vagrant/scorched_vagrant_portrait.png',
 miragewrightPortrait: './assets/sprites/miragewright/miragewright_portrait.png',
 calcifiedCrusaderPortrait: './assets/sprites/calcified_crusader/calcified_crusader_portrait.png',
+frostbittenWarriorPortrait: './assets/sprites/frostbitten_warrior/frostbitten_warrior_portrait.png',   // the snow trio (with the Frozen Trapper)
+rimeHermitPortrait: './assets/sprites/rime_hermit/rime_hermit_portrait.png',
 shadyMerchantPortrait: './assets/sprites/shady_merchant/shady_merchant_portrait.png',
 thunderLocustPortrait: './assets/sprites/thunder_locust/thunder_locust_portrait.png',
 dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_groveler_portrait.png',
@@ -491,6 +497,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     //Encounters
     encounter_wounded_mutt: './assets/icons/encounters/wounded_mutt.png',
     encounter_a_disturbing_sight: './assets/icons/encounters/a_disturbing_sight.png',
+    encounter_frozen_trapper_patrol: './assets/icons/encounters/frozen_trapper_patrol.png',   // 4 x 2 cells of 128: his back, front, dead, walking off, grabbing, robbed, spotting you (story/encounters/frozenTrapperPatrol.js)
     encounter_legionary_patrol: './assets/icons/encounters/legionary_patrol.png',   // 4 x 2 cells of 128: his back, front, dead, walking off, grabbing, robbed, saluting (story/encounters/legionaryPatrol.js)
     encounter_bonfire: './assets/icons/encounters/bonfire.png',
     encounter_wild_hunt: './assets/icons/encounters/wild_hunt.png',
@@ -641,6 +648,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     skeletalWarriorCry: './assets/audio/sfx/cries/skeletal_warrior_cry.mp3',
     floatingSkullCry: './assets/audio/sfx/cries/floating_skull_cry.mp3',
     frozenTrapperCry: './assets/audio/sfx/cries/frozen_trapper_cry.mp3',
+    frostbittenWarriorCry: './assets/audio/sfx/cries/frostbitten_warrior_cry.mp3',
+    rimeHermitCry: './assets/audio/sfx/cries/rime_hermit_cry.mp3',
     panzerkamferCry: './assets/audio/sfx/cries/panzerkamfer_cry.mp3',
     watchmanCry: './assets/audio/sfx/cries/watchman_cry.mp3',
     // --- UI SFX ---

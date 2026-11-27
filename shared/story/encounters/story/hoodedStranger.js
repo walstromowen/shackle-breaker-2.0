@@ -30,7 +30,10 @@
    He is Cornelius Mentoras, once commander of the royal guard (docs/story.md): never said, and nothing he says may give it away before the story does. (Act 3, story/encounters/story/actTwo.js, shows the rest.)
    His grief (his son, docs/story.md) is never spoken of. Once only, when Codey comes back alive, it slips out: "One of you did."
 
-   Personal: in a party of players this is never shared or voted on, since it is about this player's own quests.
+   Shared: in a party of players he is met together, like every encounter (the party near you is pulled in, and votes; one further off
+   can walk up and ask to join). He
+   opens on what the leader's quests have reached (engine/multiplayerSocial.js startPartyEncounter `stage`), and a step the leader hands in is
+   handed in by everyone in it, with its rewards (encounterLogic COMPLETE_QUEST): the party goes through his story as one.
    Art: assets/icons/encounters/story/hooded_stranger.png registered as `encounter_hooded_stranger` (one 128 px picture). */
 import { gameState } from '../../../core/gameState.js';
 import { QuestModel } from '../../questModel.js';
@@ -109,7 +112,7 @@ export const hoodedStranger = {
     id: "hooded_stranger",
     title: TITLE,
     imageSheet: "encounter_hooded_stranger",
-    personal: true,
+    personal: false,   // met together: see the note at the top
     tone: "cold",
     initialStage: opening,
     stages: {

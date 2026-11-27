@@ -8,8 +8,8 @@ export const MAX_LINEUP = 6;
 
 /* A party of players walks freely; a fight or an encounter one of them starts pulls in the others standing within this many tiles of them
    (a square: up to this many tiles across and this many down), on the same map, from the map or a menu (not from a fight, an encounter or
-   a trade of their own). Those further off carry on as they were; a story encounter reaches the whole party wherever they are
-   (multiplayerSocial.storyParty). The dev console's /radius shows it. */
+   a trade of their own). Those further off carry on as they were, the story's encounters too, and can walk up to a player in one
+   and ask to join it (multiplayerSocial.askToJoin). The dev console's /radius shows it. */
 export const PARTY_PULL_RADIUS = 16;
 
 /**

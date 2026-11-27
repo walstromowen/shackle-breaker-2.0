@@ -158,6 +158,13 @@ class MultiplayerSession {
     /** Whether the character creator should hand its character to this flow (not start a game of its own). */
     get makingNewWorld() { return !!(this.newWorld && !this.newWorld.began); }
 
+    /** SceneManager, opening the prologue: is it the shared one of a world started together (the host's)? Asked once. */
+    takeSharedPrologue() {
+        const yes = !!this._sharedPrologue;
+        this._sharedPrologue = false;
+        return yes;
+    }
+
     /** This player has made their character: tell everyone, and wait for the others. */
     characterReady() {
         if (!this.makingNewWorld) return false;
@@ -191,7 +198,9 @@ class MultiplayerSession {
         if (!this.makingNewWorld) return;
         this.newWorld.began = true;
         if (this.role === 'founding') {
-            // the host: the new world is built from their creator's choices and the prologue plays (SceneManager); hosting starts with it
+            // the host: the new world is built from their creator's choices and the prologue plays (SceneManager); hosting starts with it.
+            // The prologue is shared: every guest who arrives while it plays is let into it (multiplayerSocial.startPrologue)
+            this._sharedPrologue = true;
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
             return;
         }

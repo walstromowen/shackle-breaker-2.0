@@ -4,14 +4,16 @@ import { events } from '../../../../shared/core/eventBus.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { TurnManager } from '../../../../shared/battle/turnManager.js';
 import { PHASE, TURN_TYPES } from '../../../../shared/battle/battleConstants.js';
-import { createBattleState, applyRoundEndRecovery, commitBattleResults, registerStatusApplication, noEscapeMessage } from '../../../../shared/battle/battleState.js';
+import { createBattleState, applyRoundEndRecovery, commitBattleResults, registerStatusApplication, noEscapeMessage, stripNonBattleAbilities } from '../../../../shared/battle/battleState.js';
+import { CombatantModel } from '../../../../shared/battle/combatantModel.js';
+import { serializeEntity, hydrateEntity } from '../../engine/saveManager.js';
 import { queueOpeningSequence, queueSwap, queueVictory, queueDefeat, sortTurnQueue } from '../../../../shared/battle/battleQueue.js';
 import { queueEnemyActions } from '../../../../shared/battle/enemyAI.js';
 import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
 import { QuestSystem } from '../../../../shared/story/questSystem.js';
 import { BaseController } from '../../engine/baseController.js';
 import { TargetSelection } from './targetSelection.js';
-import { seedRandom, unseedRandom } from '../../../../shared/core/random.js';
+import { seedRandom, unseedRandom, withoutSeed, getRandomState, setRandomState } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { multiplayer } from '../../engine/multiplayerClient.js';
 
@@ -53,6 +55,7 @@ export class BattleController extends BaseController {
         events.on('MP_BATTLE_SYNC', (d) => this._onRemoteSync(d));
         // a player of this shared fight was busy elsewhere (or has left): stop waiting for their fighters' picks
         events.on('MP_BATTLE_DECLINE', () => this._tryResolveShared());
+        events.on('MP_BATTLE_ADD', (d) => this._onRemoteAdd(d));   // a player let into the fight: their characters join the line-up
 
         // Statuses announce themselves on the event bus (combatantModel.js); the ledger keeps them for the trait checks after a win
         events.on('ON_STATUS_APPLIED', (data) => {
@@ -70,6 +73,8 @@ export class BattleController extends BaseController {
         this._awaitReinforce = null;   // a shared fight: waiting for another player's pick of who steps in for their fallen fighter
         this._reinforceIn = new Map(); // ... and those picks as they come (one can come before this screen gets there)
         if (context.mp) this._setupShared(context.mp);
+        // let into a fight in progress (multiplayerSocial bt_join): it stands as the leader's screen had it at the start of this round
+        if (context.mp && context.mp.resume) { this._resumeFrom(context.mp.resume); this.timer = 0; return; }
 
         const preBattleActionsQueued = queueOpeningSequence(this.state);
 
@@ -568,13 +573,14 @@ export class BattleController extends BaseController {
         this.state.active = false;
         const mp = this.state.mp;
         unseedRandom();
-        events.emit('BATTLE_ENDED', { victory, fled: !!this.state.fled, mp: mp ? { kind: mp.kind, bid: mp.bid, opponent: mp.opponent || null } : null });
+        events.emit('BATTLE_ENDED', { victory, fled: !!this.state.fled, mp: mp ? { kind: mp.kind, bid: mp.bid, opponent: mp.opponent || null, authority: mp.authority, me: mp.me, players: (mp.players || []).slice() } : null });
     }
 
     // ================================================================ SHARED (MULTIPLAYER) FIGHTS
     _setupShared(mp) {
         const s = this.state;
-        s.mp = { ...mp, round: 0, decisions: new Map(), syncs: new Map() };
+        s.mp = { ...mp, round: 0, decisions: new Map(), syncs: new Map(), adds: new Map(), admits: [] };
+        multiplayerSocial.battleCtrl = () => this;   // (a player who walks up can ask to join it: admitPlayer)
         const tag = (c, meta) => { if (c && meta) { c.netId = meta.netId; c.netOwner = meta.owner || null; c.isPlayerCharacter = !!meta.owner; } };
         s.partyRoster.forEach((c, i) => tag(c, mp.partyMeta[i]));
         s.enemyRoster.forEach((c, i) => tag(c, (mp.enemyMeta || [])[i]));
@@ -602,9 +608,126 @@ export class BattleController extends BaseController {
             const vitals = {};
             for (const c of this.byNet.values()) vitals[c.netId] = [c.hp, c.stamina, c.insight];
             multiplayerSocial.sendBattleSync(s.mp, { round: s.mp.round, vitals });
-        } else if (s.mp.syncs.has(s.mp.round)) {
-            this._applySync(s.mp.syncs.get(s.mp.round));
+            if (s.mp.admits.length) this._admitWaiting();
+        } else {
+            if (s.mp.syncs.has(s.mp.round)) this._applySync(s.mp.syncs.get(s.mp.round));
+            if (s.mp.adds.has(s.mp.round)) { const d = s.mp.adds.get(s.mp.round); s.mp.adds.delete(s.mp.round); this._addFighters(d); }
         }
+    }
+
+    // ---------------------------------------------------------------- a player let into the fight in progress (multiplayerSocial: join)
+    /** The authority: a player asked to join and was let in. They come in at the start of a round (_beginSharedRound). */
+    admitPlayer(id, members, jid) {
+        const s = this.state;
+        if (!s || !s.mp || s.mp.kind !== 'party' || s.mp.authority !== s.mp.me || !id || id === s.mp.me) return;
+        if (s.mp.players.includes(id)) { multiplayerSocial._send({ k: 'join_no', jid, why: 'in' }, id); return; }
+        s.mp.admits.push({ id, members, jid, waited: 0 });
+        s.message = `${multiplayerSocial.nameOf(id)} will join at the start of the next round.`;
+    }
+
+    /* A field the newcomer's screen can be given as it stands: nobody gathering a charged blow, shapeshifted or with a familiar out (those live
+       on the fighters, not in their characters, and are not sent). Otherwise they wait for a plainer round (a few at most). */
+    _plainField() {
+        const s = this.state;
+        return ![...s.partyRoster, ...s.enemyRoster].some(c => c && (c._charging || c._form || c._familiar || c.familiarOf || !c.netId));
+    }
+
+    _admitWaiting() {
+        const s = this.state;
+        if (!this._plainField()) {
+            for (const a of s.mp.admits) if (++a.waited > 6) multiplayerSocial._send({ k: 'join_no', jid: a.jid, why: 'busy' }, a.id);
+            s.mp.admits = s.mp.admits.filter(a => a.waited <= 6);
+            return;
+        }
+        for (const a of s.mp.admits.splice(0)) {
+            if (s.mp.players.includes(a.id) || !multiplayerSocial.partyHere([a.id]).length) continue;
+            const entries = multiplayerSocial.joinEntries(a.id, a.members);
+            if (!entries.length) { multiplayerSocial._send({ k: 'join_no', jid: a.jid, why: 'full' }, a.id); continue; }
+            // their lead takes an empty place on the field, if there is one (never in the middle of the allies'); the rest wait at the back
+            const hasAllies = s.activeParty.some(c => c && c.isAlly);
+            let slot = s.activeParty.findIndex(c => !c);
+            if (slot < 0 && !hasAllies && s.activeParty.length < 3) slot = s.activeParty.length;
+            const add = { bid: s.mp.bid, round: s.mp.round, id: a.id, name: multiplayerSocial.nameOf(a.id), entries, slot: slot >= 0 ? slot : null };
+            multiplayerSocial.sendBattleAdd(s.mp, add);   // the others, before the newcomer is one of the players
+            this._addFighters(add);
+            multiplayerSocial._send({ k: 'bt_join', jid: a.jid, spec: this._resumeSpec() }, a.id);
+        }
+    }
+
+    /** Every screen: one more player in the fight, their characters at the back of the line-up (and their lead on the field, given a place). */
+    _addFighters(d) {
+        const s = this.state;
+        if (!s || !s.mp || s.mp.players.includes(d.id)) return;
+        s.mp.players.push(d.id);
+        s.mp.names = { ...(s.mp.names || {}), [d.id]: d.name || multiplayerSocial.nameOf(d.id) };
+        if (multiplayerSocial.battle && multiplayerSocial.battle.bid === s.mp.bid && !multiplayerSocial.battle.players.includes(d.id)) multiplayerSocial.battle.players.push(d.id);
+        multiplayerSocial.declined.delete(d.id);
+        const firstAlly = s.partyRoster.findIndex(c => c && c.isAlly);
+        const added = [];
+        for (const e of d.entries || []) {
+            const entity = e.owner === s.mp.me ? gameState.party.members[e.idx] : hydrateEntity(e.data);
+            if (!entity) continue;
+            // (made without the shared dice: building a fighter must never move them)
+            const c = withoutSeed(() => new CombatantModel(entity, 'party'));
+            stripNonBattleAbilities(c);
+            c.netId = `${e.owner}#${e.idx}`; c.netOwner = e.owner; c.isPlayerCharacter = true; c.hasEnteredBattle = true;
+            added.push(c);
+            this.byNet.set(c.netId, c);
+        }
+        if (firstAlly >= 0) s.partyRoster.splice(firstAlly, 0, ...added); else s.partyRoster.push(...added);
+        if (added.length && Number.isInteger(d.slot) && d.slot >= 0 && d.slot <= s.activeParty.length && !s.activeParty[d.slot]) s.activeParty[d.slot] = added[0];
+        s.message = `${s.mp.names[d.id]} joins the fight!`;
+        // picks of mine already sent this round went to the players as they were: the newcomer needs them too
+        for (const p of this._myPicks || []) if (p.round === s.mp.round && p.d) multiplayerSocial.sendBattleDecision(s.mp, p.d, d.id);
+        this._tryResolveShared();
+    }
+
+    /** The authority: the fight as it stands at the start of this round, for a newcomer's screen (multiplayerSocial._beginBattle with `resume`). */
+    _resumeSpec() {
+        const s = this.state, mp = s.mp;
+        const party = s.partyRoster.filter(c => c && !c.isAlly);
+        const allies = s.partyRoster.filter(c => c && c.isAlly);
+        const fighter = (c) => ({ netId: c.netId, dead: !!c._deathHandled, entered: !!c.hasEnteredBattle });
+        const lineup = party.map(c => {
+            const idx = parseInt(String(c.netId).split('#')[1], 10);
+            return { owner: c.netOwner, idx, data: serializeEntity(c.originalEntity) };
+        });
+        return {
+            bid: mp.bid, kind: 'party', seed: mp.seed, authority: mp.me, players: mp.players.slice(), names: { ...(mp.names || {}) },
+            lineup, enemies: s.enemyRoster.map(c => serializeEntity(c.originalEntity)), allies: allies.map(c => serializeEntity(c.originalEntity)),
+            background: s.backgroundId || null, weather: s.weather && s.weather.id ? { id: String(s.weather.id), intensity: s.weather.intensity } : null,
+            bgm: mp.bgm || null, noEscape: !!s.noEscape, afterVictory: null,
+            resume: {
+                round: mp.round, rng: getRandomState(),
+                fighters: [...s.partyRoster, ...s.enemyRoster].filter(Boolean).map(fighter),
+                activeParty: s.activeParty.map(c => (c ? c.netId : null)), activeEnemies: s.activeEnemies.map(c => (c ? c.netId : null)),
+            },
+        };
+    }
+
+    /** The newcomer: the fight they were let into, set as the leader's screen had it at the start of this round, then their first picks. */
+    _resumeFrom(r) {
+        const s = this.state;
+        for (const f of r.fighters || []) {
+            const c = this.byNet.get(f.netId);
+            if (c) { c._deathHandled = !!f.dead; c.hasEnteredBattle = !!f.entered; }
+        }
+        const pick = (id) => (id ? this.byNet.get(id) || null : null);
+        s.activeParty = (r.activeParty || []).map(pick);
+        s.activeEnemies = (r.activeEnemies || []).map(pick);
+        s.mp.round = (r.round || 1) - 1;
+        setRandomState(r.rng);
+        this._startActionPhase();
+        s.message = 'You join the fight. Your characters wait at the back of the line-up until they are called in.';
+    }
+
+    _onRemoteAdd(d) {
+        const s = this.state;
+        if (!s || !s.mp || !d || d.bid !== s.mp.bid || s.mp.authority === s.mp.me || d.from !== s.mp.authority || typeof d.id !== 'string') return;
+        // at the start of its round (as the authority did), never in the middle of one still playing out
+        if (d.round === s.mp.round && s.phase !== PHASE.RESOLVE && s.phase !== PHASE.INTRO) this._addFighters(d);
+        else if (d.round > s.mp.round) s.mp.adds.set(d.round, d);
+        else this._addFighters(d);
     }
 
     _waitForOthers() {

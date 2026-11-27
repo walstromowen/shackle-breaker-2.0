@@ -155,10 +155,51 @@ export class VillagePlanner {
             density: bp.buildingDensity ?? 0.5,
             maxBuildings: bp.maxBuildings ?? 28,
             setback: bp.setback ?? 0,
+            yardSlack: bp.yardSlack ?? 0,
             skipStart: 3,
             tries: Math.max(1, bp.buildingTries ?? 1),
             levels: this._levelConfig(bp.levels),
+            curves: bp.curves ? {
+                amp: bp.curves.amplitude || { min: 0, max: 0 },
+                sideAmp: bp.curves.sideAmplitude || bp.curves.amplitude || { min: 0, max: 0 },
+                period: bp.curves.period || { min: 16, max: 28 },
+            } : null,
         };
+    }
+    /* ---- the sway of a road (blueprint `curves`) ----------------------------------------------------------------------------------
+       A road heads one of the four ways, but it does not run ruler straight: it drifts a cell to one side and back along a slow wave (`amplitude` cells at
+       most, one swing every `period` cells), so a street bends gently between its turns and the plots along it follow it. A wave starts afresh (at no drift)
+       after every turn. A drift step is a diagonal one; a one-wide alley also takes the cell on the corner, so it stays joined edge to edge. */
+    _wave(plan, seedC, seedR, side) {
+        const cv = plan.cfg.curves;
+        if (!cv) return null;
+        const a = side ? cv.sideAmp : cv.amp;
+        if (!(a.max > 0)) return null;
+        const amp = a.min + this.pseudoRandom(seedC * 7 + plan.salt, seedR * 11 + 3) * (a.max - a.min);
+        const per = cv.period.min + this.pseudoRandom(seedC * 13 + 5, seedR * 17 + plan.salt) * (cv.period.max - cv.period.min);
+        return { amp, per: Math.max(6, per), sign: this.pseudoRandom(seedC * 19 + 1, seedR * 23 + plan.salt) < 0.5 ? 1 : -1, t: 0, lat: 0 };
+    }
+    /* the next centre of a road heading `dir` from (c, r): straight ahead, or ahead and a cell to the side where its wave says so and the ground allows.
+       { c, r, corner } (corner: the extra cell a one-wide alley takes on a drift step, or null) */
+    _swayNext(plan, road, w, c, r, dir, step) {
+        const f = VILLAGE_DIRS[dir];
+        if (w) {
+            w.t++;
+            const want = Math.round(w.sign * w.amp * Math.sin((2 * Math.PI * w.t) / w.per));
+            if (want !== w.lat) {
+                const toRight = want > w.lat;
+                const s = VILLAGE_DIRS[toRight ? (dir + 1) % 4 : (dir + 3) % 4];
+                const nc = c + f.c + s.c;
+                const nr = r + f.r + s.r;
+                const narrow = this._rad(plan, road) === 0;
+                const corner = narrow ? { c: c + s.c, r: r + s.r } : null;
+                if (this._centreOk(plan, road, nc, nr, step + (narrow ? 1 : 0)) && (!corner || this._centreOk(plan, road, corner.c, corner.r, step))) {
+                    w.lat += toRight ? 1 : -1;
+                    return { c: nc, r: nr, corner };
+                }
+            }
+        }
+        return { c: c + f.c, r: r + f.r, corner: null };
     }
     _levelConfig(lv) {
         lv = lv || {};
@@ -286,7 +327,7 @@ export class VillagePlanner {
             const maxLen = Math.floor(lenRng * (bp.branchLength.max - bp.branchLength.min)) + bp.branchLength.min;
             const road = { id: plan.roads.length, kind: 'arm', parent: undefined, centres: [{ c, r, d: i }] };
             plan.roads.push(road);
-            active.push({ road, c, r, dirIndex: i, len: 0, maxLen, sinceTurn: 0 });
+            active.push({ road, c, r, dirIndex: i, len: 0, maxLen, sinceTurn: 0, wave: this._wave(plan, c + i * 3, r + i * 5, false) });
         }
         /* all roads grow one step at a time, in turns, so none of them gets first pick of the land */
         while (active.length > 0) {
@@ -301,12 +342,17 @@ export class VillagePlanner {
                     if (this._centreOk(plan, p.road, p.c + VILLAGE_DIRS[turnDir].c, p.r + VILLAGE_DIRS[turnDir].r, p.len + 1)) {
                         p.dirIndex = turnDir;
                         p.sinceTurn = 0;
+                        if (p.wave) { p.wave.t = 0; p.wave.lat = 0; }
                     }
                 }
-                let nextC = p.c + VILLAGE_DIRS[p.dirIndex].c;
-                let nextR = p.r + VILLAGE_DIRS[p.dirIndex].r;
-                let valid = this._centreOk(plan, p.road, nextC, nextR, p.len + 1);
+                const sway = this._swayNext(plan, p.road, p.wave, p.c, p.r, p.dirIndex, p.len + 1);
+                let nextC = sway.c;
+                let nextR = sway.r;
+                let corner = sway.corner;
+                let valid = this._centreOk(plan, p.road, nextC, nextR, p.len + 1 + (corner ? 1 : 0));
                 if (!valid) {
+                    corner = null;
+                    if (p.wave) { p.wave.t = 0; p.wave.lat = 0; }
                     /* blocked: bend round the obstacle */
                     const leftDir = (p.dirIndex + 3) % 4;
                     const rightDir = (p.dirIndex + 1) % 4;
@@ -326,6 +372,11 @@ export class VillagePlanner {
                     }
                 }
                 if (!valid) continue;
+                if (corner) {
+                    p.len++;
+                    p.road.centres.push({ c: corner.c, r: corner.r, d: p.dirIndex });
+                    this._stampRoad(plan, p.road, corner.c, corner.r, p.len);
+                }
                 p.c = nextC;
                 p.r = nextR;
                 p.len++;
@@ -484,15 +535,20 @@ export class VillagePlanner {
         let { c, r } = road.centres[road.centres.length - 1];
         let sinceTurn = 0;
         let len = 0;
+        const wave = this._wave(plan, c + 7, r + 11, false);
         while (len < maxLen) {
             if (sinceTurn >= cfg.minTurn && this.pseudoRandom(c * 53 + 3, r * 67 + 5) < cfg.turnChance) {
                 const turn = this.pseudoRandom(c * 71 + 1, r * 79 + 2) < 0.5 ? (dir + 3) % 4 : (dir + 1) % 4;
-                if (this._centreOk(plan, road, c + VILLAGE_DIRS[turn].c, r + VILLAGE_DIRS[turn].r, len + 1)) { dir = turn; sinceTurn = 0; }
+                if (this._centreOk(plan, road, c + VILLAGE_DIRS[turn].c, r + VILLAGE_DIRS[turn].r, len + 1)) { dir = turn; sinceTurn = 0; if (wave) { wave.t = 0; wave.lat = 0; } }
             }
-            let nc = c + VILLAGE_DIRS[dir].c;
-            let nr = r + VILLAGE_DIRS[dir].r;
-            let valid = this._centreOk(plan, road, nc, nr, len + 1);
+            const sway = this._swayNext(plan, road, wave, c, r, dir, len + 1);
+            let nc = sway.c;
+            let nr = sway.r;
+            let corner = sway.corner;
+            let valid = this._centreOk(plan, road, nc, nr, len + 1 + (corner ? 1 : 0));
             if (!valid) {
+                corner = null;
+                if (wave) { wave.t = 0; wave.lat = 0; }
                 const first = this.pseudoRandom(c, r) < 0.5 ? (dir + 3) % 4 : (dir + 1) % 4;
                 for (const turn of [first, first === (dir + 3) % 4 ? (dir + 1) % 4 : (dir + 3) % 4]) {
                     const tc = c + VILLAGE_DIRS[turn].c;
@@ -501,6 +557,11 @@ export class VillagePlanner {
                 }
             }
             if (!valid) break;
+            if (corner) {
+                len++;
+                road.centres.push({ c: corner.c, r: corner.r, d: dir });
+                this._stampRoad(plan, road, corner.c, corner.r, len, created);
+            }
             c = nc;
             r = nr;
             len++;
@@ -556,18 +617,27 @@ export class VillagePlanner {
     _growSideStreet(plan, parent, at, dirIndex, len) {
         const cfg = plan.cfg;
         const road = { id: plan.roads.length, kind: 'side', alley: true, parent: parent.id, rad: cfg.sideRad, elev: this._roadElev(plan, parent), depth: parent.depth || 0, centres: [{ c: at.c, r: at.r, d: dirIndex }] };
-        const d = VILLAGE_DIRS[dirIndex];
         const created = [];
         let c = at.c;
         let r = at.r;
         let steps = 0;
-        for (let k = 1; k <= len; k++) {
-            const nc = c + d.c;
-            const nr = r + d.r;
-            if (!this._centreOk(plan, road, nc, nr, k)) break;
-            c = nc;
-            r = nr;
-            steps = k;
+        let k = 0;
+        /* (a street leaves its parent straight for a few cells before it sways, so the junction stays square) */
+        const wave = this._wave(plan, at.c + dirIndex * 3, at.r + dirIndex * 7, true);
+        if (wave) wave.t = -3;
+        while (steps < len) {
+            let sway = this._swayNext(plan, road, wave && wave.t >= 0 ? wave : null, c, r, dirIndex, k + 1);
+            if (wave && wave.t < 0) wave.t++;
+            if (!this._centreOk(plan, road, sway.c, sway.r, k + 1 + (sway.corner ? 1 : 0))) break;
+            if (sway.corner) {
+                k++;
+                road.centres.push({ c: sway.corner.c, r: sway.corner.r, d: dirIndex });
+                this._stampRoad(plan, road, sway.corner.c, sway.corner.r, k, created);
+            }
+            c = sway.c;
+            r = sway.r;
+            k++;
+            steps++;
             road.centres.push({ c, r, d: dirIndex });
             this._stampRoad(plan, road, c, r, k, created);
         }
@@ -667,28 +737,50 @@ export class VillagePlanner {
         const prefab = (proto.variants && proto.variants[gate]) || proto;
         const w = prefab.width;
         const h = prefab.height;
-        const off = this._rad(plan, slot.road) + 1 + cfg.setback;
-        let originC;
-        let originR;
-        if (horizontal) {
-            originC = ctr.c - Math.floor(w / 2);
-            originR = slot.side === 0 ? ctr.r - off - (h - 1) : ctr.r + off;
-        } else {
-            originR = ctr.r - Math.floor(h / 2);
-            originC = slot.side === 0 ? ctr.c - off - (w - 1) : ctr.c + off;
+        const elev = this._roadElev(plan, slot.road);
+        /* a road that sways leaves room beside it here and there: a yard may stand up to `yardSlack` cells further back, its footpath running on to the road */
+        for (let extra = 0; extra <= cfg.yardSlack; extra++) {
+            const off = this._rad(plan, slot.road) + 1 + cfg.setback + extra;
+            let originC;
+            let originR;
+            if (horizontal) {
+                originC = ctr.c - Math.floor(w / 2);
+                originR = slot.side === 0 ? ctr.r - off - (h - 1) : ctr.r + off;
+            } else {
+                originR = ctr.r - Math.floor(h / 2);
+                originC = slot.side === 0 ? ctr.c - off - (w - 1) : ctr.c + off;
+            }
+            /* the footpath leaves the yard at `entry`; walked on from there it must reach road (or hub) within `extra` cells, or the yard would face a field */
+            const walk = [];
+            if (prefab.entry) {
+                const e = prefab.entry;
+                let x = originC + e.x + e.dx;
+                let y = originR + e.y + e.dy;
+                let reached = false;
+                for (let k = 0; k <= extra; k++) {
+                    const key = this._s(x, y);
+                    if (plan.roadOwner.has(key) || plan.hubTiles.has(key)) { reached = true; break; }
+                    if (k === extra || plan.buildingTiles.has(key) || gameState.world.changes[key] !== undefined || this.getElevation(x, y) !== elev
+                        || this.isBlockedByFace(x, y) || this.isCliffFace(x, y) || this._nearStair(x, y)) break;
+                    walk.push([x, y]);
+                    x += e.dx;
+                    y += e.dy;
+                }
+                if (!reached) continue;
+            }
+            if (!this._moduleFits(plan, originC, originR, w, h, elev)) continue;
+            this._writePrefabToGlobalState(originC, originR, prefab);
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) plan.buildingTiles.add(this._s(originC + x, originR + y));
+            }
+            /* the rest of the footpath, a cell of dirt at a time (part of the yard: nothing else is put there) */
+            for (const [x, y] of walk) {
+                this._writePrefabToGlobalState(x, y, { width: 1, height: 1, terrain: [[1]], objects: [[null]] });
+                plan.buildingTiles.add(this._s(x, y));
+            }
+            return true;
         }
-        /* the footpath leaves the yard at `entry`; the cell it points at must be road (or hub), or the yard would face a field */
-        if (prefab.entry) {
-            const e = prefab.entry;
-            const key = this._s(originC + e.x + e.dx, originR + e.y + e.dy);
-            if (!plan.roadOwner.has(key) && !plan.hubTiles.has(key)) return false;
-        }
-        if (!this._moduleFits(plan, originC, originR, w, h, this._roadElev(plan, slot.road))) return false;
-        this._writePrefabToGlobalState(originC, originR, prefab);
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) plan.buildingTiles.add(this._s(originC + x, originR + y));
-        }
-        return true;
+        return false;
     }
     _moduleFits(plan, originC, originR, w, h, elev) {
         for (let y = 0; y < h; y++) {

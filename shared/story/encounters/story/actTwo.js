@@ -16,8 +16,9 @@ import { toStage, next } from '../stageKit.js';
 export const actTwo = {
     id: "act_two",
     title: "A Dark Truth",
-    // every player who beat Darius plays it for themselves: it grants their own act 3 and quest (in a party of players each sees it on their own screen)
-    personal: true,
+    // the party that beat Darius sees it together, led by the fight's leader (SceneManager BATTLE_ENDED, multiplayerSocial.awaitAfterFight); every
+    // player in it is granted their act 3 and quest. One who missed it (an old save) sees it alone later, on the map (ActSystem.owesDarkTruth).
+    personal: false,
     initialStage: "silence",
     tone: "blood",
     stages: {

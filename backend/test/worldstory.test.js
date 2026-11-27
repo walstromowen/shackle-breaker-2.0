@@ -80,11 +80,15 @@ test('a flag from another player lands in the world\'s changes without disturbin
     clean();
 });
 
-test('the story\'s scenes are shared and voted on; the Hooded Stranger stays personal (he hands in each player\'s own quests)', () => {
-    for (const id of ['nikoli', 'nikoli_after_battle', 'brothers_won', 'jaeger', 'codey', 'stranger_mark', 'brothers_sword', 'pursuer', 'pursuer_won', 'dry_kraken_ambush', 'codey_freed']) {
+test('the story\'s scenes are shared and voted on, the Hooded Stranger and A Dark Truth too', () => {
+    for (const id of ['nikoli', 'nikoli_after_battle', 'brothers_won', 'jaeger', 'codey', 'stranger_mark', 'brothers_sword', 'pursuer', 'pursuer_won', 'dry_kraken_ambush', 'codey_freed', 'hooded_stranger', 'act_two']) {
         assert.equal(E[id].personal, false, `${id} is the world's`);
     }
-    assert.equal(E.hooded_stranger.personal, true);
+    // the story pulls in the party near you, like any encounter (a party member further off can ask to join it)
+    const social = fs.readFileSync(new URL('../../frontend/src/engine/multiplayerSocial.js', import.meta.url), 'utf8');
+    assert.match(social, /const players = \[\.\.\.new Set\(\[this\.me, \.\.\.must, \.\.\.this\.nearbyParty\(\)\]\)\]/);
+    assert.match(social, /if \(d\.mp && multiplayerSession\.active && \(this\._busy\(\) \|\| this\._tooFar\(from\)\)\)/, 'too far: not pulled in');
+    assert.ok(!/storyParty/.test(social), 'no encounter reaches the whole party wherever they are');
 });
 
 test('the story\'s quests are shared with the party; a player still hands in their own', () => {

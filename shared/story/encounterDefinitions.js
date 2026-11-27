@@ -4,6 +4,7 @@ import { aDisturbingSight, madmanSpotsYou } from './encounters/aDisturbingSight.
 import { woundedMutt } from './encounters/woundedMutt.js';
 import { bearPatrol } from './encounters/bearPatrol.js';
 import { legionaryPatrol, legionarySpotsYou } from './encounters/legionaryPatrol.js';
+import { frozenTrapperPatrol, frozenTrapperSpotsYou } from './encounters/frozenTrapperPatrol.js';
 import { bonfire } from './encounters/bonfire.js';
 import { wildHunt } from './encounters/wildHunt.js';
 import { treasureChest } from './encounters/treasureChest.js';
@@ -42,6 +43,8 @@ export const encounterDefinitions = {
     [madmanSpotsYou.id]: madmanSpotsYou,   // a madman who sees you coming (front or sides): the fight
     [legionaryPatrol.id]: legionaryPatrol,       // a legionary on patrol in a village or a castle, walked up to from behind (LEGIONARY_PATROL)
     [legionarySpotsYou.id]: legionarySpotsYou,   // one who sees you coming: the fight
+    [frozenTrapperPatrol.id]: frozenTrapperPatrol,       // a frozen trapper on the prowl in the snowy mountains, walked up to from behind (FROZEN_TRAPPER_PATROL)
+    [frozenTrapperSpotsYou.id]: frozenTrapperSpotsYou,   // one who sees you coming: the fight
     [bonfire.id]: bonfire,
     [wildHunt.id]: wildHunt,
     [treasureChest.id]: treasureChest,
@@ -98,16 +101,6 @@ export const encounterDefinitions = {
     // 1. Import it at the top.
     // 2. Add `[yourEncounter.id]: yourEncounter,` right here.
 };
-
-/* The story's encounters, shared with the whole party in multiplayer: a party member anywhere in the world is pulled into one, not only those
-   standing near (engine/multiplayerSocial.js storyParty), so the story is lived together. The deliberately personal ones are not here (the
-   Hooded Stranger and the end of act one are each player's own: `personal`), nor the prologue (each player's own start). */
-export const STORY_ENCOUNTERS = new Set([
-    mysteriousAltar, nikoli, nikoliAfterBattle, nikoliBrothersWon, dryKrakenAmbush, codeyFreed, jaeger,
-    amputatorOsric, amputatorGarrick, amputatorGarrickFallen, arcKnight, arcKnightFallen,
-    codey, strangerMark, strangerNote, brothersSword, pursuer, pursuerWon,
-    catacombVaultDoor, infernusSentinel, infernusSentinelFallen, shackledBetrayal, shackledBetrayalEnd,
-].filter(e => e && !e.personal).map(e => e.id));
 
 // The moments that sometimes teach a trait, good or bad (story/encounterTraits.js): put into the stages above, once.
 export const MISSING_TRAIT_STAGES = applyEncounterTraits(encounterDefinitions);

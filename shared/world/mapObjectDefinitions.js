@@ -121,6 +121,9 @@ export const MAP_OBJECTS_DEFINITIONS = {
     ABANDONED_STONE_HOUSE_RIGHT: { sheet: 'objAbandonedStoneHouseRight', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 5, h: 2 }] },
     ABANDONED_SMITHY_LEFT: { sheet: 'objAbandonedSmithyLeft', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 5, h: 2 }] },
     ABANDONED_SMITHY_RIGHT: { sheet: 'objAbandonedSmithyRight', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 5, h: 2 }] },
+    /* the village stable: the houses' scale (their wall height, planks and thatch), only longer: 8 x 5 (its wall about 6.5 tiles, with the houses' soft
+       shadow at its foot in the margin either side), a row of empty horse stalls with shut half-doors. Not entered: the whole front is solid */
+    STABLE: { sheet: 'objStable', spriteX: 5, spriteY: 7, width: 8, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 8, h: 2 }] },
     CRAFTING_HOUSE_LEFT: { sheet: 'objCraftingHouseLeft', spriteX: 5, spriteY: 7, width: 6, height: 6, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 6, h: 2 }] },
     CRAFTING_HOUSE_RIGHT: { sheet: 'objCraftingHouseRight', spriteX: 5, spriteY: 7, width: 6, height: 6, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 6, h: 2 }] },
 
@@ -157,6 +160,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     IRON_CHEST: { sheet: 'objIronChest', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'iron_chest', isRepeatable: false } },
     PINE_TREE: { sheet: 'objPineTree', spriteX: 3, spriteY: 1, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'TREE_STUMP' } },
     SNOWY_PINE_TREE: { sheet: 'objPineTreeSnow', spriteX: 3, spriteY: 1, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'SNOWY_TREE_STUMP' } },
+    /* a dead tree: leafless, grey and gnarled, the oak's size and style (PixelLab, the game's own trees as the style). Cut down for wood like the others */
+    DEAD_TREE: { sheet: 'objDeadTree', spriteX: 0, spriteY: 1, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'TREE_STUMP' } },
     OAK_TREE_1: { sheet: 'objOakTree1', spriteX: 0, spriteY: 1, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'hard_wood', amount: 2, duration: 2.0, replaceWith: 'TREE_STUMP' } },
     TREE_STUMP: { sheet: 'objTreeStump', spriteX: 0, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SNOWY_TREE_STUMP: { sheet: 'objTreeStumpSnow', spriteX: 0, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
@@ -267,6 +272,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // walked up to from behind, "A Legionary on Patrol" (story/encounters/legionaryPatrol.js): assassinate, distract, steal, or walk away
     LEGIONARY_PATROL: { ...npcBody('LEGIONARY', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'legionary_patrol', seenId: 'legionary_spots_you', sight: 5 },
         wander: { radius: 6, stepMs: [900, 1200], pauseChance: 0.2, pauseMs: [1200, 3200], straight: 0.75, waypoints: 4 } },
+    // a frozen trapper walking his trapline in the open snow of the mountains (biomeDefinitions.js, the snowy mountains' rules). He sees 5 tiles ahead, in a
+    // half circle the way he faces (`sight`): seen, it is the fight (frozen_trapper_spots_you); walked up to from behind, "A Trapper on the Prowl"
+    // (story/encounters/frozenTrapperPatrol.js): assassinate, distract, steal, or walk away. Like every patrol, back with each new act (world/patrols.js)
+    FROZEN_TRAPPER_PATROL: { ...npcBody('FROZEN_TRAPPER', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'frozen_trapper_patrol', seenId: 'frozen_trapper_spots_you', sight: 5 },
+        wander: { radius: 6, stepMs: [850, 1150], pauseChance: 0.25, pauseMs: [1200, 3500], straight: 0.6, waypoints: 5 } },
     BEAR_PATROL: { ...npcBody('BEAR', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'bear_patrol', sight: 5 },
         wander: { radius: 2, stepMs: [1500, 2100], pauseChance: 0.6, pauseMs: [3000, 7000], waypoints: 3 } },
     GARRICK_NPC: { ...npcBody('AMPUTATOR_GARRICK', 'LEFT'), interaction: { type: 'ENCOUNTER', id: 'amputator_garrick', triggerRadius: 2 } },
@@ -447,7 +457,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
 const HERB_DAYS = 7, TREE_DAYS = 7, SCRAP_DAYS = 7, ROCK_DAYS = 14;
 export const RESPAWN_DAYS = {
     // trees (the stump goes with the cut tree)
-    PINE_TREE: TREE_DAYS, SNOWY_PINE_TREE: TREE_DAYS, OAK_TREE_1: TREE_DAYS,
+    PINE_TREE: TREE_DAYS, SNOWY_PINE_TREE: TREE_DAYS, OAK_TREE_1: TREE_DAYS, DEAD_TREE: TREE_DAYS,
     // herbs and plants
     HEALING_HERB: HERB_DAYS, ALOE_PLANT: HERB_DAYS, INVIGORATING_HERB: HERB_DAYS, ILLUMINATING_HERB: HERB_DAYS, COTTON_PLANT: HERB_DAYS, WHEAT_PLANT: HERB_DAYS,
     TULIPS_ORANGE: HERB_DAYS, TULIPS_WHITE: HERB_DAYS, TULIPS_RED: HERB_DAYS,

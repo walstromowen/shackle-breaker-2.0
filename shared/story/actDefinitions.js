@@ -105,7 +105,9 @@ export const ACT_DEFINITIONS = {
             CALCIFIED_CRUSADER: { abilities: ['shield_bash', 'cleave'], traits: ['tough'] },
             // --- snowy mountains ---
             SNOW_LEOPARD:     { abilities: ['hit_and_run'], traits: ['quick'] },
-            FROZEN_TRAPPER:   { traits: ['quick'] }
+            FROZEN_TRAPPER:   { traits: ['quick'] },
+            FROSTBITTEN_WARRIOR: { abilities: ['shield_bash', 'cleave'], traits: ['tough'] },
+            RIME_HERMIT:      { abilities: ['frost_ward'] }
         }
     },
 

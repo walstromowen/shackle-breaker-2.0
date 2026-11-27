@@ -310,7 +310,8 @@ export const SpawnTableDefinitions = {
                 { id: 'BEAR', weight: 100, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }
             ]
         }, {
-            // the trappers of the peaks hunt the roads: about half of the mountain's ambushes
+            // the shackled of the peaks hunt the roads: about half of the mountain's ambushes. The trappers most of all; with them the Frostbitten
+            // Warrior, and from act 3 the Rime Hermit (the snow's trio, as the desert's is the Sand Stalker, Calcified Crusader and Miragewright)
             factionId: "shackled",
             weight: 50,
             difficultySettings: {
@@ -320,7 +321,9 @@ export const SpawnTableDefinitions = {
                 nightmare: { minSize: 2, maxSize: 4 }
             },
             members: [
-                { id: 'FROZEN_TRAPPER', weight: 100, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }
+                { id: 'FROZEN_TRAPPER', weight: 70, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } },
+                { id: 'FROSTBITTEN_WARRIOR', weight: 30, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } },
+                { id: 'RIME_HERMIT', weight: 25, minAct: 3, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
             ]
         }]
     },
@@ -367,7 +370,9 @@ export const SpawnTableDefinitions = {
                 nightmare: { minSize: 2, maxSize: 4 }
             },
             members: [
-                { id: 'FROZEN_TRAPPER', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+                { id: 'FROZEN_TRAPPER', weight: 50, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
+                { id: 'RIME_HERMIT', weight: 25, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } },
+                { id: 'FROSTBITTEN_WARRIOR', weight: 25, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 3 } } }
             ]
         }]
     },
@@ -516,7 +521,9 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 2, maxSize: 4 }
                 },
                 members: [
-                    { id: 'FROZEN_TRAPPER', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                    { id: 'FROZEN_TRAPPER', weight: 40, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } },
+                    { id: 'RIME_HERMIT', weight: 30, modifiers: { levelOffset: { chance: 0.6, min: 1, max: 2 } } },
+                    { id: 'FROSTBITTEN_WARRIOR', weight: 30, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 3 } } }
                 ]
             }
         ]
